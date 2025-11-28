@@ -14,8 +14,8 @@ import {
  */
 
 export const createTable = pgTableCreator(
-    (name) => `Aruppukottai_turf_${name}`
-  );
+  (name) => `Aruppukottai_turf_${name}`
+);
 
 /* -------------------- TABLES -------------------- */
 
@@ -331,6 +331,29 @@ export const couponUsesRelations = relations(couponUses, ({ one }) => ({
     fields: [couponUses.bookingId],
     references: [bookings.id],
   }),
+}));
+
+//config table
+export const configTable = createTable("config", (d) => ({
+  id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+  updatedBy: d.integer().references(() => managers.id),
+  createdAt: d
+    .timestamp({ withTimezone: true })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+
+  maintenanceMode: d.boolean().notNull().default(false),
+  maintenanceMessage: d.text().notNull().default(""),
+
+  fullPaymentMode: d.boolean().notNull().default(false),
+  
+  slotIntervalMinutes: d.integer().notNull().default(60),
+  numberOfSlotsPerDay: d.integer().notNull().default(24),
+  
+  bookingBufferMinutes: d.integer().notNull().default(3),// minutes before payment deadline to open slot again
+
+  slotsVisibleDaysInAdvance: d.integer().notNull().default(4), // number of days in advance slots are visible to customers
 }));
 
 

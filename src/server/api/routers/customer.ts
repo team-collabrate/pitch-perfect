@@ -53,21 +53,7 @@ export const customerRouter = createTRPCRouter({
             return result[0] ?? null;
         }),
 
-    // Get customer by ID
-    getById: publicProcedure
-        .input(
-            z.object({
-                id: z.number(),
-            })
-        )
-        .query(async ({ input }) => {
-            const result = await db
-                .select()
-                .from(customers)
-                .where(eq(customers.id, input.id));
-
-            return result[0] ?? null;
-        }),
+   
 
     // Update customer
     update: publicProcedure
@@ -93,37 +79,4 @@ export const customerRouter = createTRPCRouter({
             return result[0] ?? null;
         }),
 
-    // List all customers (paginated)
-    list: publicProcedure
-        .input(
-            z.object({
-                limit: z.number().min(1).max(100).default(10),
-                offset: z.number().min(0).default(0),
-            })
-        )
-        .query(async ({ input }) => {
-            const result = await db
-                .select()
-                .from(customers)
-                .limit(input.limit)
-                .offset(input.offset);
-
-            return result;
-        }),
-
-    // Delete customer
-    delete: publicProcedure
-        .input(
-            z.object({
-                phoneNumber: z.string().min(1, "Phone number is required"),
-            })
-        )
-        .mutation(async ({ input }) => {
-            const result = await db
-                .delete(customers)
-                .where(eq(customers.number, input.phoneNumber))
-                .returning();
-
-            return result[0] ?? null;
-        }),
 });

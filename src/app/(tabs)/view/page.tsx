@@ -49,6 +49,10 @@ const rescheduleSource = buildRescheduleSlots();
 
 const formatDate = (isoDate: string) => format(parseISO(isoDate), "EEE, MMM d");
 
+const MotionCard = motion(Card);
+const MotionButton = motion(Button);
+const springy = { type: "spring", stiffness: 260, damping: 22 } as const;
+
 function BookingList({
   title,
   bookings,
@@ -64,30 +68,53 @@ function BookingList({
 }) {
   if (bookings.length === 0) {
     return (
-      <section className="space-y-3">
+      <motion.section
+        className="space-y-3"
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.35 }}
+      >
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
           {title}
         </h2>
-        <Card className="items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
+        <MotionCard
+          className="items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground"
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.35 }}
+        >
           <p>No bookings yet.</p>
-        </Card>
-      </section>
+        </MotionCard>
+      </motion.section>
     );
   }
 
   return (
-    <section className="space-y-3">
+    <motion.section
+      className="space-y-3"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.35 }}
+    >
       <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
         {title}
       </h2>
       <div className="space-y-3">
         {bookings.map((booking) => (
-          <Card
+          <MotionCard
             key={booking.id}
             className={cn(
               "p-4",
               accent === "muted" && "opacity-70",
             )}
+            layout
+            initial={{ opacity: 0, translateY: 16 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ duration: 0.3 }}
+            whileHover={{ scale: 1.01 }}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -119,24 +146,32 @@ function BookingList({
               <span className="font-mono">{booking.verificationCode}</span>
             </div>
             <div className="mt-4 flex items-center gap-2">
-              <Button size="sm" className="flex-1 rounded-xl" onClick={() => onOpenTicket(booking)}>
+              <MotionButton
+                size="sm"
+                className="flex-1 rounded-xl"
+                onClick={() => onOpenTicket(booking)}
+                whileTap={{ scale: 0.96 }}
+                transition={springy}
+              >
                 View ticket
-              </Button>
+              </MotionButton>
               {onReschedule && (
-                <Button
+                <MotionButton
                   size="sm"
                   variant="outline"
                   className="flex-1 rounded-xl"
                   onClick={() => onReschedule(booking)}
+                  whileTap={{ scale: 0.96 }}
+                  transition={springy}
                 >
                   Reschedule
-                </Button>
+                </MotionButton>
               )}
             </div>
-          </Card>
+          </MotionCard>
         ))}
       </div>
-    </section>
+    </motion.section>
   );
 }
 
@@ -222,13 +257,23 @@ export default function ViewPage() {
   };
 
   return (
-    <div className="space-y-8 pb-6">
-      <header className="space-y-1">
+    <motion.div
+      className="space-y-8 pb-6"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: "easeOut" }}
+    >
+      <motion.header
+        className="space-y-1"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.05 }}
+      >
         <p className="text-xs uppercase tracking-wide text-muted-foreground">
           Manage visits
         </p>
         <h1 className="text-2xl font-semibold">Your bookings</h1>
-      </header>
+      </motion.header>
 
       <BookingList
         title="Upcoming"
@@ -256,9 +301,13 @@ export default function ViewPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <Card
+            <MotionCard
               ref={ticketRef}
               className="w-full max-w-sm space-y-4 px-0 pb-6 pt-4"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
             >
               <div className="px-6">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -300,18 +349,25 @@ export default function ViewPage() {
                 </div>
               </div>
               <div className="flex flex-col gap-2 px-6">
-                <Button onClick={handleTicketDownload} className="rounded-xl">
+                <MotionButton
+                  onClick={handleTicketDownload}
+                  className="rounded-xl"
+                  whileTap={{ scale: 0.97 }}
+                  transition={springy}
+                >
                   Download ticket
-                </Button>
-                <Button
+                </MotionButton>
+                <MotionButton
                   variant="ghost"
                   className="rounded-xl"
                   onClick={() => setActiveTicket(null)}
+                  whileTap={{ scale: 0.97 }}
+                  transition={springy}
                 >
                   Close
-                </Button>
+                </MotionButton>
               </div>
-            </Card>
+            </MotionCard>
           </motion.div>
         )}
       </AnimatePresence>
@@ -324,7 +380,13 @@ export default function ViewPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <Card className="w-full max-w-md space-y-4 p-6">
+            <MotionCard
+              className="w-full max-w-md space-y-4 p-6"
+              initial={{ opacity: 0, translateY: 50 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              exit={{ opacity: 0, translateY: 50 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
               <div>
                 <h3 className="text-lg font-semibold">Reschedule slot</h3>
                 <p className="text-sm text-muted-foreground">
@@ -335,7 +397,7 @@ export default function ViewPage() {
                 {rescheduleSource.map((entry) => {
                   const isActive = rescheduleDate === entry.date;
                   return (
-                    <button
+                    <motion.button
                       key={entry.date}
                       onClick={() => {
                         setRescheduleDate(entry.date);
@@ -347,12 +409,14 @@ export default function ViewPage() {
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-border text-muted-foreground",
                       )}
+                      whileTap={{ scale: 0.94 }}
+                      transition={springy}
                     >
                       <span className="font-semibold uppercase">
                         {format(parseISO(entry.date), "EEE")}
                       </span>
                       <span>{format(parseISO(entry.date), "MMM d")}</span>
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
@@ -362,7 +426,7 @@ export default function ViewPage() {
                 ).map((slot) => {
                   const isChosen = rescheduleSlotId === slot.id;
                   return (
-                    <button
+                    <motion.button
                       key={slot.id}
                       onClick={() => setRescheduleSlotId(slot.id)}
                       className={cn(
@@ -371,6 +435,8 @@ export default function ViewPage() {
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-border text-muted-foreground",
                       )}
+                      whileTap={{ scale: 0.96 }}
+                      transition={springy}
                     >
                       <span className="font-semibold">
                         {slot.from} – {slot.to}
@@ -378,30 +444,34 @@ export default function ViewPage() {
                       <span className="mt-1 text-xs text-muted-foreground">
                         {isChosen ? "Selected" : "Tap to choose"}
                       </span>
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
               <div className="flex items-center gap-3">
-                <Button
+                <MotionButton
                   className="flex-1 rounded-xl"
                   disabled={!selectedSlot}
                   onClick={handleRescheduleConfirm}
+                  whileTap={{ scale: selectedSlot ? 0.97 : 1 }}
+                  transition={springy}
                 >
                   Confirm move
-                </Button>
-                <Button
+                </MotionButton>
+                <MotionButton
                   variant="ghost"
                   className="rounded-xl"
                   onClick={resetRescheduleState}
+                  whileTap={{ scale: 0.97 }}
+                  transition={springy}
                 >
                   Cancel
-                </Button>
+                </MotionButton>
               </div>
-            </Card>
+            </MotionCard>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }

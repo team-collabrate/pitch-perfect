@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { addDays, format, parseISO } from "date-fns";
 import { toPng } from "html-to-image";
 import confetti from "canvas-confetti";
+import { motion, AnimatePresence } from "motion/react";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -74,6 +75,11 @@ const createMockSlots = () => {
 };
 
 const fallbacks = createMockSlots();
+
+const MotionButton = motion(Button);
+const MotionCard = motion(Card);
+
+const springy = { type: "spring", stiffness: 260, damping: 20 } as const;
 
 const fireSideCannons = () => {
   const colors = ["#a786ff", "#fd8bbc", "#eca184", "#f8deb1"];
@@ -287,7 +293,12 @@ export default function BookingPage() {
   }, [confirmation, renderToPng]);
 
   return (
-    <div className="space-y-8">
+    <motion.div
+      className="space-y-8"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: "easeOut" }}
+    >
       <header className="space-y-1">
         <p className="text-xs uppercase tracking-wide text-muted-foreground">
           Turf booking
@@ -305,7 +316,7 @@ export default function BookingPage() {
             const formatted = format(parseISO(date), "EEE d MMM");
             const [day, dayNum, month] = formatted.split(" ");
             return (
-              <button
+              <motion.button
                 key={date}
                 onClick={() => setSelectedDate(date)}
                 className={cn(
@@ -314,12 +325,16 @@ export default function BookingPage() {
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border text-muted-foreground",
                 )}
+                layout
+                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.03 }}
+                transition={springy}
               >
                 <span className="font-semibold uppercase">{day}</span>
                 <span>
                   {dayNum} {month}
                 </span>
-              </button>
+              </motion.button>
             );
           })}
         </div>
@@ -386,7 +401,7 @@ export default function BookingPage() {
                   const isAtLimit = !isSelected && selectionCount >= MAX_SLOTS_PER_DAY;
                   const isDisabled = isUnavailable || isAtLimit;
                   return (
-                    <button
+                    <motion.button
                       key={slot.id}
                       type="button"
                       disabled={isDisabled}
@@ -399,6 +414,9 @@ export default function BookingPage() {
                           "border-primary bg-primary/10 text-primary shadow-sm",
                         isAtLimit && !isSelected && "opacity-60",
                       )}
+                      layout
+                      whileTap={{ scale: isDisabled ? 1 : 0.97 }}
+                      transition={springy}
                     >
                       <span className="font-semibold">
                         {slot.from} – {slot.to}
@@ -415,7 +433,7 @@ export default function BookingPage() {
                           <span className="h-2 w-2 rounded-full bg-primary" />
                         )}
                       </span>
-                    </button>
+                    </motion.button>
                   );
                 })
               )}
@@ -428,23 +446,36 @@ export default function BookingPage() {
           </DrawerContent>
         </Drawer>
         <div className="flex flex-wrap gap-2">
-          {selectionCount === 0 ? (
-            <span className="text-sm text-muted-foreground">
-              No slots selected yet.
-            </span>
-          ) : (
-            selectedSlots
-              .slice()
-              .sort((a, b) => a.from.localeCompare(b.from))
-              .map((slot) => (
-                <span
-                  key={slot.id}
-                  className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-                >
-                  {slot.from} – {slot.to}
-                </span>
-              ))
-          )}
+          <AnimatePresence mode="popLayout">
+            {selectionCount === 0
+              ? (
+                  <motion.span
+                    key="empty-state"
+                    className="text-sm text-muted-foreground"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    No slots selected yet.
+                  </motion.span>
+                )
+              : selectedSlots
+                  .slice()
+                  .sort((a, b) => a.from.localeCompare(b.from))
+                  .map((slot) => (
+                    <motion.span
+                      key={slot.id}
+                      className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                      layout
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={springy}
+                    >
+                      {slot.from} – {slot.to}
+                    </motion.span>
+                  ))}
+          </AnimatePresence>
         </div>
       </section>
 
@@ -456,7 +487,7 @@ export default function BookingPage() {
           {["cricket", "football"].map((option) => {
             const isActive = bookingType === option;
             return (
-              <Button
+              <MotionButton
                 key={option}
                 variant={isActive ? "default" : "outline"}
                 disabled={!canChooseGame}
@@ -465,9 +496,12 @@ export default function BookingPage() {
                   !isActive && "bg-background",
                 )}
                 onClick={() => setBookingType(option as "cricket" | "football")}
+                whileTap={{ scale: canChooseGame ? 0.96 : 1 }}
+                whileHover={{ scale: canChooseGame ? 1.02 : 1 }}
+                transition={springy}
               >
                 {option}
-              </Button>
+              </MotionButton>
             );
           })}
         </div>
@@ -484,7 +518,7 @@ export default function BookingPage() {
           ].map((option) => {
             const isActive = paymentOption === option.key;
             return (
-              <Button
+              <MotionButton
                 key={option.key}
                 variant={isActive ? "default" : "outline"}
                 disabled={!canChoosePayment}
@@ -493,9 +527,12 @@ export default function BookingPage() {
                   option.key === "advance" && !isActive && "bg-background",
                 )}
                 onClick={() => setPaymentOption(option.key as "advance" | "full")}
+                whileTap={{ scale: canChoosePayment ? 0.96 : 1 }}
+                whileHover={{ scale: canChoosePayment ? 1.02 : 1 }}
+                transition={springy}
               >
                 {option.label}
-              </Button>
+              </MotionButton>
             );
           })}
         </div>
@@ -561,20 +598,34 @@ export default function BookingPage() {
         </div>
       </section>
 
-      <Button
+      <MotionButton
         disabled={!formReady}
         className="w-full rounded-2xl py-6 text-base font-semibold uppercase tracking-wide"
         onClick={handleSubmit}
+        whileTap={{ scale: formReady ? 0.97 : 1 }}
+        whileHover={{ scale: formReady ? 1.02 : 1 }}
+        transition={springy}
       >
         Pay Now
-      </Button>
+      </MotionButton>
 
-      {confirmation && primaryConfirmation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <Card
-            ref={confirmationCardRef}
-            className="w-full max-w-sm space-y-4 px-0 pb-6 pt-4"
+      <AnimatePresence>
+        {confirmation && primaryConfirmation && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
           >
+            <MotionCard
+              ref={confirmationCardRef}
+              className="w-full max-w-sm space-y-4 px-0 pb-6 pt-4"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+            >
             <div className="px-6">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">
                 Booking successful
@@ -643,9 +694,10 @@ export default function BookingPage() {
                 Close
               </Button>
             </div>
-          </Card>
-        </div>
-      )}
-    </div>
+            </MotionCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

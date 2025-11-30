@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "motion/react";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -18,36 +19,69 @@ const contacts = [
 
 const whatsappNumber = "919123456780";
 
+const MotionCard = motion(Card);
+const MotionButton = motion(Button);
+
 export default function ContactPage() {
   return (
-    <div className="space-y-6 pb-6">
-      <header className="space-y-1">
+    <motion.div
+      className="space-y-6 pb-6"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
+      <motion.header
+        className="space-y-1"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.05 }}
+      >
         <p className="text-xs uppercase tracking-wide text-muted-foreground">
           We are one call away
         </p>
         <h1 className="text-2xl font-semibold">Contact</h1>
-      </header>
+      </motion.header>
 
-      <Card className="gap-4 p-6">
+      <MotionCard
+        className="gap-4 p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+      >
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Management contacts
           </h2>
           <ul className="mt-3 space-y-3 text-sm">
-            {contacts.map((contact) => (
-              <li key={contact.phone} className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-foreground">{contact.name}</p>
-                  <Link
-                    href={`tel:${contact.phone.replace(/\s+/g, "")}`}
-                    className="text-muted-foreground hover:text-primary"
+            {contacts.map((contact, index) => (
+              <li key={contact.phone}>
+                <motion.div
+                  className="flex items-center justify-between"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.15 + index * 0.05 }}
+                  whileHover={{ scale: 1.01 }}
+                >
+                  <div>
+                    <p className="font-medium text-foreground">{contact.name}</p>
+                    <Link
+                      href={`tel:${contact.phone.replace(/\s+/g, "")}`}
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      {contact.phone}
+                    </Link>
+                  </div>
+                  <MotionButton
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    whileTap={{ scale: 0.94 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
-                    {contact.phone}
-                  </Link>
-                </div>
-                <Button asChild variant="outline" size="sm" className="rounded-full">
-                  <Link href={`tel:${contact.phone.replace(/\s+/g, "")}`}>Call</Link>
-                </Button>
+                    <Link href={`tel:${contact.phone.replace(/\s+/g, "")}`}>Call</Link>
+                  </MotionButton>
+                </motion.div>
               </li>
             ))}
           </ul>
@@ -65,9 +99,14 @@ export default function ContactPage() {
           <p className="font-semibold text-foreground">Business hours</p>
           <p className="text-muted-foreground">Monday – Sunday · 05:00 AM – 11:00 PM</p>
         </div>
-      </Card>
+      </MotionCard>
 
-      <Card className="overflow-hidden p-0">
+      <MotionCard
+        className="overflow-hidden p-0"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.18 }}
+      >
         <div className="aspect-video">
           <iframe
             title="Pitch Perfect map"
@@ -80,9 +119,14 @@ export default function ContactPage() {
         <div className="p-4 text-sm text-muted-foreground">
           <p>12/4A, Pitch Perfect Turf, Aruppukottai Main Road, Tamil Nadu.</p>
         </div>
-      </Card>
+      </MotionCard>
 
-      <Card className="items-start gap-4 p-6">
+      <MotionCard
+        className="items-start gap-4 p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.25 }}
+      >
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             WhatsApp
@@ -91,9 +135,12 @@ export default function ContactPage() {
             Reach us instantly for slot checks, reschedules and quick clarifications.
           </p>
         </div>
-        <Button
+        <MotionButton
           asChild
           className="w-full rounded-full"
+          whileTap={{ scale: 0.96 }}
+          whileHover={{ scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 220, damping: 18 }}
         >
           <Link
             href={`https://wa.me/${whatsappNumber}?text=Hi%20Pitch%20Perfect%2C%20I%20need%20help%20with%20a%20booking.`}
@@ -102,8 +149,8 @@ export default function ContactPage() {
           >
             Chat on WhatsApp
           </Link>
-        </Button>
-      </Card>
-    </div>
+        </MotionButton>
+      </MotionCard>
+    </motion.div>
   );
 }

@@ -1,6 +1,6 @@
 import "~/styles/globals.css";
 
-import { type Metadata } from "next";
+import { type Metadata, type Viewport } from "next";
 import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "~/trpc/react";
@@ -38,10 +38,6 @@ export const metadata: Metadata = {
     apple: [{ url: "/icon-192.png" }],
   },
   manifest: "/manifest.webmanifest",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#25ff00" },
-    { media: "(prefers-color-scheme: dark)", color: "#25ff00" },
-  ],
   openGraph: {
     title: "Pitch Perfect Turf",
     description,
@@ -69,6 +65,13 @@ export const metadata: Metadata = {
     title: "Pitch Perfect",
     statusBarStyle: "black-translucent",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#25ff00" },
+    { media: "(prefers-color-scheme: dark)", color: "#25ff00" },
+  ],
 };
 
 const geist = Geist({

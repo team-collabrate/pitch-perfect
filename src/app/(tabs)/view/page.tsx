@@ -205,13 +205,16 @@ export default function ViewPage() {
     return { upcoming, past };
   }, [bookings, getStatus]);
 
-  const background = useMemo(
-    () =>
+  const background = useMemo(() => {
+    if (typeof window === "undefined") {
+      return "#ffffff";
+    }
+    return (
       getComputedStyle(document.documentElement)
         .getPropertyValue("--background")
-        .trim() || "#ffffff",
-    [],
-  );
+        .trim() || "#ffffff"
+    );
+  }, []);
 
   const handleTicketDownload = useCallback(async () => {
     if (!activeTicket || !ticketRef.current) return;

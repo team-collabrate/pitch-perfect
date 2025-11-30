@@ -9,6 +9,16 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import {
+  Drawer,
+  DrawerTrigger,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerCloseButton,
+} from "~/components/ui/drawer";
 import { cn } from "~/lib/utils";
 import {
   createBookingRecord,
@@ -27,6 +37,7 @@ type SlotView = {
 
 const TOTAL_AMOUNT = 800;
 const ADVANCE_AMOUNT = 100;
+const MAX_SLOTS_PER_DAY = 2 as const;
 const toPngImage = toPng as (
   node: HTMLElement,
   options: { cacheBust?: boolean; backgroundColor?: string },
@@ -136,7 +147,8 @@ export default function BookingPage() {
   const { addBooking } = useBookings();
 
   const [selectedDate, setSelectedDate] = useState<string>("");
-  const [selectedSlotId, setSelectedSlotId] = useState<string>("");
+  const [selectedSlots, setSelectedSlots] = useState<SlotView[]>([]);
+  const [slotDrawerOpen, setSlotDrawerOpen] = useState(false);
   const [bookingType, setBookingType] = useState<"" | "cricket" | "football">(
     "",
   );
@@ -144,9 +156,12 @@ export default function BookingPage() {
     "",
   );
   const [customer, setCustomer] = useState<CustomerFormState>(blankCustomer);
-  const [confirmation, setConfirmation] = useState<StoredBooking | null>(null);
+  const [confirmation, setConfirmation] = useState<StoredBooking[] | null>(null);
 
   const confirmationCardRef = useRef<HTMLDivElement | null>(null);
+  const primaryConfirmation = confirmation?.[0] ?? null;
+  const confirmationTotalPaid =
+    confirmation?.reduce((sum, booking) => sum + booking.amountPaid, 0) ?? 0;
 
   const slotsByDate = useMemo(() => {
     return slots.reduce<Record<string, SlotView[]>>((acc, slot) => {
@@ -164,6 +179,12 @@ export default function BookingPage() {
       .slice(0, 7);
   }, [slotsByDate]);
 
+  const slotsForSelectedDate = useMemo(() => {
+    return slotsByDate[selectedDate ?? ""] ?? [];
+  }, [slotsByDate, selectedDate]);
+
+  const selectionCount = selectedSlots.length;
+
   useEffect(() => {
     if (!selectedDate && dates.length > 0) {
       setSelectedDate(dates[0]!);
@@ -171,26 +192,37 @@ export default function BookingPage() {
   }, [dates, selectedDate]);
 
   useEffect(() => {
-    setSelectedSlotId("");
+    setSelectedSlots([]);
     setBookingType("");
     setPaymentOption("");
   }, [selectedDate]);
-
-  const selectedSlot = useMemo(() => {
-    if (!selectedSlotId) return undefined;
-    return slots.find((slot) => slot.id === selectedSlotId);
-  }, [slots, selectedSlotId]);
 
   const handleCustomerChange = (field: keyof CustomerFormState, value: string) => {
     setCustomer((prev) => ({ ...prev, [field]: value }));
   };
 
-  const canChooseGame = Boolean(selectedSlotId);
+  const toggleSlotSelection = (slot: SlotView) => {
+    if (slot.status !== "available" || slot.date !== selectedDate) return;
+    setSelectedSlots((prev) => {
+      const exists = prev.some((item) => item.id === slot.id);
+      if (exists) {
+        return prev.filter((item) => item.id !== slot.id);
+      }
+      if (prev.length >= MAX_SLOTS_PER_DAY) {
+        return prev;
+      }
+      return [...prev, slot];
+    });
+  };
+
+  const clearSelectedSlots = () => setSelectedSlots([]);
+
+  const canChooseGame = selectionCount > 0;
   const canChoosePayment = canChooseGame && Boolean(bookingType);
 
   const formReady = Boolean(
     selectedDate &&
-      selectedSlot &&
+      selectionCount > 0 &&
       bookingType &&
       paymentOption &&
       customer.name.trim() &&
@@ -200,31 +232,33 @@ export default function BookingPage() {
   );
 
   const handleSubmit = () => {
-    if (!formReady || !selectedSlot || !bookingType || !paymentOption) return;
+    if (!formReady || !bookingType || !paymentOption || selectionCount === 0) {
+      return;
+    }
 
-    const verificationCode = Math.floor(1000 + Math.random() * 9000).toString();
-    const amountPaid = paymentOption === "full" ? TOTAL_AMOUNT : ADVANCE_AMOUNT;
+    const bookingsToSave = selectedSlots.map((slot) =>
+      createBookingRecord({
+        slotId: slot.id,
+        date: slot.date,
+        from: slot.from,
+        to: slot.to,
+        bookingType,
+        paymentOption,
+        amountPaid: paymentOption === "full" ? TOTAL_AMOUNT : ADVANCE_AMOUNT,
+        totalAmount: TOTAL_AMOUNT,
+        verificationCode: Math.floor(1000 + Math.random() * 9000).toString(),
+        customer,
+      }),
+    );
 
-    const newBooking = createBookingRecord({
-      slotId: selectedSlot.id,
-      date: selectedSlot.date,
-      from: selectedSlot.from,
-      to: selectedSlot.to,
-      bookingType,
-      paymentOption,
-      amountPaid,
-      totalAmount: TOTAL_AMOUNT,
-      verificationCode,
-      customer,
-    });
-
-    addBooking(newBooking);
-    setConfirmation(newBooking);
+    bookingsToSave.forEach((booking) => addBooking(booking));
+    setConfirmation(bookingsToSave);
     fireSideCannons();
     setCustomer(blankCustomer);
-    setSelectedSlotId("");
+    setSelectedSlots([]);
     setBookingType("");
     setPaymentOption("");
+    setSlotDrawerOpen(false);
   };
 
   const renderToPng = useCallback(async (node: HTMLElement) => {
@@ -239,12 +273,13 @@ export default function BookingPage() {
   }, []);
 
   const handleDownload = useCallback(async () => {
-    if (!confirmation || !confirmationCardRef.current) return;
+    if (!confirmation?.length || !confirmationCardRef.current) return;
     try {
       const url = await renderToPng(confirmationCardRef.current);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${confirmation.bookingCode}.png`;
+      const primary = confirmation[0];
+      link.download = `${primary?.bookingCode ?? "booking"}.png`;
       link.click();
     } catch (error: unknown) {
       console.error("Unable to export booking", error);
@@ -291,40 +326,125 @@ export default function BookingPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          Available slots
-        </h2>
-        <div className="grid grid-cols-2 gap-3">
-          {(slotsByDate[selectedDate ?? ""] ?? []).map((slot) => {
-            const isSelected = selectedSlotId === slot.id;
-            const isDisabled = slot.status !== "available";
-            return (
-              <button
-                key={slot.id}
-                disabled={isDisabled}
-                onClick={() => !isDisabled && setSelectedSlotId(slot.id)}
-                className={cn(
-                  "flex flex-col rounded-2xl border px-3 py-3 text-left text-sm transition-all",
-                  isDisabled && "cursor-not-allowed bg-muted text-muted-foreground",
-                  !isDisabled && "hover:border-primary",
-                  isSelected &&
-                    "border-primary bg-primary/10 text-primary shadow-sm",
-                )}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              Slots
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              {selectedDate
+                ? `Pick up to ${MAX_SLOTS_PER_DAY} for ${format(parseISO(selectedDate), "EEE, MMM d")}`
+                : "Choose a date to enable slots"}
+            </p>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {selectionCount}/{MAX_SLOTS_PER_DAY}
+          </span>
+        </div>
+        <Drawer open={slotDrawerOpen} onOpenChange={setSlotDrawerOpen}>
+          <DrawerTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full rounded-2xl py-6 text-base"
+              disabled={!selectedDate}
+            >
+              {selectionCount > 0 ? "Edit slots" : "Choose slots"}
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent>
+            <DrawerCloseButton />
+            <DrawerHeader>
+              <DrawerTitle>
+                {selectedDate
+                  ? format(parseISO(selectedDate), "EEEE, MMM d")
+                  : "Pick a date above"}
+              </DrawerTitle>
+              <DrawerDescription>
+                Select up to {MAX_SLOTS_PER_DAY} slots for this day.
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="flex items-center justify-between px-6 pb-2 text-xs text-muted-foreground">
+              <span>{selectionCount} selected</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={!selectionCount}
+                onClick={clearSelectedSlots}
               >
-                <span className="font-semibold">
+                Clear all
+              </Button>
+            </div>
+            <div className="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto px-6 pb-4">
+              {slotsForSelectedDate.length === 0 ? (
+                <p className="col-span-2 text-sm text-muted-foreground">
+                  No slots available for this day.
+                </p>
+              ) : (
+                slotsForSelectedDate.map((slot) => {
+                  const isSelected = selectedSlots.some((item) => item.id === slot.id);
+                  const isUnavailable = slot.status !== "available";
+                  const isAtLimit = !isSelected && selectionCount >= MAX_SLOTS_PER_DAY;
+                  const isDisabled = isUnavailable || isAtLimit;
+                  return (
+                    <button
+                      key={slot.id}
+                      type="button"
+                      disabled={isDisabled}
+                      onClick={() => toggleSlotSelection(slot)}
+                      className={cn(
+                        "flex flex-col rounded-2xl border px-3 py-3 text-left text-sm transition-all",
+                        isUnavailable && "cursor-not-allowed bg-muted text-muted-foreground",
+                        !isUnavailable && "hover:border-primary",
+                        isSelected &&
+                          "border-primary bg-primary/10 text-primary shadow-sm",
+                        isAtLimit && !isSelected && "opacity-60",
+                      )}
+                    >
+                      <span className="font-semibold">
+                        {slot.from} – {slot.to}
+                      </span>
+                      <span className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
+                        {isUnavailable
+                          ? "Unavailable"
+                          : isSelected
+                            ? "Selected"
+                            : isAtLimit
+                              ? "Slot limit reached"
+                              : "Tap to select"}
+                        {isSelected && (
+                          <span className="h-2 w-2 rounded-full bg-primary" />
+                        )}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            <DrawerFooter>
+              <Button onClick={() => setSlotDrawerOpen(false)} disabled={!selectedDate}>
+                Done
+              </Button>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+        <div className="flex flex-wrap gap-2">
+          {selectionCount === 0 ? (
+            <span className="text-sm text-muted-foreground">
+              No slots selected yet.
+            </span>
+          ) : (
+            selectedSlots
+              .slice()
+              .sort((a, b) => a.from.localeCompare(b.from))
+              .map((slot) => (
+                <span
+                  key={slot.id}
+                  className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                >
                   {slot.from} – {slot.to}
                 </span>
-                <span className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
-                  {isDisabled
-                    ? "Unavailable"
-                    : isSelected
-                      ? "Selected"
-                      : "Tap to select"}
-                  {isSelected && <span className="h-2 w-2 rounded-full bg-primary" />}
-                </span>
-              </button>
-            );
-          })}
+              ))
+          )}
         </div>
       </section>
 
@@ -449,7 +569,7 @@ export default function BookingPage() {
         Pay Now
       </Button>
 
-      {confirmation && (
+      {confirmation && primaryConfirmation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <Card
             ref={confirmationCardRef}
@@ -464,35 +584,51 @@ export default function BookingPage() {
             <div className="space-y-3 px-6 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Date</span>
-                <span>{format(parseISO(confirmation.date), "EEE, MMM d")}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Time</span>
                 <span>
-                  {confirmation.from} – {confirmation.to}
+                  {format(parseISO(primaryConfirmation.date), "EEE, MMM d")}
                 </span>
+              </div>
+              <div className="space-y-2">
+                <span className="text-muted-foreground">Slots</span>
+                <div className="space-y-1 rounded-2xl border border-dashed border-border/60 bg-muted/50 p-3">
+                  {confirmation.map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="flex items-center justify-between text-xs font-semibold"
+                    >
+                      <span>
+                        {booking.from} – {booking.to}
+                      </span>
+                      <span className="text-muted-foreground">
+                        #{booking.bookingCode.slice(-4)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Player</span>
-                <span>{confirmation.customer.name}</span>
+                <span>{primaryConfirmation.customer.name}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Amount paid</span>
-                <span>₹{confirmation.amountPaid}</span>
+                <span>₹{confirmationTotalPaid}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Payment mode</span>
-                <span className="capitalize">{confirmation.paymentOption}</span>
+                <span className="capitalize">{primaryConfirmation.paymentOption}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Verification code</span>
                 <span className="font-mono text-lg font-semibold">
-                  {confirmation.verificationCode}
+                  {primaryConfirmation.verificationCode}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Booking ID</span>
-                <span className="font-mono text-xs">{confirmation.bookingCode}</span>
+                <span className="font-mono text-xs">
+                  {primaryConfirmation.bookingCode}
+                </span>
               </div>
             </div>
             <div className="flex flex-col gap-2 px-6">

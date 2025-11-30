@@ -10,13 +10,62 @@ import { LanguageProvider } from "~/lib/language-context";
 import { TopBar } from "~/components/top-bar";
 import { PwaRegister } from "~/components/pwa-register";
 
+const siteUrl = "https://pitchperfect.turf";
+const description = "Mobile-first turf booking experience for Aruppukottai players.";
+
 export const metadata: Metadata = {
-  title: "Pitch Perfect Turf",
-  description: "Mobile-first turf booking experience",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Pitch Perfect Turf",
+    template: "%s • Pitch Perfect Turf",
+  },
+  description,
+  keywords: [
+    "turf booking",
+    "football turf",
+    "cricket practice",
+    "Aruppukottai",
+    "Pitch Perfect",
+  ],
+  authors: [{ name: "Pitch Perfect" }],
+  creator: "Pitch Perfect",
+  publisher: "Pitch Perfect",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [{ url: "/icon-192.png" }],
+  },
   manifest: "/manifest.webmanifest",
-  themeColor: "#25ff00",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#25ff00" },
+    { media: "(prefers-color-scheme: dark)", color: "#25ff00" },
+  ],
+  openGraph: {
+    title: "Pitch Perfect Turf",
+    description,
+    url: siteUrl,
+    siteName: "Pitch Perfect Turf",
+    type: "website",
+    locale: "en_US",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Pitch Perfect Turf booking hero",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pitch Perfect Turf",
+    description,
+    images: ["/og-image.png"],
+  },
   appleWebApp: {
+    capable: true,
     title: "Pitch Perfect",
     statusBarStyle: "black-translucent",
   },

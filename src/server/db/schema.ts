@@ -94,6 +94,8 @@ export const bookingStatusEnum = pgEnum("booking_status", [
   "paymentFailed",
 ]);
 
+export const bookingTypeEnum = pgEnum("booking_type", ["cricket", "football"]);
+
 export const bookings = createTable("booking", (d) => ({
   id: d.uuid().primaryKey().defaultRandom().notNull(),
 
@@ -112,9 +114,12 @@ export const bookings = createTable("booking", (d) => ({
   amountPaid: d.integer().notNull().default(0), // in paise
   totalAmount: d.integer().notNull(), // in paise
 
+  verificationCode: d.varchar({ length: 4 }).notNull(), // 4-digit code
+  bookingType: bookingTypeEnum().notNull().default("cricket"),
+
   createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
   updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
-  status: bookingStatusEnum().notNull().default("pending"),
+  status: bookingStatusEnum().notNull().default("advancePending"),
 }));
 
 /* 5. Banners (references managers) */
@@ -349,10 +354,10 @@ export const configTable = createTable("config", (d) => ({
   maintenanceMessage: d.text().notNull().default(""),
 
   fullPaymentMode: d.boolean().notNull().default(false),
-  
+
   slotIntervalMinutes: d.integer().notNull().default(60),
   numberOfSlotsPerDay: d.integer().notNull().default(24),
-  
+
   bookingBufferMinutes: d.integer().notNull().default(3),// minutes before payment deadline to open slot again
 
   slotsVisibleDaysInAdvance: d.integer().notNull().default(4), // number of days in advance slots are visible to customers

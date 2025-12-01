@@ -83,7 +83,7 @@ export default function ContactPage() {
                     whileTap={{ scale: 0.94 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
-                    <Link 
+                    <Link
                       href={`tel:${contact.phone.replace(/\s+/g, "")}`}
                       className="flex items-center gap-1"
                     >

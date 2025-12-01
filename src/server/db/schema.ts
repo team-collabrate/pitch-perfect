@@ -68,11 +68,11 @@ export const customers = createTable(
   (d) => ({
     id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
 
-    name: d.varchar({ length: 100 }).notNull(),
+    name: d.varchar({ length: 100 }),
     number: d.varchar({ length: 20 }).notNull().unique(),
-    email: d.varchar({ length: 256 }).notNull(),
-    alternateContactName: d.varchar({ length: 100 }).notNull(),
-    alternateContactNumber: d.varchar({ length: 20 }).notNull().unique(),
+    email: d.varchar({ length: 256 }),
+    alternateContactName: d.varchar({ length: 100 }),
+    alternateContactNumber: d.varchar({ length: 20 }),
     languagePreference: languageEnum().notNull().default("en"),
 
     createdAt: d

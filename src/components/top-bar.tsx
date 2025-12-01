@@ -25,11 +25,11 @@ export function TopBar() {
       <div className="flex items-center gap-3">
         <div className="bg-secondary flex items-center gap-1 rounded-full px-1 py-1 text-xs">
           {languages.map((code) => (
-            <Button
+            <button
               key={code}
               type="button"
               onClick={() => setLanguage(code)}
-              aria-pressed={language === code}
+              aria-pressed={language === code ? "true" : "false"}
               className={cn(
                 "rounded-full px-3 py-1 font-medium transition-colors",
                 language === code
@@ -38,7 +38,7 @@ export function TopBar() {
               )}
             >
               {code.toUpperCase()}
-            </Button>
+            </button>
           ))}
         </div>
         <ThemeToggle />

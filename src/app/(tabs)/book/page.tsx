@@ -705,7 +705,9 @@ export default function BookingPage() {
         ) : (
           <div className="space-y-3">
             <div className="space-y-1">
-              <Label htmlFor="number">Phone Number</Label>
+              <Label htmlFor="number">
+                Phone Number <span className="text-red-500">*</span>
+              </Label>
               <div className="flex gap-2">
                 <Input
                   id="number"
@@ -742,7 +744,9 @@ export default function BookingPage() {
               )}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">
+                Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="name"
                 value={customer.name}
@@ -753,7 +757,7 @@ export default function BookingPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="email">Email (optional)</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -761,11 +765,13 @@ export default function BookingPage() {
                 onChange={(event) =>
                   handleCustomerChange("email", event.target.value)
                 }
-                placeholder="For booking summary"
+                placeholder=""
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="alternateName">Alternate contact name</Label>
+              <Label htmlFor="alternateName">
+                Alternate contact name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="alternateName"
                 value={customer.alternateContactName}
@@ -779,7 +785,9 @@ export default function BookingPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="alternateNumber">Alternate contact number</Label>
+              <Label htmlFor="alternateNumber">
+                Alternate contact number <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="alternateNumber"
                 inputMode="tel"
@@ -808,6 +816,7 @@ export default function BookingPage() {
         {isSubmitting ? "Processing..." : "Pay Now"}
       </MotionButton>
 
+      <div className="h-2" />
       {/* Phone Number Change Drawer */}
       <Drawer open={phoneDrawerOpen} onOpenChange={setPhoneDrawerOpen}>
         <DrawerContent>

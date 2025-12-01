@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { ArrowRight } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -18,6 +19,8 @@ const copy = {
     highlightsTitle: "Turf Highlights",
     locationTitle: "Where we play",
     instructionsTitle: "Quick Booking Tips",
+    instructionsCardTitle: "Need detailed instructions?",
+    instructionsCardSubtitle: "Tap to view a step-by-step guide.",
   },
   ta: {
     headline: "பிட்ச் பர்ஃபெக்டில் உங்கள் ஆட்டம் தயாராக",
@@ -26,6 +29,8 @@ const copy = {
     highlightsTitle: "டர்ஃப் சிறப்பம்சங்கள்",
     locationTitle: "நாங்கள் விளையாடும் இடம்",
     instructionsTitle: "விரைவான பதிவு குறிப்புகள்",
+    instructionsCardTitle: "வழிமுறைகள் தேவைப்படுகிறதா?",
+    instructionsCardSubtitle: "படி படியாக உள்ள வழிகாட்டியை பார்க்கத் தொடுக.",
   },
 } satisfies Record<string, Record<string, string>>;
 
@@ -166,6 +171,19 @@ export default function HomePage() {
             ))}
           </div>
         </Card>
+        <Link href="/instructions" className="block" aria-label={strings.instructionsCardTitle}>
+          <Card className="group flex items-center justify-between border border-dashed border-border/70 p-4 transition-all hover:border-primary">
+            <div>
+              <h3 className="text-base font-medium">{strings.instructionsCardTitle}</h3>
+              <p className="text-sm text-muted-foreground">
+                {strings.instructionsCardSubtitle}
+              </p>
+            </div>
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </span>
+          </Card>
+        </Link>
       </section>
 
       <section className="space-y-3">

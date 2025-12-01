@@ -8,6 +8,7 @@ import { ThemeProvider } from "~/components/theme-provider";
 import { BookingsProvider } from "~/lib/bookings-context";
 import { LanguageProvider } from "~/lib/language-context";
 import { PhoneProvider } from "~/lib/phone-context";
+import { LocationProvider } from "~/lib/location-context";
 import { TopBar } from "~/components/top-bar";
 import { PwaRegister } from "~/components/pwa-register";
 import { Toaster } from "sonner";
@@ -96,16 +97,18 @@ export default function RootLayout({
         >
           <LanguageProvider>
             <PhoneProvider>
-              <BookingsProvider>
-                <TRPCReactProvider>
-                  <div className="bg-background mx-auto flex min-h-screen w-full max-w-md flex-col">
-                    <PwaRegister />
-                    <TopBar />
-                    <div className="flex-1 overflow-hidden">{children}</div>
-                  </div>
-                  <Toaster position="top-center" />
-                </TRPCReactProvider>
-              </BookingsProvider>
+              <LocationProvider>
+                <BookingsProvider>
+                  <TRPCReactProvider>
+                    <div className="bg-background mx-auto flex min-h-screen w-full max-w-md flex-col">
+                      <PwaRegister />
+                      <TopBar />
+                      <div className="flex-1 overflow-hidden">{children}</div>
+                    </div>
+                    <Toaster position="top-center" />
+                  </TRPCReactProvider>
+                </BookingsProvider>
+              </LocationProvider>
             </PhoneProvider>
           </LanguageProvider>
         </ThemeProvider>

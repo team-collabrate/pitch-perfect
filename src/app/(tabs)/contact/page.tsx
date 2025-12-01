@@ -6,6 +6,7 @@ import { Phone } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
+import { useLocation } from "~/lib/location-context";
 import { WhatsAppIcon } from "~/components/ui/whatsapp-icon";
 
 const contacts = [
@@ -25,6 +26,7 @@ const MotionCard = motion(Card);
 const MotionButton = motion(Button);
 
 export default function ContactPage() {
+  const { coords } = useLocation();
   return (
     <motion.div
       className="space-y-6 pb-6"
@@ -122,7 +124,7 @@ export default function ContactPage() {
         <div className="aspect-video">
           <iframe
             title="Pitch Perfect map"
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3916.1740533169855!2d78.103!3d10.998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTDCsDU5JzUyLjgiTiA3OMKwMDYnMTAuOCJF!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
+            src={`https://maps.google.com/maps?q=${coords.lat},${coords.lng}&z=17&output=embed`}
             className="h-full w-full border-0"
             loading="lazy"
             allowFullScreen

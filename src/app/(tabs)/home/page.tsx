@@ -2,14 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { ArrowRight } from "lucide-react";
-
+import { useMemo } from "react";
+import { ArrowUpRight, Calendar, HelpCircle, Ticket } from "lucide-react";
+import { motion } from "motion/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { cn } from "~/lib/utils";
+import { Carousel } from "~/components/ui/carousel";
 import { useLanguage } from "~/lib/language-context";
+import { useLocation } from "~/lib/location-context";
 
 const copy = {
   en: {
@@ -18,9 +18,13 @@ const copy = {
     cta: "Book Now",
     highlightsTitle: "Turf Highlights",
     locationTitle: "Where we play",
-    instructionsTitle: "Quick Booking Tips",
-    instructionsCardTitle: "Need detailed instructions?",
-    instructionsCardSubtitle: "Tap to view a step-by-step guide.",
+    bookTicket: "Book Ticket",
+    viewTicket: "View Ticket",
+    bookTicketDesc: "Reserve a slot in seconds",
+    viewTicketDesc: "Pull up your ticket",
+    instructionsTitle: "How to Book",
+    instructionsDesc:
+      "Learn the simple steps to book your perfect turf session",
   },
   ta: {
     headline: "பிட்ச் பர்ஃபெக்டில் உங்கள் ஆட்டம் தயாராக",
@@ -28,30 +32,15 @@ const copy = {
     cta: "இப்போது பதிவு செய்ய",
     highlightsTitle: "டர்ஃப் சிறப்பம்சங்கள்",
     locationTitle: "நாங்கள் விளையாடும் இடம்",
-    instructionsTitle: "விரைவான பதிவு குறிப்புகள்",
-    instructionsCardTitle: "வழிமுறைகள் தேவைப்படுகிறதா?",
-    instructionsCardSubtitle: "படி படியாக உள்ள வழிகாட்டியை பார்க்கத் தொடுக.",
+    bookTicket: "டிக்கெட் பதிவு செய்ய",
+    viewTicket: "டிக்கெட்டைப் பார்க்கவும்",
+    bookTicketDesc: "சில நொடிகளில் ஸ்லாட் பதிவு",
+    viewTicketDesc: "உங்கள் ticket-ஐ உடனே காண்க",
+    instructionsTitle: "பதிவு செய்வது எப்படி",
+    instructionsDesc:
+      "உங்கள் சரியான டர்ஃப் சேஷனை பதிவு செய்வதற்கான எளிய படிகளைக் கற்றுக்கொள்ளுங்கள்",
   },
-} satisfies Record<string, Record<string, string>>;
-
-const bookingInstructions = [
-  {
-    title: "Check slot availability",
-    detail: "Only real-time open slots are shown on the booking screen.",
-  },
-  {
-    title: "Pick your sport",
-    detail: "Choose between cricket or football before confirming.",
-  },
-  {
-    title: "Secure your payment",
-    detail: "Pay ₹100 to block or ₹800 for full payment, instantly.",
-  },
-  {
-    title: "Share contact details",
-    detail: "Add an alternate number so our team can coordinate easily.",
-  },
-];
+} as const satisfies Record<string, Record<string, string>>;
 
 const highlights = [
   {
@@ -72,121 +61,91 @@ const highlights = [
   },
 ];
 
+const bannerSlides = [
+  {
+    id: "banner-1",
+    src: "https://picsum.photos/seed/banner-1/800/300",
+    alt: "Pitch Perfect Banner 1",
+  },
+  {
+    id: "banner-2",
+    src: "https://picsum.photos/seed/banner-2/800/300",
+    alt: "Pitch Perfect Banner 2",
+  },
+  {
+    id: "banner-3",
+    src: "https://picsum.photos/seed/banner-3/800/300",
+    alt: "Pitch Perfect Banner 3",
+  },
+];
+
 export default function HomePage() {
   const { language } = useLanguage();
-  const [instructionIndex, setInstructionIndex] = useState(0);
 
   const strings = useMemo(() => copy[language], [language]);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setInstructionIndex((prev) => (prev + 1) % bookingInstructions.length);
-    }, 3500);
-    return () => window.clearInterval(timer);
-  }, []);
+  const { coords } = useLocation();
+  const quickActions = [
+    {
+      key: "book",
+      href: "/book",
+      label: strings.bookTicket,
+      desc: strings.bookTicketDesc,
+      Icon: Ticket,
+      cardGlow: "bg-primary/30",
+    },
+    {
+      key: "view",
+      href: "/view",
+      label: strings.viewTicket,
+      desc: strings.viewTicketDesc,
+      Icon: Calendar,
+      cardGlow: "bg-secondary/30",
+    },
+  ];
 
   return (
-    <div className="space-y-8 pb-6">
-      <header className="space-y-4">
-        <motion.section
-          layout
-          className="border-border/40 from-primary/10 via-background to-secondary relative overflow-hidden rounded-3xl border bg-linear-to-br p-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          <motion.div
-            className="bg-primary/20 absolute -top-10 -right-12 h-40 w-40 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.1, 1],
-              opacity: [0.6, 0.9, 0.6],
-            }}
-            transition={{ duration: 6, repeat: Infinity }}
-          />
-          <motion.div
-            className="bg-primary/30 absolute right-0 -bottom-16 h-48 w-48 rounded-full blur-[110px]"
-            animate={{ scale: [1, 0.92, 1], opacity: [0.6, 0.8, 0.6] }}
-            transition={{ duration: 7, repeat: Infinity }}
-          />
-          <div className="relative z-10 space-y-3">
-            <p className="text-muted-foreground text-sm">{strings.sub}</p>
-            <Button asChild size="lg" className="rounded-full px-6">
-              <Link href="/book">{strings.cta}</Link>
-            </Button>
-          </div>
-          <div className="relative mt-6 flex h-44 items-end overflow-hidden rounded-2xl">
-            <Image
-              src="https://picsum.photos/seed/pitch-hero/600/320"
-              alt="Turf hero"
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
-        </motion.section>
-      </header>
+    <motion.div
+      className="space-y-8 pb-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+    >
+      <Carousel slides={bannerSlides} autoPlayInterval={4000} />
 
-      {/* <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{strings.instructionsTitle}</h2>
-          <span className="text-muted-foreground text-xs">
-            Auto-scroll tips
-          </span>
-        </div>
-        <Card className="border-border/50 overflow-hidden border p-0">
-          <div className="relative h-32">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={instructionIndex}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -30 }}
-                transition={{ duration: 0.45, ease: "easeOut" }}
-                className="absolute inset-0 flex flex-col justify-center gap-2 p-4"
+      <div className="grid grid-cols-2 gap-3">
+        {quickActions.map(({ key, href, label, desc, Icon, cardGlow }) => (
+          <motion.div
+            key={key}
+            whileHover={{ y: -4 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+          >
+            <Link href={href} className="block">
+              <Card
+                className={`group border-border/60 shadow-primary/5 relative overflow-hidden rounded-2xl border p-4 shadow-lg transition-all duration-300`}
               >
-                <h3 className="text-base font-medium">
-                  {bookingInstructions[instructionIndex]?.title}
-                </h3>
-                <p className="text-muted-foreground text-sm">
-                  {bookingInstructions[instructionIndex]?.detail}
-                </p>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-          <div className="flex justify-center gap-2 pb-3">
-            {bookingInstructions.map((_, index) => (
-              <span
-                key={index}
-                className={cn(
-                  "h-2 w-2 rounded-full transition-colors",
-                  instructionIndex === index
-                    ? "bg-primary"
-                    : "bg-muted-foreground/30",
-                )}
-              />
-            ))}
-          </div>
-        </Card>
-        <Link
-          href="/instructions"
-          className="block"
-          aria-label={strings.instructionsCardTitle}
-        >
-          <Card className="group border-border/70 hover:border-primary flex items-center justify-between border border-dashed p-4 transition-all">
-            <div>
-              <h3 className="text-base font-medium">
-                {strings.instructionsCardTitle}
-              </h3>
-              <p className="text-muted-foreground text-sm">
-                {strings.instructionsCardSubtitle}
-              </p>
-            </div>
-            <span className="bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground flex h-10 w-10 items-center justify-center rounded-full transition-colors">
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </span>
-          </Card>
-        </Link>
-      </section> */}
+                <div
+                  className={`absolute inset-0 ${cardGlow} opacity-0 blur-3xl transition-opacity duration-300 group-hover:opacity-60`}
+                />
+                <div className="relative z-10 flex items-center gap-3">
+                  <span className="bg-background/70 text-foreground/80 group-hover:text-primary border-border/40 flex h-12 w-12 items-center justify-center rounded-2xl border transition-colors">
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-foreground text-base font-semibold">
+                      {label}
+                    </p>
+                    <p className="text-muted-foreground text-xs">{desc}</p>
+                  </div>
+                  <ArrowUpRight
+                    className="text-muted-foreground group-hover:text-primary h-4 w-4 transition-colors"
+                    aria-hidden="true"
+                  />
+                </div>
+              </Card>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{strings.locationTitle}</h2>
@@ -194,7 +153,7 @@ export default function HomePage() {
           <div className="aspect-video">
             <iframe
               title="Pitch Perfect map"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3916.1740533169855!2d78.103!3d10.998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTDCsDU5JzUyLjgiTiA3OMKwMDYnMTAuOCJF!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
+              src={`https://maps.google.com/maps?q=${coords.lat},${coords.lng}&z=17&output=embed`}
               className="h-full w-full border-0"
               loading="lazy"
               allowFullScreen
@@ -205,7 +164,7 @@ export default function HomePage() {
               12/4A, Pitch Perfect Turf, Aruppukottai Main Road, Tamil Nadu.
             </p>
             <p className="text-foreground mt-2 font-medium">
-              Open 5 AM – 11 PM
+              Pitch Perfect
             </p>
           </div>
         </Card>
@@ -215,7 +174,7 @@ export default function HomePage() {
         <h2 className="text-lg font-semibold">{strings.highlightsTitle}</h2>
         <div className="grid grid-cols-2 gap-3">
           {highlights.map((item) => (
-            <Card key={item.label} className="overflow-hidden p-0">
+            <Card key={item.src} className="overflow-hidden p-0">
               <div className="relative h-28 w-full">
                 <Image
                   src={item.src}
@@ -224,13 +183,38 @@ export default function HomePage() {
                   className="object-cover"
                 />
               </div>
-              <p className="text-muted-foreground px-3 py-2 text-xs">
-                {item.label}
-              </p>
             </Card>
           ))}
         </div>
       </section>
-    </div>
+
+      <section className="space-y-3">
+        <Link href="/instructions" className="block">
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          >
+            <Card className="group border-border/70 hover:border-primary/50 flex flex-col gap-3 border p-4 transition-all">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-foreground text-base font-semibold">
+                    {strings.instructionsTitle}
+                  </p>
+                  <p className="text-muted-foreground text-sm">
+                    {strings.instructionsDesc}
+                  </p>
+                </div>
+                <HelpCircle className="text-muted-foreground group-hover:text-primary h-5 w-5 shrink-0 transition-colors" />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-xs">
+                  Tap to learn more →
+                </span>
+              </div>
+            </Card>
+          </motion.div>
+        </Link>
+      </section>
+    </motion.div>
   );
 }

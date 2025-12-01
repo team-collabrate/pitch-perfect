@@ -29,7 +29,13 @@ type BookingFromApi = {
   id: string;
   phoneNumber: string;
   timeSlotId: number;
-  status: "advancePaid" | "fullPaid" | "fullPending" | "advancePending" | "wontCome" | "paymentFailed";
+  status:
+    | "advancePaid"
+    | "fullPaid"
+    | "fullPending"
+    | "advancePending"
+    | "wontCome"
+    | "paymentFailed";
   amountPaid: number;
   totalAmount: number;
   verificationCode: string | null;
@@ -102,7 +108,11 @@ const springy = { type: "spring", stiffness: 260, damping: 22 } as const;
 
 // Transform API booking to display format
 function transformBooking(booking: BookingFromApi): DisplayBooking | null {
-  if (!booking.timeSlot?.date || !booking.timeSlot?.from || !booking.timeSlot?.to) {
+  if (
+    !booking.timeSlot?.date ||
+    !booking.timeSlot?.from ||
+    !booking.timeSlot?.to
+  ) {
     return null;
   }
 
@@ -151,11 +161,11 @@ function BookingList({
         viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 0.35 }}
       >
-        <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+        <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
           {title}
         </h2>
         <MotionCard
-          className="items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground"
+          className="text-muted-foreground items-center justify-center gap-2 p-6 text-center text-sm"
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, amount: 0.5 }}
@@ -175,17 +185,14 @@ function BookingList({
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.35 }}
     >
-      <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+      <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
         {title}
       </h2>
       <div className="space-y-3">
         {bookings.map((booking) => (
           <MotionCard
             key={booking.id}
-            className={cn(
-              "p-4",
-              accent === "muted" && "opacity-70",
-            )}
+            className={cn("p-4", accent === "muted" && "opacity-70")}
             layout
             initial={{ opacity: 0, translateY: 16 }}
             animate={{ opacity: 1, translateY: 0 }}
@@ -194,11 +201,12 @@ function BookingList({
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <p className="text-muted-foreground text-xs tracking-wide uppercase">
                   {booking.bookingType}
                 </p>
                 <h3 className="text-lg font-semibold">
-                  {formatDate(booking.date)} · {formatSlotRange(booking.from, booking.to)}
+                  {formatDate(booking.date)} ·{" "}
+                  {formatSlotRange(booking.from, booking.to)}
                 </h3>
                 {booking.rescheduled && (
                   <div className="mt-2">
@@ -217,7 +225,7 @@ function BookingList({
                 ₹{booking.amountPaid}
               </span>
             </div>
-            <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+            <div className="text-muted-foreground mt-3 flex items-center justify-between text-xs">
               <span>{customerName ?? booking.phoneNumber}</span>
               <span className="font-mono">{booking.verificationCode}</span>
             </div>
@@ -252,24 +260,26 @@ function BookingList({
 }
 
 export default function ViewPage() {
-  const { phoneNumber: storedPhone, setPhoneNumber: setStoredPhone } = usePhone();
+  const { phoneNumber: storedPhone, setPhoneNumber: setStoredPhone } =
+    usePhone();
   const [phoneDrawerOpen, setPhoneDrawerOpen] = useState(false);
   const [tempPhone, setTempPhone] = useState("");
 
   // Fetch customer data
   const { data: customer } = api.customer.getByPhoneNumber.useQuery(
     { phoneNumber: storedPhone },
-    { enabled: !!storedPhone }
+    { enabled: !!storedPhone },
   );
 
   // Fetch bookings from backend
   const { data: apiBookings, isLoading } = api.booking.getByNumber.useQuery(
     { number: storedPhone },
-    { enabled: !!storedPhone }
+    { enabled: !!storedPhone },
   );
 
   const [activeTicket, setActiveTicket] = useState<DisplayBooking | null>(null);
-  const [rescheduleTarget, setRescheduleTarget] = useState<DisplayBooking | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] =
+    useState<DisplayBooking | null>(null);
   const ticketRef = useRef<HTMLDivElement | null>(null);
 
   // Transform and sort bookings
@@ -374,7 +384,7 @@ export default function ViewPage() {
       >
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold">View Your Bookings</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Enter your phone number to see your bookings
           </p>
         </div>
@@ -414,13 +424,13 @@ export default function ViewPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.05 }}
       >
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+        <p className="text-muted-foreground text-xs tracking-wide uppercase">
           Manage visits
         </p>
         <h1 className="text-2xl font-semibold">Your bookings</h1>
         <div className="flex items-center gap-2 pt-1">
-          <span className="text-sm text-muted-foreground">
-            {customer?.name ?? storedPhone}
+          <span className="text-muted-foreground text-sm">
+            {customer?.name + " ph:" + storedPhone}
           </span>
           <Button
             variant="ghost"
@@ -435,7 +445,9 @@ export default function ViewPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <span className="text-sm text-muted-foreground">Loading your bookings...</span>
+          <span className="text-muted-foreground text-sm">
+            Loading your bookings...
+          </span>
         </div>
       ) : (
         <>
@@ -484,7 +496,10 @@ export default function ViewPage() {
             </div>
           </div>
           <DrawerFooter>
-            <Button onClick={handleConfirmPhoneChange} disabled={!tempPhone.trim()}>
+            <Button
+              onClick={handleConfirmPhoneChange}
+              disabled={!tempPhone.trim()}
+            >
               Use This Number
             </Button>
             <Button variant="ghost" onClick={() => setPhoneDrawerOpen(false)}>
@@ -504,18 +519,20 @@ export default function ViewPage() {
           >
             <MotionCard
               ref={ticketRef}
-              className="w-full max-w-sm space-y-4 px-0 pb-6 pt-4"
+              className="w-full max-w-sm space-y-4 px-0 pt-4 pb-6"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
             >
               <div className="px-6">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                <p className="text-muted-foreground text-xs tracking-wide uppercase">
                   Pitch Perfect ticket
                 </p>
-                <h3 className="text-lg font-semibold">{customer?.name ?? activeTicket.phoneNumber}</h3>
-                <p className="text-xs text-muted-foreground">
+                <h3 className="text-lg font-semibold">
+                  {customer?.name ?? activeTicket.phoneNumber}
+                </h3>
+                <p className="text-muted-foreground text-xs">
                   {activeTicket.phoneNumber}
                 </p>
               </div>
@@ -536,17 +553,23 @@ export default function ViewPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Mode</span>
-                  <span className="capitalize">{activeTicket.paymentOption}</span>
+                  <span className="capitalize">
+                    {activeTicket.paymentOption}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Verification code</span>
+                  <span className="text-muted-foreground">
+                    Verification code
+                  </span>
                   <span className="font-mono text-lg font-semibold">
                     {activeTicket.verificationCode}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Booking ID</span>
-                  <span className="font-mono text-xs">{activeTicket.bookingCode}</span>
+                  <span className="font-mono text-xs">
+                    {activeTicket.bookingCode}
+                  </span>
                 </div>
               </div>
               <div className="flex flex-col gap-2 px-6">
@@ -590,7 +613,7 @@ export default function ViewPage() {
             >
               <div>
                 <h3 className="text-lg font-semibold">Reschedule slot</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Move booking for {formatDate(rescheduleTarget.date)}
                 </p>
               </div>
@@ -622,8 +645,10 @@ export default function ViewPage() {
                 })}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {(rescheduleSource.find((entry) => entry.date === rescheduleDate)
-                  ?.slots ?? []
+                {(
+                  rescheduleSource.find(
+                    (entry) => entry.date === rescheduleDate,
+                  )?.slots ?? []
                 ).map((slot) => {
                   const isChosen = rescheduleSlotId === slot.id;
                   return (
@@ -642,7 +667,7 @@ export default function ViewPage() {
                       <span className="font-semibold">
                         {formatSlotRange(slot.from, slot.to)}
                       </span>
-                      <span className="mt-1 text-xs text-muted-foreground">
+                      <span className="text-muted-foreground mt-1 text-xs">
                         {isChosen ? "Selected" : "Tap to choose"}
                       </span>
                     </motion.button>

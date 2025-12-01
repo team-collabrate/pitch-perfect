@@ -5,6 +5,8 @@ import { addDays, format, parseISO } from "date-fns";
 import { toPng } from "html-to-image";
 import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "motion/react";
+import { Pencil } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -21,23 +23,18 @@ import {
   DrawerCloseButton,
 } from "~/components/ui/drawer";
 import { cn, formatSlotRange } from "~/lib/utils";
-import {
-  createBookingRecord,
-  useBookings,
-  type StoredBooking,
-} from "~/lib/bookings-context";
+import { createBookingRecord, useBookings } from "~/lib/bookings-context";
+import { usePhone } from "~/lib/phone-context";
 import { api } from "~/trpc/react";
 
 type SlotView = {
-  id: string;
+  id: number;
   date: string;
   from: string;
   to: string;
   status: "available" | "booked" | "unavailable";
 };
 
-const TOTAL_AMOUNT = 800;
-const ADVANCE_AMOUNT = 100;
 const MAX_SLOTS_PER_DAY = 2 as const;
 const toPngImage = toPng as (
   node: HTMLElement,
@@ -57,17 +54,22 @@ const createMockSlots = () => {
   ];
 
   const result: SlotView[] = [];
+  let idCounter = 1;
   for (let dayIndex = 0; dayIndex < 7; dayIndex += 1) {
     const date = format(addDays(today, dayIndex), "yyyy-MM-dd");
     template.forEach(([from, to], slotIndex) => {
       const isUnavailable = (slotIndex + dayIndex) % 6 === 0;
       const isBooked = !isUnavailable && (slotIndex + dayIndex) % 5 === 0;
       result.push({
-        id: `${date}-${from}-${to}`,
+        id: idCounter++,
         date,
         from,
         to,
-        status: isUnavailable ? "unavailable" : isBooked ? "booked" : "available",
+        status: isUnavailable
+          ? "unavailable"
+          : isBooked
+            ? "booked"
+            : "available",
       });
     });
   }
@@ -120,13 +122,16 @@ function useSlotBoard() {
       return fallbacks;
     }
 
-    return data.map((slot) => ({
-      id: `${slot.date}-${slot.from}-${slot.to}`,
-      date: slot.date,
-      from: slot.from.slice(0, 5),
-      to: slot.to.slice(0, 5),
-      status: slot.status === "available" ? "available" : "unavailable",
-    } satisfies SlotView));
+    return data.map(
+      (slot) =>
+        ({
+          id: slot.id,
+          date: slot.date,
+          from: slot.from.slice(0, 5),
+          to: slot.to.slice(0, 5),
+          status: slot.status === "available" ? "available" : "unavailable",
+        }) satisfies SlotView,
+    );
   }, [data]);
 }
 
@@ -148,9 +153,26 @@ const blankCustomer: CustomerFormState = {
   language: "en",
 };
 
+type ConfirmationBooking = {
+  id: string;
+  date: string;
+  from: string;
+  to: string;
+  bookingType: "cricket" | "football";
+  paymentOption: "advance" | "full";
+  amountPaid: number;
+  totalAmount: number;
+  verificationCode: string;
+  bookingCode: string;
+  customer: CustomerFormState;
+};
+
 export default function BookingPage() {
   const slots = useSlotBoard();
   const { addBooking } = useBookings();
+  const { phoneNumber: storedPhone, setPhoneNumber: setStoredPhone } =
+    usePhone();
+  const utils = api.useUtils();
 
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedSlots, setSelectedSlots] = useState<SlotView[]>([]);
@@ -162,12 +184,55 @@ export default function BookingPage() {
     "",
   );
   const [customer, setCustomer] = useState<CustomerFormState>(blankCustomer);
-  const [confirmation, setConfirmation] = useState<StoredBooking[] | null>(null);
+  const [confirmation, setConfirmation] = useState<
+    ConfirmationBooking[] | null
+  >(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [phoneDrawerOpen, setPhoneDrawerOpen] = useState(false);
+  const [tempPhone, setTempPhone] = useState("");
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Hydration effect
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  // Fetch customer data when stored phone exists
+  const { data: existingCustomer, isLoading: isLoadingCustomer } =
+    api.customer.getByPhoneNumber.useQuery(
+      { phoneNumber: storedPhone },
+      { enabled: !!storedPhone && isHydrated },
+    );
+
+  // Mutations
+  const upsertCustomer = api.customer.upsert.useMutation();
+  const bookSlots = api.booking.book.useMutation();
 
   const confirmationCardRef = useRef<HTMLDivElement | null>(null);
   const primaryConfirmation = confirmation?.[0] ?? null;
   const confirmationTotalPaid =
     confirmation?.reduce((sum, booking) => sum + booking.amountPaid, 0) ?? 0;
+
+  // Pre-fill customer form when existing customer data is loaded
+  useEffect(() => {
+    if (existingCustomer) {
+      setCustomer({
+        name: existingCustomer.name,
+        number: existingCustomer.number,
+        email: existingCustomer.email,
+        alternateContactName: existingCustomer.alternateContactName,
+        alternateContactNumber: existingCustomer.alternateContactNumber,
+        language: existingCustomer.languagePreference,
+      });
+    }
+  }, [existingCustomer]);
+
+  // If no stored phone, set customer number to empty to allow input
+  useEffect(() => {
+    if (!storedPhone && !customer.number) {
+      setCustomer((prev) => ({ ...prev, number: "" }));
+    }
+  }, [storedPhone, customer.number]);
 
   const slotsByDate = useMemo(() => {
     return slots.reduce<Record<string, SlotView[]>>((acc, slot) => {
@@ -203,7 +268,10 @@ export default function BookingPage() {
     setPaymentOption("");
   }, [selectedDate]);
 
-  const handleCustomerChange = (field: keyof CustomerFormState, value: string) => {
+  const handleCustomerChange = (
+    field: keyof CustomerFormState,
+    value: string,
+  ) => {
     setCustomer((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -228,43 +296,116 @@ export default function BookingPage() {
 
   const formReady = Boolean(
     selectedDate &&
-      selectionCount > 0 &&
-      bookingType &&
-      paymentOption &&
-      customer.name.trim() &&
-      customer.number.trim() &&
-      customer.alternateContactName.trim() &&
-      customer.alternateContactNumber.trim(),
+    selectionCount > 0 &&
+    bookingType &&
+    paymentOption &&
+    customer.name.trim() &&
+    customer.number.trim() &&
+    customer.alternateContactName.trim() &&
+    customer.alternateContactNumber.trim(),
   );
 
-  const handleSubmit = () => {
+  // Handle phone number change
+  const handleChangePhone = () => {
+    setTempPhone(storedPhone || customer.number);
+    setPhoneDrawerOpen(true);
+  };
+
+  const handleConfirmPhoneChange = () => {
+    if (tempPhone.trim()) {
+      setStoredPhone(tempPhone.trim());
+      setCustomer(blankCustomer); // Reset form to load new customer
+      setPhoneDrawerOpen(false);
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!formReady || !bookingType || !paymentOption || selectionCount === 0) {
       return;
     }
 
-    const bookingsToSave = selectedSlots.map((slot) =>
-      createBookingRecord({
-        slotId: slot.id,
-        date: slot.date,
-        from: slot.from,
-        to: slot.to,
-        bookingType,
-        paymentOption,
-        amountPaid: paymentOption === "full" ? TOTAL_AMOUNT : ADVANCE_AMOUNT,
-        totalAmount: TOTAL_AMOUNT,
-        verificationCode: Math.floor(1000 + Math.random() * 9000).toString(),
-        customer,
-      }),
-    );
+    setIsSubmitting(true);
 
-    bookingsToSave.forEach((booking) => addBooking(booking));
-    setConfirmation(bookingsToSave);
-    fireSideCannons();
-    setCustomer(blankCustomer);
-    setSelectedSlots([]);
-    setBookingType("");
-    setPaymentOption("");
-    setSlotDrawerOpen(false);
+    try {
+      // Step 1: Upsert customer details
+      await upsertCustomer.mutateAsync({
+        name: customer.name,
+        number: customer.number,
+        email: customer.email,
+        alternateContactName: customer.alternateContactName,
+        alternateContactNumber: customer.alternateContactNumber,
+        languagePreference: customer.language,
+      });
+
+      // Store the phone number for future use
+      setStoredPhone(customer.number);
+
+      // Step 2: Book the slots
+      const timeSlotIds = selectedSlots.map((slot) => slot.id);
+      const bookingResult = await bookSlots.mutateAsync({
+        number: customer.number,
+        timeSlotIds,
+        paymentType: paymentOption,
+        bookingType,
+      });
+
+      // Step 3: Create confirmation data
+      const confirmationData: ConfirmationBooking[] = bookingResult.map(
+        (booking) => ({
+          id: booking.id,
+          date: booking.timeSlot?.date ?? selectedDate,
+          from: booking.timeSlot?.from?.slice(0, 5) ?? "",
+          to: booking.timeSlot?.to?.slice(0, 5) ?? "",
+          bookingType: booking.bookingType ?? bookingType,
+          paymentOption,
+          amountPaid: booking.amountPaid / 100, // Convert from paise to rupees
+          totalAmount: booking.totalAmount / 100,
+          verificationCode: booking.verificationCode ?? "",
+          bookingCode: `PP-${booking.id.slice(-6).toUpperCase()}`,
+          customer,
+        }),
+      );
+
+      // Also store in local bookings context for offline viewing
+      confirmationData.forEach((booking) => {
+        addBooking(
+          createBookingRecord({
+            id: booking.id,
+            slotId: `${booking.date}-${booking.from}-${booking.to}`,
+            date: booking.date,
+            from: booking.from,
+            to: booking.to,
+            bookingType: booking.bookingType,
+            paymentOption: booking.paymentOption,
+            amountPaid: booking.amountPaid,
+            totalAmount: booking.totalAmount,
+            verificationCode: booking.verificationCode,
+            bookingCode: booking.bookingCode,
+            customer,
+          }),
+        );
+      });
+
+      setConfirmation(confirmationData);
+      fireSideCannons();
+      setSelectedSlots([]);
+      setBookingType("");
+      setPaymentOption("");
+      setSlotDrawerOpen(false);
+
+      // Invalidate queries to refresh data
+      await utils.timeSlot.getAllAvailable.invalidate();
+      await utils.booking.getByNumber.invalidate({ number: customer.number });
+    } catch (error) {
+      console.error("Booking failed:", error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Booking failed. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderToPng = useCallback(async (node: HTMLElement) => {
@@ -300,14 +441,14 @@ export default function BookingPage() {
       transition={{ duration: 0.45, ease: "easeOut" }}
     >
       <header className="space-y-1">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+        <p className="text-muted-foreground text-xs tracking-wide uppercase">
           Turf booking
         </p>
         <h1 className="text-2xl font-semibold">Booking</h1>
       </header>
 
       <section className="space-y-4">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+        <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
           Pick a date
         </h2>
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4">
@@ -343,16 +484,16 @@ export default function BookingPage() {
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
               Slots
             </h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {selectedDate
                 ? `Pick up to ${MAX_SLOTS_PER_DAY} for ${format(parseISO(selectedDate), "EEE, MMM d")}`
                 : "Choose a date to enable slots"}
             </p>
           </div>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground text-xs">
             {selectionCount}/{MAX_SLOTS_PER_DAY}
           </span>
         </div>
@@ -378,7 +519,7 @@ export default function BookingPage() {
                 Select up to {MAX_SLOTS_PER_DAY} slots for this day.
               </DrawerDescription>
             </DrawerHeader>
-            <div className="flex items-center justify-between px-6 pb-2 text-xs text-muted-foreground">
+            <div className="text-muted-foreground flex items-center justify-between px-6 pb-2 text-xs">
               <span>{selectionCount} selected</span>
               <Button
                 variant="ghost"
@@ -391,14 +532,17 @@ export default function BookingPage() {
             </div>
             <div className="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto px-6 pb-4">
               {slotsForSelectedDate.length === 0 ? (
-                <p className="col-span-2 text-sm text-muted-foreground">
+                <p className="text-muted-foreground col-span-2 text-sm">
                   No slots available for this day.
                 </p>
               ) : (
                 slotsForSelectedDate.map((slot) => {
-                  const isSelected = selectedSlots.some((item) => item.id === slot.id);
+                  const isSelected = selectedSlots.some(
+                    (item) => item.id === slot.id,
+                  );
                   const isUnavailable = slot.status !== "available";
-                  const isAtLimit = !isSelected && selectionCount >= MAX_SLOTS_PER_DAY;
+                  const isAtLimit =
+                    !isSelected && selectionCount >= MAX_SLOTS_PER_DAY;
                   const isDisabled = isUnavailable || isAtLimit;
                   return (
                     <motion.button
@@ -408,7 +552,8 @@ export default function BookingPage() {
                       onClick={() => toggleSlotSelection(slot)}
                       className={cn(
                         "flex flex-col rounded-2xl border px-3 py-3 text-left text-sm transition-all",
-                        isUnavailable && "cursor-not-allowed bg-muted text-muted-foreground",
+                        isUnavailable &&
+                          "bg-muted text-muted-foreground cursor-not-allowed",
                         !isUnavailable && "hover:border-primary",
                         isSelected &&
                           "border-primary bg-primary/10 text-primary shadow-sm",
@@ -421,7 +566,7 @@ export default function BookingPage() {
                       <span className="font-semibold">
                         {formatSlotRange(slot.from, slot.to)}
                       </span>
-                      <span className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="text-muted-foreground mt-2 inline-flex items-center gap-2 text-xs">
                         {isUnavailable
                           ? "Unavailable"
                           : isSelected
@@ -430,7 +575,7 @@ export default function BookingPage() {
                               ? "Slot limit reached"
                               : "Tap to select"}
                         {isSelected && (
-                          <span className="h-2 w-2 rounded-full bg-primary" />
+                          <span className="bg-primary h-2 w-2 rounded-full" />
                         )}
                       </span>
                     </motion.button>
@@ -439,7 +584,10 @@ export default function BookingPage() {
               )}
             </div>
             <DrawerFooter>
-              <Button onClick={() => setSlotDrawerOpen(false)} disabled={!selectedDate}>
+              <Button
+                onClick={() => setSlotDrawerOpen(false)}
+                disabled={!selectedDate}
+              >
                 Done
               </Button>
             </DrawerFooter>
@@ -447,40 +595,40 @@ export default function BookingPage() {
         </Drawer>
         <div className="flex flex-wrap gap-2">
           <AnimatePresence mode="popLayout">
-            {selectionCount === 0
-              ? (
+            {selectionCount === 0 ? (
+              <motion.span
+                key="empty-state"
+                className="text-muted-foreground text-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                No slots selected yet.
+              </motion.span>
+            ) : (
+              selectedSlots
+                .slice()
+                .sort((a, b) => a.from.localeCompare(b.from))
+                .map((slot) => (
                   <motion.span
-                    key="empty-state"
-                    className="text-sm text-muted-foreground"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    key={slot.id}
+                    className="border-primary/30 bg-primary/10 text-primary rounded-full border px-3 py-1 text-xs font-medium"
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={springy}
                   >
-                    No slots selected yet.
+                    {formatSlotRange(slot.from, slot.to)}
                   </motion.span>
-                )
-              : selectedSlots
-                  .slice()
-                  .sort((a, b) => a.from.localeCompare(b.from))
-                  .map((slot) => (
-                    <motion.span
-                      key={slot.id}
-                      className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-                      layout
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={springy}
-                    >
-                      {formatSlotRange(slot.from, slot.to)}
-                    </motion.span>
-                  ))}
+                ))
+            )}
           </AnimatePresence>
         </div>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+        <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
           Ask
         </h2>
         <div className="grid grid-cols-2 gap-2">
@@ -508,7 +656,7 @@ export default function BookingPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+        <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
           Payment
         </h2>
         <div className="grid grid-cols-2 gap-2">
@@ -526,7 +674,9 @@ export default function BookingPage() {
                   "rounded-2xl py-6 text-base",
                   option.key === "advance" && !isActive && "bg-background",
                 )}
-                onClick={() => setPaymentOption(option.key as "advance" | "full")}
+                onClick={() =>
+                  setPaymentOption(option.key as "advance" | "full")
+                }
                 whileTap={{ scale: canChoosePayment ? 0.96 : 1 }}
                 whileHover={{ scale: canChoosePayment ? 1.02 : 1 }}
                 transition={springy}
@@ -539,75 +689,160 @@ export default function BookingPage() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+        <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
           Player details
         </h2>
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={customer.name}
-              onChange={(event) => handleCustomerChange("name", event.target.value)}
-              placeholder="Full name"
-            />
+        {!isHydrated ? (
+          <div className="flex items-center justify-center py-4">
+            <span className="text-muted-foreground text-sm">Loading...</span>
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="number">Number</Label>
-            <Input
-              id="number"
-              inputMode="tel"
-              value={customer.number}
-              onChange={(event) => handleCustomerChange("number", event.target.value)}
-              placeholder="Primary contact"
-            />
+        ) : isLoadingCustomer && storedPhone ? (
+          <div className="flex items-center justify-center py-4">
+            <span className="text-muted-foreground text-sm">
+              Loading your details...
+            </span>
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="email">Email (optional)</Label>
-            <Input
-              id="email"
-              type="email"
-              value={customer.email}
-              onChange={(event) => handleCustomerChange("email", event.target.value)}
-              placeholder="For booking summary"
-            />
+        ) : (
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="number">Phone Number</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="number"
+                  inputMode="tel"
+                  value={customer.number}
+                  onChange={(event) =>
+                    handleCustomerChange("number", event.target.value)
+                  }
+                  placeholder="Primary contact"
+                  disabled={!!storedPhone}
+                  className={storedPhone ? "bg-muted" : ""}
+                />
+                {storedPhone && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleChangePhone}
+                    className="shrink-0"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              {isHydrated && storedPhone && (
+                <p className="text-muted-foreground text-xs">
+                  Using saved number. Tap edit to change.
+                </p>
+              )}
+              {isHydrated && !storedPhone && (
+                <p className="text-muted-foreground text-xs">
+                  Enter your primary contact number
+                </p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={customer.name}
+                onChange={(event) =>
+                  handleCustomerChange("name", event.target.value)
+                }
+                placeholder="Full name"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="email">Email (optional)</Label>
+              <Input
+                id="email"
+                type="email"
+                value={customer.email}
+                onChange={(event) =>
+                  handleCustomerChange("email", event.target.value)
+                }
+                placeholder="For booking summary"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="alternateName">Alternate contact name</Label>
+              <Input
+                id="alternateName"
+                value={customer.alternateContactName}
+                onChange={(event) =>
+                  handleCustomerChange(
+                    "alternateContactName",
+                    event.target.value,
+                  )
+                }
+                placeholder="Person on standby"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="alternateNumber">Alternate contact number</Label>
+              <Input
+                id="alternateNumber"
+                inputMode="tel"
+                value={customer.alternateContactNumber}
+                onChange={(event) =>
+                  handleCustomerChange(
+                    "alternateContactNumber",
+                    event.target.value,
+                  )
+                }
+                placeholder="Secondary contact"
+              />
+            </div>
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="alternateName">Alternate contact name</Label>
-            <Input
-              id="alternateName"
-              value={customer.alternateContactName}
-              onChange={(event) =>
-                handleCustomerChange("alternateContactName", event.target.value)
-              }
-              placeholder="Person on standby"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="alternateNumber">Alternate contact number</Label>
-            <Input
-              id="alternateNumber"
-              inputMode="tel"
-              value={customer.alternateContactNumber}
-              onChange={(event) =>
-                handleCustomerChange("alternateContactNumber", event.target.value)
-              }
-              placeholder="Secondary contact"
-            />
-          </div>
-        </div>
+        )}
       </section>
 
       <MotionButton
-        disabled={!formReady}
-        className="w-full rounded-2xl py-6 text-base font-semibold uppercase tracking-wide"
+        disabled={!formReady || isSubmitting}
+        className="w-full rounded-2xl py-6 text-base font-semibold tracking-wide uppercase"
         onClick={handleSubmit}
-        whileTap={{ scale: formReady ? 0.97 : 1 }}
-        whileHover={{ scale: formReady ? 1.02 : 1 }}
+        whileTap={{ scale: formReady && !isSubmitting ? 0.97 : 1 }}
+        whileHover={{ scale: formReady && !isSubmitting ? 1.02 : 1 }}
         transition={springy}
       >
-        Pay Now
+        {isSubmitting ? "Processing..." : "Pay Now"}
       </MotionButton>
+
+      {/* Phone Number Change Drawer */}
+      <Drawer open={phoneDrawerOpen} onOpenChange={setPhoneDrawerOpen}>
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader>
+            <DrawerTitle>Change Phone Number</DrawerTitle>
+            <DrawerDescription>
+              Enter a different phone number to use for booking
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="px-6 pb-4">
+            <div className="space-y-1">
+              <Label htmlFor="tempPhone">Phone Number</Label>
+              <Input
+                id="tempPhone"
+                inputMode="tel"
+                value={tempPhone}
+                onChange={(event) => setTempPhone(event.target.value)}
+                placeholder="Enter phone number"
+              />
+            </div>
+          </div>
+          <DrawerFooter>
+            <Button
+              onClick={handleConfirmPhoneChange}
+              disabled={!tempPhone.trim()}
+            >
+              Use This Number
+            </Button>
+            <Button variant="ghost" onClick={() => setPhoneDrawerOpen(false)}>
+              Cancel
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
       <AnimatePresence>
         {confirmation && primaryConfirmation && (
@@ -620,80 +855,82 @@ export default function BookingPage() {
           >
             <MotionCard
               ref={confirmationCardRef}
-              className="w-full max-w-sm space-y-4 px-0 pb-6 pt-4"
+              className="w-full max-w-sm space-y-4 px-0 pt-4 pb-6"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
             >
-            <div className="px-6">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Booking successful
-              </p>
-              <h3 className="text-lg font-semibold">Pitch Perfect pass</h3>
-            </div>
-            <div className="space-y-3 px-6 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Date</span>
-                <span>
-                  {format(parseISO(primaryConfirmation.date), "EEE, MMM d")}
-                </span>
+              <div className="px-6">
+                <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                  Booking successful
+                </p>
+                <h3 className="text-lg font-semibold">Pitch Perfect pass</h3>
               </div>
-              <div className="space-y-2">
-                <span className="text-muted-foreground">Slots</span>
-                <div className="space-y-1 rounded-2xl border border-dashed border-border/60 bg-muted/50 p-3">
-                  {confirmation.map((booking) => (
-                    <div
-                      key={booking.id}
-                      className="flex items-center justify-between text-xs font-semibold"
-                    >
-                      <span>
-                        {formatSlotRange(booking.from, booking.to)}
-                      </span>
-                      <span className="text-muted-foreground">
-                        #{booking.bookingCode.slice(-4)}
-                      </span>
-                    </div>
-                  ))}
+              <div className="space-y-3 px-6 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Date</span>
+                  <span>
+                    {format(parseISO(primaryConfirmation.date), "EEE, MMM d")}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <span className="text-muted-foreground">Slots</span>
+                  <div className="border-border/60 bg-muted/50 space-y-1 rounded-2xl border border-dashed p-3">
+                    {confirmation.map((booking) => (
+                      <div
+                        key={booking.id}
+                        className="flex items-center justify-between text-xs font-semibold"
+                      >
+                        <span>{formatSlotRange(booking.from, booking.to)}</span>
+                        <span className="text-muted-foreground">
+                          #{booking.bookingCode.slice(-4)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Player</span>
+                  <span>{primaryConfirmation.customer.name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Amount paid</span>
+                  <span>₹{confirmationTotalPaid}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Payment mode</span>
+                  <span className="capitalize">
+                    {primaryConfirmation.paymentOption}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    Verification code
+                  </span>
+                  <span className="font-mono text-lg font-semibold">
+                    {primaryConfirmation.verificationCode}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Booking ID</span>
+                  <span className="font-mono text-xs">
+                    {primaryConfirmation.bookingCode}
+                  </span>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Player</span>
-                <span>{primaryConfirmation.customer.name}</span>
+              <div className="flex flex-col gap-2 px-6">
+                <Button onClick={handleDownload} className="rounded-xl">
+                  Download as image
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="rounded-xl"
+                  onClick={() => setConfirmation(null)}
+                >
+                  Close
+                </Button>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Amount paid</span>
-                <span>₹{confirmationTotalPaid}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Payment mode</span>
-                <span className="capitalize">{primaryConfirmation.paymentOption}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Verification code</span>
-                <span className="font-mono text-lg font-semibold">
-                  {primaryConfirmation.verificationCode}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Booking ID</span>
-                <span className="font-mono text-xs">
-                  {primaryConfirmation.bookingCode}
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 px-6">
-              <Button onClick={handleDownload} className="rounded-xl">
-                Download as image
-              </Button>
-              <Button
-                variant="ghost"
-                className="rounded-xl"
-                onClick={() => setConfirmation(null)}
-              >
-                Close
-              </Button>
-            </div>
             </MotionCard>
           </motion.div>
         )}

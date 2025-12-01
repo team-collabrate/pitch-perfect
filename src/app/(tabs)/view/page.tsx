@@ -4,15 +4,62 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { addDays, format, parseISO } from "date-fns";
 import { motion, AnimatePresence } from "motion/react";
 import { toPng } from "html-to-image";
+import { Pencil } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
-import { cn, formatSlotRange } from "~/lib/utils";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
 import {
-  useBookings,
-  type StoredBooking,
-} from "~/lib/bookings-context";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerCloseButton,
+} from "~/components/ui/drawer";
+import { cn, formatSlotRange } from "~/lib/utils";
+import { usePhone } from "~/lib/phone-context";
+import { api } from "~/trpc/react";
+
+// Type for bookings from the API
+type BookingFromApi = {
+  id: string;
+  phoneNumber: string;
+  timeSlotId: number;
+  status: "advancePaid" | "fullPaid" | "fullPending" | "advancePending" | "wontCome" | "paymentFailed";
+  amountPaid: number;
+  totalAmount: number;
+  verificationCode: string | null;
+  bookingType: "cricket" | "football" | null;
+  createdAt: Date;
+  updatedAt: Date | null;
+  timeSlot: {
+    id: number | null;
+    from: string | null;
+    to: string | null;
+    date: string | null;
+    status: "available" | "booked" | "unavailable" | "bookingInProgress" | null;
+  } | null;
+};
+
+// Transformed booking type for display
+type DisplayBooking = {
+  id: string;
+  date: string;
+  from: string;
+  to: string;
+  bookingType: "cricket" | "football";
+  paymentOption: "advance" | "full";
+  amountPaid: number;
+  totalAmount: number;
+  verificationCode: string;
+  bookingCode: string;
+  phoneNumber: string;
+  rescheduled?: boolean;
+};
 
 const SLOT_TEMPLATE: Array<[string, string]> = [
   ["06:00", "07:00"],
@@ -53,18 +100,47 @@ const MotionCard = motion(Card);
 const MotionButton = motion(Button);
 const springy = { type: "spring", stiffness: 260, damping: 22 } as const;
 
+// Transform API booking to display format
+function transformBooking(booking: BookingFromApi): DisplayBooking | null {
+  if (!booking.timeSlot?.date || !booking.timeSlot?.from || !booking.timeSlot?.to) {
+    return null;
+  }
+
+  return {
+    id: booking.id,
+    date: booking.timeSlot.date,
+    from: booking.timeSlot.from.slice(0, 5),
+    to: booking.timeSlot.to.slice(0, 5),
+    bookingType: booking.bookingType ?? "cricket",
+    paymentOption: booking.status === "fullPaid" ? "full" : "advance",
+    amountPaid: booking.amountPaid / 100, // Convert from paise
+    totalAmount: booking.totalAmount / 100,
+    verificationCode: booking.verificationCode ?? "----",
+    bookingCode: `PP-${booking.id.slice(-6).toUpperCase()}`,
+    phoneNumber: booking.phoneNumber,
+  };
+}
+
+// Compute booking status based on slot time
+function computeStatus(booking: DisplayBooking): "upcoming" | "past" {
+  const slotDate = new Date(`${booking.date}T${booking.to}:00`);
+  return slotDate.getTime() >= Date.now() ? "upcoming" : "past";
+}
+
 function BookingList({
   title,
   bookings,
   accent,
   onOpenTicket,
   onReschedule,
+  customerName,
 }: {
   title: string;
-  bookings: StoredBooking[];
+  bookings: DisplayBooking[];
   accent: "primary" | "muted";
-  onOpenTicket: (booking: StoredBooking) => void;
-  onReschedule?: (booking: StoredBooking) => void;
+  onOpenTicket: (booking: DisplayBooking) => void;
+  onReschedule?: (booking: DisplayBooking) => void;
+  customerName?: string;
 }) {
   if (bookings.length === 0) {
     return (
@@ -142,7 +218,7 @@ function BookingList({
               </span>
             </div>
             <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-              <span>{booking.customer.name}</span>
+              <span>{customerName ?? booking.phoneNumber}</span>
               <span className="font-mono">{booking.verificationCode}</span>
             </div>
             <div className="mt-4 flex items-center gap-2">
@@ -176,22 +252,41 @@ function BookingList({
 }
 
 export default function ViewPage() {
-  const { bookings, getStatus, rescheduleBooking } = useBookings();
-  const [activeTicket, setActiveTicket] = useState<StoredBooking | null>(null);
-  const [rescheduleTarget, setRescheduleTarget] = useState<StoredBooking | null>(
-    null,
+  const { phoneNumber: storedPhone, setPhoneNumber: setStoredPhone } = usePhone();
+  const [phoneDrawerOpen, setPhoneDrawerOpen] = useState(false);
+  const [tempPhone, setTempPhone] = useState("");
+
+  // Fetch customer data
+  const { data: customer } = api.customer.getByPhoneNumber.useQuery(
+    { phoneNumber: storedPhone },
+    { enabled: !!storedPhone }
   );
+
+  // Fetch bookings from backend
+  const { data: apiBookings, isLoading } = api.booking.getByNumber.useQuery(
+    { number: storedPhone },
+    { enabled: !!storedPhone }
+  );
+
+  const [activeTicket, setActiveTicket] = useState<DisplayBooking | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<DisplayBooking | null>(null);
   const ticketRef = useRef<HTMLDivElement | null>(null);
 
+  // Transform and sort bookings
   const sorted = useMemo(() => {
-    const upcoming: StoredBooking[] = [];
-    const past: StoredBooking[] = [];
+    const upcoming: DisplayBooking[] = [];
+    const past: DisplayBooking[] = [];
 
-    bookings.forEach((booking) => {
-      if (getStatus(booking) === "upcoming") {
-        upcoming.push(booking);
+    if (!apiBookings) return { upcoming, past };
+
+    apiBookings.forEach((booking) => {
+      const transformed = transformBooking(booking as BookingFromApi);
+      if (!transformed) return;
+
+      if (computeStatus(transformed) === "upcoming") {
+        upcoming.push(transformed);
       } else {
-        past.push(booking);
+        past.push(transformed);
       }
     });
 
@@ -203,7 +298,7 @@ export default function ViewPage() {
     );
 
     return { upcoming, past };
-  }, [bookings, getStatus]);
+  }, [apiBookings]);
 
   const background = useMemo(() => {
     if (typeof window === "undefined") {
@@ -250,14 +345,61 @@ export default function ViewPage() {
 
   const handleRescheduleConfirm = () => {
     if (!rescheduleTarget || !selectedSlot) return;
-    rescheduleBooking(rescheduleTarget.id, {
-      date: selectedSlot.date,
-      from: selectedSlot.from,
-      to: selectedSlot.to,
-      slotId: selectedSlot.id,
-    });
+    // TODO: Implement backend reschedule mutation
+    console.log("Reschedule:", rescheduleTarget.id, "to", selectedSlot);
     resetRescheduleState();
   };
+
+  // Handle phone number change
+  const handleChangePhone = () => {
+    setTempPhone(storedPhone);
+    setPhoneDrawerOpen(true);
+  };
+
+  const handleConfirmPhoneChange = () => {
+    if (tempPhone.trim()) {
+      setStoredPhone(tempPhone.trim());
+      setPhoneDrawerOpen(false);
+    }
+  };
+
+  // Show phone input if no stored phone
+  if (!storedPhone) {
+    return (
+      <motion.div
+        className="flex flex-col items-center justify-center space-y-6 py-12"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: "easeOut" }}
+      >
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-semibold">View Your Bookings</h1>
+          <p className="text-sm text-muted-foreground">
+            Enter your phone number to see your bookings
+          </p>
+        </div>
+        <Card className="w-full max-w-sm space-y-4 p-6">
+          <div className="space-y-1">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              inputMode="tel"
+              value={tempPhone}
+              onChange={(event) => setTempPhone(event.target.value)}
+              placeholder="Enter your phone number"
+            />
+          </div>
+          <Button
+            className="w-full"
+            disabled={!tempPhone.trim()}
+            onClick={() => setStoredPhone(tempPhone.trim())}
+          >
+            View Bookings
+          </Button>
+        </Card>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -276,25 +418,81 @@ export default function ViewPage() {
           Manage visits
         </p>
         <h1 className="text-2xl font-semibold">Your bookings</h1>
+        <div className="flex items-center gap-2 pt-1">
+          <span className="text-sm text-muted-foreground">
+            {customer?.name ?? storedPhone}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={handleChangePhone}
+          >
+            <Pencil className="h-3 w-3" />
+          </Button>
+        </div>
       </motion.header>
 
-      <BookingList
-        title="Upcoming"
-        bookings={sorted.upcoming}
-        accent="primary"
-        onOpenTicket={setActiveTicket}
-        onReschedule={(booking) => {
-          setRescheduleTarget(booking);
-          setRescheduleDate(booking.date);
-        }}
-      />
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <span className="text-sm text-muted-foreground">Loading your bookings...</span>
+        </div>
+      ) : (
+        <>
+          <BookingList
+            title="Upcoming"
+            bookings={sorted.upcoming}
+            accent="primary"
+            onOpenTicket={setActiveTicket}
+            onReschedule={(booking) => {
+              setRescheduleTarget(booking);
+              setRescheduleDate(booking.date);
+            }}
+            customerName={customer?.name}
+          />
 
-      <BookingList
-        title="Past"
-        bookings={sorted.past}
-        accent="muted"
-        onOpenTicket={setActiveTicket}
-      />
+          <BookingList
+            title="Past"
+            bookings={sorted.past}
+            accent="muted"
+            onOpenTicket={setActiveTicket}
+            customerName={customer?.name}
+          />
+        </>
+      )}
+
+      {/* Phone Number Change Drawer */}
+      <Drawer open={phoneDrawerOpen} onOpenChange={setPhoneDrawerOpen}>
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader>
+            <DrawerTitle>Change Phone Number</DrawerTitle>
+            <DrawerDescription>
+              Enter a different phone number to view its bookings
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="px-6 pb-4">
+            <div className="space-y-1">
+              <Label htmlFor="tempPhone">Phone Number</Label>
+              <Input
+                id="tempPhone"
+                inputMode="tel"
+                value={tempPhone}
+                onChange={(event) => setTempPhone(event.target.value)}
+                placeholder="Enter phone number"
+              />
+            </div>
+          </div>
+          <DrawerFooter>
+            <Button onClick={handleConfirmPhoneChange} disabled={!tempPhone.trim()}>
+              Use This Number
+            </Button>
+            <Button variant="ghost" onClick={() => setPhoneDrawerOpen(false)}>
+              Cancel
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
       <AnimatePresence>
         {activeTicket && (
@@ -316,9 +514,9 @@ export default function ViewPage() {
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
                   Pitch Perfect ticket
                 </p>
-                <h3 className="text-lg font-semibold">{activeTicket.customer.name}</h3>
+                <h3 className="text-lg font-semibold">{customer?.name ?? activeTicket.phoneNumber}</h3>
                 <p className="text-xs text-muted-foreground">
-                  {activeTicket.customer.number}
+                  {activeTicket.phoneNumber}
                 </p>
               </div>
               <div className="space-y-3 px-6 text-sm">

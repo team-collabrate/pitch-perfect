@@ -7,11 +7,14 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { ThemeProvider } from "~/components/theme-provider";
 import { BookingsProvider } from "~/lib/bookings-context";
 import { LanguageProvider } from "~/lib/language-context";
+import { PhoneProvider } from "~/lib/phone-context";
 import { TopBar } from "~/components/top-bar";
 import { PwaRegister } from "~/components/pwa-register";
+import { Toaster } from "sonner";
 
 const siteUrl = "https://pitchperfect.turf";
-const description = "Mobile-first turf booking experience for Aruppukottai players.";
+const description =
+  "Mobile-first turf booking experience for Aruppukottai players.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -84,7 +87,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={geist.variable} suppressHydrationWarning>
-      <body className="min-h-screen bg-background font-sans text-foreground">
+      <body className="bg-background text-foreground min-h-screen font-sans">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -92,15 +95,18 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <LanguageProvider>
-            <BookingsProvider>
-              <TRPCReactProvider>
-                <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-background">
-                  <PwaRegister />
-                  <TopBar />
-                  <div className="flex-1 overflow-hidden">{children}</div>
-                </div>
-              </TRPCReactProvider>
-            </BookingsProvider>
+            <PhoneProvider>
+              <BookingsProvider>
+                <TRPCReactProvider>
+                  <div className="bg-background mx-auto flex min-h-screen w-full max-w-md flex-col">
+                    <PwaRegister />
+                    <TopBar />
+                    <div className="flex-1 overflow-hidden">{children}</div>
+                  </div>
+                  <Toaster position="top-center" />
+                </TRPCReactProvider>
+              </BookingsProvider>
+            </PhoneProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

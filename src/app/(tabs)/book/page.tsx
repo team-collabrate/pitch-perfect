@@ -314,7 +314,8 @@ export default function BookingPage() {
   const handleConfirmPhoneChange = () => {
     if (tempPhone.trim()) {
       setStoredPhone(tempPhone.trim());
-      setCustomer(blankCustomer); // Reset form to load new customer
+      // Set the phone number in customer state so it remains visible
+      setCustomer(() => ({ ...blankCustomer, number: tempPhone.trim() }));
       setPhoneDrawerOpen(false);
     }
   };
@@ -717,10 +718,10 @@ export default function BookingPage() {
                     handleCustomerChange("number", event.target.value)
                   }
                   placeholder="Primary contact"
-                  disabled={!!storedPhone}
-                  className={storedPhone ? "bg-muted" : ""}
+                  disabled={!!storedPhone && !!existingCustomer}
+                  className={storedPhone && existingCustomer ? "bg-muted" : ""}
                 />
-                {storedPhone && (
+                {storedPhone && existingCustomer && (
                   <Button
                     type="button"
                     variant="outline"
@@ -732,12 +733,12 @@ export default function BookingPage() {
                   </Button>
                 )}
               </div>
-              {isHydrated && storedPhone && (
+              {isHydrated && storedPhone && existingCustomer && (
                 <p className="text-muted-foreground text-xs">
                   Using saved number. Tap edit to change.
                 </p>
               )}
-              {isHydrated && !storedPhone && (
+              {isHydrated && (!storedPhone || !existingCustomer) && (
                 <p className="text-muted-foreground text-xs">
                   Enter your primary contact number
                 </p>

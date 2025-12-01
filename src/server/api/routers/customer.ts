@@ -101,7 +101,6 @@ export const customerRouter = createTRPCRouter({
                 .select()
                 .from(customers)
                 .where(eq(customers.number, input.phoneNumber));
-
             return result[0] ?? null;
         }),
 

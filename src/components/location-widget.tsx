@@ -1,20 +1,21 @@
 "use client";
 
 import { Card } from "~/components/ui/card";
-import { useLocation } from "~/lib/location-context";
 
 interface LocationWidgetProps {
   title?: string;
-  address: string;
+  address?: string;
   hours?: string;
 }
+
+const FALLBACK = { lat: 9.5097955, lng: 78.1113851 };
 
 export function LocationWidget({
   title = "Pitch Perfect",
   address = "12/4A, Pitch Perfect Turf, Aruppukottai Main Road, Tamil Nadu.",
   hours,
 }: LocationWidgetProps) {
-  const { coords } = useLocation();
+  const coords = FALLBACK;
 
   return (
     <Card className="overflow-hidden p-0">

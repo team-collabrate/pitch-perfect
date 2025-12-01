@@ -5,11 +5,10 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { ArrowUpRight, Calendar, HelpCircle, Ticket } from "lucide-react";
 import { motion } from "motion/react";
-import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Carousel } from "~/components/ui/carousel";
 import { useLanguage } from "~/lib/language-context";
-import { useLocation } from "~/lib/location-context";
+import { LocationWidget } from "~/components/location-widget";
 
 const copy = {
   en: {
@@ -83,7 +82,6 @@ export default function HomePage() {
   const { language } = useLanguage();
 
   const strings = useMemo(() => copy[language], [language]);
-  const { coords } = useLocation();
   const quickActions = [
     {
       key: "book",
@@ -149,25 +147,7 @@ export default function HomePage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{strings.locationTitle}</h2>
-        <Card className="overflow-hidden p-0">
-          <div className="aspect-video">
-            <iframe
-              title="Pitch Perfect map"
-              src={`https://maps.google.com/maps?q=${coords.lat},${coords.lng}&z=17&output=embed`}
-              className="h-full w-full border-0"
-              loading="lazy"
-              allowFullScreen
-            />
-          </div>
-          <div className="text-muted-foreground p-4 text-sm">
-            <p>
-              12/4A, Pitch Perfect Turf, Aruppukottai Main Road, Tamil Nadu.
-            </p>
-            <p className="text-foreground mt-2 font-medium">
-              Pitch Perfect
-            </p>
-          </div>
-        </Card>
+        <LocationWidget />
       </section>
 
       <section className="space-y-3">

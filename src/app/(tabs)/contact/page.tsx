@@ -6,7 +6,7 @@ import { Phone } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { useLocation } from "~/lib/location-context";
+import { LocationWidget } from "~/components/location-widget";
 import { WhatsAppIcon } from "~/components/ui/whatsapp-icon";
 
 const contacts = [
@@ -26,7 +26,6 @@ const MotionCard = motion(Card);
 const MotionButton = motion(Button);
 
 export default function ContactPage() {
-  const { coords } = useLocation();
   return (
     <motion.div
       className="space-y-6 pb-6"
@@ -115,25 +114,13 @@ export default function ContactPage() {
         </div> */}
       </MotionCard>
 
-      <MotionCard
-        className="overflow-hidden p-0"
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.18 }}
       >
-        <div className="aspect-video">
-          <iframe
-            title="Pitch Perfect map"
-            src={`https://maps.google.com/maps?q=${coords.lat},${coords.lng}&z=17&output=embed`}
-            className="h-full w-full border-0"
-            loading="lazy"
-            allowFullScreen
-          />
-        </div>
-        <div className="text-muted-foreground p-4 text-sm">
-          <p>12/4A, Pitch Perfect Turf, Aruppukottai Main Road, Tamil Nadu.</p>
-        </div>
-      </MotionCard>
+        <LocationWidget />
+      </motion.div>
 
       <MotionCard
         className="items-start gap-4 p-6"

@@ -8,7 +8,7 @@ import { toPng } from "html-to-image";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
-import { cn } from "~/lib/utils";
+import { cn, formatSlotRange } from "~/lib/utils";
 import {
   useBookings,
   type StoredBooking,
@@ -122,7 +122,7 @@ function BookingList({
                   {booking.bookingType}
                 </p>
                 <h3 className="text-lg font-semibold">
-                  {formatDate(booking.date)} · {booking.from} – {booking.to}
+                  {formatDate(booking.date)} · {formatSlotRange(booking.from, booking.to)}
                 </h3>
                 {booking.rescheduled && (
                   <div className="mt-2">
@@ -329,7 +329,7 @@ export default function ViewPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Time</span>
                   <span>
-                    {activeTicket.from} – {activeTicket.to}
+                    {formatSlotRange(activeTicket.from, activeTicket.to)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -442,7 +442,7 @@ export default function ViewPage() {
                       transition={springy}
                     >
                       <span className="font-semibold">
-                        {slot.from} – {slot.to}
+                        {formatSlotRange(slot.from, slot.to)}
                       </span>
                       <span className="mt-1 text-xs text-muted-foreground">
                         {isChosen ? "Selected" : "Tap to choose"}

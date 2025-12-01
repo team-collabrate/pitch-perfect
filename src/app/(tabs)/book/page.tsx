@@ -20,7 +20,7 @@ import {
   DrawerFooter,
   DrawerCloseButton,
 } from "~/components/ui/drawer";
-import { cn } from "~/lib/utils";
+import { cn, formatSlotRange } from "~/lib/utils";
 import {
   createBookingRecord,
   useBookings,
@@ -419,7 +419,7 @@ export default function BookingPage() {
                       transition={springy}
                     >
                       <span className="font-semibold">
-                        {slot.from} – {slot.to}
+                        {formatSlotRange(slot.from, slot.to)}
                       </span>
                       <span className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
                         {isUnavailable
@@ -472,7 +472,7 @@ export default function BookingPage() {
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={springy}
                     >
-                      {slot.from} – {slot.to}
+                      {formatSlotRange(slot.from, slot.to)}
                     </motion.span>
                   ))}
           </AnimatePresence>
@@ -648,7 +648,7 @@ export default function BookingPage() {
                       className="flex items-center justify-between text-xs font-semibold"
                     >
                       <span>
-                        {booking.from} – {booking.to}
+                        {formatSlotRange(booking.from, booking.to)}
                       </span>
                       <span className="text-muted-foreground">
                         #{booking.bookingCode.slice(-4)}

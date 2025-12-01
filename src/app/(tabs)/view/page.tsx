@@ -428,10 +428,22 @@ export default function ViewPage() {
           Manage visits
         </p>
         <h1 className="text-2xl font-semibold">Your bookings</h1>
-        <div className="flex items-center gap-2 pt-1">
-          <span className="text-muted-foreground text-sm">
-            {customer?.name + " ph:" + storedPhone}
-          </span>
+        <div className="flex items-center gap-2 pt-2">
+          <div className="">
+            <span className="text-muted-foreground text-xs font-medium">
+              {customer?.name ? (
+                <>
+                  <span className="text-foreground font-semibold">
+                    {customer.name}
+                  </span>
+                  <span className="mx-1">•</span>
+                  <span className="font-mono">{storedPhone}</span>
+                </>
+              ) : (
+                <span className="font-mono">{storedPhone}</span>
+              )}
+            </span>
+          </div>
           <Button
             variant="ghost"
             size="icon"

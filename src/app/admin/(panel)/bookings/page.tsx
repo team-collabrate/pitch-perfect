@@ -5,18 +5,7 @@ import { Clock, Loader } from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { api } from "~/trpc/react";
 import { format, parseISO } from "date-fns";
-
-function toAmPm(time: string) {
-  if (!time) return "";
-  const [h, m] = time.split(":").map(Number);
-  const hour = h % 12 || 12;
-  const ampm = h < 12 ? "AM" : "PM";
-  return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
-}
-
-function formatSlotTime(from: string, to: string) {
-  return `${toAmPm(from)} – ${toAmPm(to)}`;
-}
+import { formatSlotRange } from "~/lib/utils";
 
 function getPaymentLabel(status: string): string {
   if (status === "fullPaid") return "Full";
@@ -87,21 +76,25 @@ export default function BookingsPage() {
             let lastDate = null;
             return bookings.map((booking, index) => {
               const bookingCode = `PP-${booking.id.slice(-6).toUpperCase()}`;
-              const slotTime = booking.slot
-                ? formatSlotTime(booking.slot.from, booking.slot.to)
-                : "N/A";
+              const slotTime =
+                booking.slot && booking.slot.from && booking.slot.to
+                  ? formatSlotRange(booking.slot.from, booking.slot.to)
+                  : "N/A";
               const isLastItem = index === bookings.length - 1;
               // Use slot.date if available, else booking.createdAt
-              const dateStr =
-                booking.slot?.date || booking.createdAt?.slice(0, 10);
+              const dateStr: string | undefined =
+                booking.slot?.date ??
+                (typeof booking.createdAt === "string"
+                  ? booking.createdAt.slice(0, 10)
+                  : undefined);
               let showDate = false;
-              if (dateStr !== lastDate) {
+              if (dateStr && dateStr !== lastDate) {
                 showDate = true;
                 lastDate = dateStr;
               }
               return (
                 <div key={booking.id} className="relative">
-                  {showDate && (
+                  {showDate && dateStr && (
                     <div className="mt-6 mb-2 flex items-center gap-2">
                       <span className="text-primary/80 text-xs font-semibold">
                         {format(parseISO(dateStr), "EEE, MMM d, yyyy")}

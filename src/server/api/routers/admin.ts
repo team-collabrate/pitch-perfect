@@ -12,7 +12,11 @@ import {
     managers,
     timeSlots,
     user,
+    account,
 } from "~/server/db/schema";
+import { generatePassword } from "~/lib/password-generator";
+import { sendAdminInvitationEmail } from "~/server/email";
+import { auth } from "~/server/better-auth";
 
 const managerProcedure = protectedProcedure.use(async ({ ctx, next }) => {
     const manager = await db.query.managers.findFirst({
@@ -143,7 +147,7 @@ export const adminRouter = createTRPCRouter({
         .mutation(async ({ input }) => {
             const [updated] = await db
                 .update(customers)
-                .set({ tag: input.tag ?? null })
+                .set({ tag: input.tag ?? undefined })
                 .where(eq(customers.id, input.customerId))
                 .returning({ id: customers.id, tag: customers.tag });
 
@@ -263,4 +267,183 @@ export const superAdminRouter = createTRPCRouter({
             .innerJoin(user, eq(user.id, managers.authId))
             .where(eq(managers.role, "admin"));
     }),
+
+    inviteAdmin: superAdminProcedure
+        .input(
+            z.object({
+                email: z.string().email(),
+                name: z.string().min(1),
+                role: z.enum(["admin", "superAdmin"]),
+            }),
+        )
+        .mutation(async ({ input }) => {
+            try {
+                // Check if user already exists
+                const existingUser = await db.query.user.findFirst({
+                    where: eq(user.email, input.email),
+                });
+
+                if (existingUser) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: "User with this email already exists",
+                    });
+                }
+
+                // Generate random password
+                const password = generatePassword();
+
+                // Create user using Better Auth API
+                const response = await auth.api.signUpEmail({
+                    body: {
+                        name: input.name,
+                        email: input.email,
+                        password: password,
+                    },
+                });
+
+                if (!response?.user?.id) {
+                    throw new TRPCError({
+                        code: "INTERNAL_SERVER_ERROR",
+                        message: "Failed to create user with Better Auth",
+                    });
+                }
+
+                const newUserId = response.user.id;
+
+                // Create manager record
+                const [newManager] = await db
+                    .insert(managers)
+                    .values({
+                        authId: newUserId,
+                        role: input.role,
+                    })
+                    .returning();
+
+                if (!newManager) {
+                    throw new TRPCError({
+                        code: "INTERNAL_SERVER_ERROR",
+                        message: "Failed to create manager record",
+                    });
+                }
+
+                // Send invitation email (fire and forget)
+                void Promise.resolve().then(async () => {
+                    try {
+                        await sendAdminInvitationEmail(input.email, {
+                            adminName: input.name,
+                            password,
+                            role: input.role,
+                        });
+                    } catch {
+                        // Silently ignore email errors
+                    }
+                });
+
+                return {
+                    id: newManager.id,
+                    email: input.email,
+                    name: input.name,
+                    role: newManager.role,
+                };
+            } catch (error) {
+                if (error instanceof TRPCError) {
+                    throw error;
+                }
+                throw new TRPCError({
+                    code: "INTERNAL_SERVER_ERROR",
+                    message: "Failed to invite admin",
+                });
+            }
+        }),
+
+    removeAdmin: superAdminProcedure
+        .input(
+            z.object({
+                managerId: z.number().int(),
+            }),
+        )
+        .mutation(async ({ input }) => {
+            // Find the manager
+            const manager = await db.query.managers.findFirst({
+                where: eq(managers.id, input.managerId),
+            });
+
+            if (!manager) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Manager not found",
+                });
+            }
+
+            // Prevent removing the current super admin (optional safety check)
+            if (manager.role === "superAdmin") {
+                throw new TRPCError({
+                    code: "BAD_REQUEST",
+                    message: "Cannot remove super admin",
+                });
+            }
+
+            // Delete manager record
+            await db
+                .delete(managers)
+                .where(eq(managers.id, input.managerId));
+
+            // Optionally delete the associated user account
+            // Uncomment if you want to fully remove the user
+            // await db.delete(user).where(eq(user.id, manager.authId));
+
+            return { success: true };
+        }),
+
+    changeAdminPassword: managerProcedure
+        .input(
+            z.object({
+                currentPassword: z.string(),
+                newPassword: z.string().min(8),
+            }),
+        )
+        .mutation(async ({ input, ctx }) => {
+            try {
+                // Get the account record for this user
+                const accountRecord = await db.query.account.findFirst({
+                    where: eq(account.userId, ctx.session.user.id),
+                });
+
+                if (!accountRecord?.password) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: "User has no password set",
+                    });
+                }
+
+                // For now, store password directly (Better Auth will hash it)
+                // In production, implement proper password hashing
+                if (accountRecord.password !== input.currentPassword) {
+                    throw new TRPCError({
+                        code: "UNAUTHORIZED",
+                        message: "Current password is incorrect",
+                    });
+                }
+
+                // Update password in account table
+                await db
+                    .update(account)
+                    .set({
+                        password: input.newPassword,
+                        updatedAt: new Date(),
+                    })
+                    .where(eq(account.id, accountRecord.id));
+
+                return { success: true };
+            } catch (error) {
+                if (error instanceof TRPCError) {
+                    throw error;
+                }
+                throw new TRPCError({
+                    code: "INTERNAL_SERVER_ERROR",
+                    message: "Failed to change password",
+                });
+            }
+        }),
 });

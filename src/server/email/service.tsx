@@ -1,4 +1,5 @@
 import { WelcomeEmail } from "./templates/welcome";
+import { AdminInvitationEmail } from "./templates/admin-invitation";
 import { renderEmailTemplate } from "./render";
 import { sendEmail } from "./transporter";
 
@@ -42,6 +43,32 @@ export async function sendBookingConfirmation(
   return sendEmail({
     to: email,
     subject: "Your Booking is Confirmed",
+    html,
+  });
+}
+
+export async function sendAdminInvitationEmail(
+  email: string,
+  options: {
+    adminName?: string;
+    password: string;
+    role: "admin" | "superAdmin";
+    loginUrl?: string;
+  },
+) {
+  const html = await renderEmailTemplate(
+    <AdminInvitationEmail
+      adminName={options.adminName}
+      email={email}
+      password={options.password}
+      role={options.role}
+      loginUrl={options.loginUrl}
+    />,
+  );
+
+  return sendEmail({
+    to: email,
+    subject: "Welcome to Pitch Perfect Admin Panel",
     html,
   });
 }

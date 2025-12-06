@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { count, desc, eq, sum, sql } from "drizzle-orm";
+import { count, desc, eq, sum, sql, asc } from "drizzle-orm";
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
@@ -49,13 +49,61 @@ export const adminRouter = createTRPCRouter({
         .input(
             z.object({
                 limit: z.number().int().min(1).max(50).default(20),
+                date: z.string().optional(), // YYYY-MM-DD format
+                time: z.string().optional(), // HH:mm format (e.g., "14:30")
             }),
         )
         .query(async ({ input }) => {
-            return db
+            const BUFFER_MINUTES = 15;
+
+            console.log("[bookingsList] Input:", { limit: input.limit, date: input.date, time: input.time });
+
+            let whereCondition;
+
+            if (input.date && input.time) {
+                // Parse date and time - keep it as local time, don't use UTC
+                const dateParts = input.date.split("-");
+                const year = parseInt(dateParts[0] ?? "2025", 10);
+                const month = parseInt(dateParts[1] ?? "01", 10);
+                const day = parseInt(dateParts[2] ?? "01", 10);
+                const timeParts = input.time.split(":");
+                const hours = parseInt(timeParts[0] ?? "0", 10);
+                const minutes = parseInt(timeParts[1] ?? "0", 10);
+
+                // Create date in local timezone
+                const currentDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+
+                console.log("[bookingsList] Date and time provided:", { date: input.date, time: input.time, currentDate: currentDate.toISOString() });
+
+                // Calculate from time: subtract buffer minutes
+                const fromDate = new Date(currentDate.getTime() - BUFFER_MINUTES * 60 * 1000);
+                const fromTime = `${String(fromDate.getHours()).padStart(2, "0")}:${String(fromDate.getMinutes()).padStart(2, "0")}`;
+                const fromDateStr = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, "0")}-${String(fromDate.getDate()).padStart(2, "0")}`;
+
+                console.log("[bookingsList] Calculated from point:", { fromDateStr, fromTime, fromDate: fromDate.toISOString() });
+
+                whereCondition = sql`(${timeSlots.date}::text > ${fromDateStr} 
+                    OR (${timeSlots.date}::text = ${fromDateStr} AND ${timeSlots.from}::text >= ${fromTime}))
+                    AND ${timeSlots.date} IS NOT NULL 
+                    AND ${timeSlots.from} IS NOT NULL`;
+
+                console.log("[bookingsList] Where condition (with date/time):", { fromDateStr, fromTime });
+            } else {
+                // Default: show all future bookings from today onwards
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const todayStr = today.toISOString().split("T")[0];
+                console.log("[bookingsList] No date/time provided, showing all future bookings from:", todayStr);
+                whereCondition = sql`${timeSlots.date}::text >= ${todayStr} 
+                    AND ${timeSlots.date} IS NOT NULL 
+                    AND ${timeSlots.from} IS NOT NULL`;
+            }
+
+            const results = await db
                 .select({
                     id: bookings.id,
                     phoneNumber: bookings.phoneNumber,
+                    name: customers.name,
                     amountPaid: bookings.amountPaid,
                     status: bookings.status,
                     verificationCode: bookings.verificationCode,
@@ -68,8 +116,28 @@ export const adminRouter = createTRPCRouter({
                 })
                 .from(bookings)
                 .leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
-                .orderBy(desc(bookings.createdAt))
+                .leftJoin(customers, eq(bookings.phoneNumber, customers.number))
+                .where(whereCondition)
+                .orderBy(asc(timeSlots.date), asc(timeSlots.from))
                 .limit(input.limit);
+
+            console.log(`[bookingsList] Query returned ${results.length} bookings`);
+            if (results.length > 0) {
+                console.log("[bookingsList] First booking:", {
+                    name: results[0]?.name,
+                    phone: results[0]?.phoneNumber,
+                    date: results[0]?.slot?.date,
+                    time: results[0]?.slot?.from,
+                });
+                console.log("[bookingsList] Last booking:", {
+                    name: results[results.length - 1]?.name,
+                    phone: results[results.length - 1]?.phoneNumber,
+                    date: results[results.length - 1]?.slot?.date,
+                    time: results[results.length - 1]?.slot?.from,
+                });
+            }
+
+            return results;
         }),
 
     verifyBooking: managerProcedure

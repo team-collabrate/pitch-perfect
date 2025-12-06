@@ -1,11 +1,9 @@
 "use client";
 
-import { Clock } from "lucide-react";
-
 import { Card } from "~/components/ui/card";
 import { Spinner } from "~/components/spinner";
 import { api } from "~/trpc/react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, parse, isAfter, isBefore } from "date-fns";
 import { formatSlotRange } from "~/lib/utils";
 
 function getPaymentLabel(status: string): string {
@@ -14,13 +12,45 @@ function getPaymentLabel(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+function getDotColor(booking: {
+  slot?: { from?: string; to?: string; date?: string } | null;
+}): string {
+  if (!booking.slot?.date || !booking.slot?.from || !booking.slot?.to) {
+    return "bg-primary"; // Default color if no slot data
+  }
+
+  const now = new Date();
+  const slotDate = parseISO(booking.slot.date);
+  const slotStart = parse(booking.slot.from, "HH:mm:ss", slotDate);
+  const slotEnd = parse(booking.slot.to, "HH:mm:ss", slotDate);
+
+  // Check if booking is active (current time is within the slot)
+  if (isAfter(now, slotStart) && isBefore(now, slotEnd)) {
+    return "bg-green-500"; // Active - green
+  }
+
+  // Check if booking is within next hour
+  const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+  if (!isAfter(now, slotStart) && isBefore(slotStart, oneHourFromNow)) {
+    return "bg-yellow-500"; // Next hour - yellow
+  }
+
+  return "bg-primary"; // Default color
+}
+
 export default function BookingsPage() {
+  const now = new Date();
+  const currentDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
   const {
     data: bookings = [],
     isLoading,
     error,
   } = api.admin.bookingsList.useQuery({
     limit: 50,
+    date: currentDate,
+    time: currentTime,
   });
 
   if (isLoading) {
@@ -74,20 +104,16 @@ export default function BookingsPage() {
       ) : (
         <div className="space-y-3">
           {(() => {
-            let lastDate = null;
+            let lastDate: string | null = null;
             return bookings.map((booking, index) => {
               const bookingCode = `PP-${booking.id.slice(-6).toUpperCase()}`;
               const slotTime =
-                booking.slot && booking.slot.from && booking.slot.to
+                booking.slot?.from && booking.slot?.to
                   ? formatSlotRange(booking.slot.from, booking.slot.to)
                   : "N/A";
               const isLastItem = index === bookings.length - 1;
-              // Use slot.date if available, else booking.createdAt
-              const dateStr: string | undefined =
-                booking.slot?.date ??
-                (typeof booking.createdAt === "string"
-                  ? booking.createdAt.slice(0, 10)
-                  : undefined);
+              // Use slot.date if available
+              const dateStr: string | undefined = booking.slot?.date;
               let showDate = false;
               if (dateStr && dateStr !== lastDate) {
                 showDate = true;
@@ -111,7 +137,9 @@ export default function BookingsPage() {
                   <div className="flex gap-4">
                     {/* Timeline dot */}
                     <div className="relative flex flex-col items-center pt-1">
-                      <div className="bg-primary h-3 w-3 rounded-full"></div>
+                      <div
+                        className={`${getDotColor(booking)} h-3 w-3 rounded-full`}
+                      ></div>
                     </div>
                     {/* Content card */}
                     <Card className="border-border/60 bg-card/60 mb-2 flex-1 rounded-3xl p-4">
@@ -122,7 +150,12 @@ export default function BookingsPage() {
                             <p className="text-muted-foreground text-xs tracking-widest uppercase">
                               {bookingCode}
                             </p>
-                            <p className="text-lg font-semibold">
+                            {booking.name && (
+                              <p className="text-lg font-semibold">
+                                {booking.name}
+                              </p>
+                            )}
+                            <p className="text-muted-foreground text-sm">
                               {booking.phoneNumber}
                             </p>
                           </div>

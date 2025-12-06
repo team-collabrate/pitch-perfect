@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { count, desc, eq, sum } from "drizzle-orm";
+import { count, desc, eq, sum, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
@@ -213,41 +213,141 @@ export const adminRouter = createTRPCRouter({
 
 export const superAdminRouter = createTRPCRouter({
     dashboardSummary: superAdminProcedure.query(async () => {
-        const [bookingStats] = await db
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+
+        // Get current month bookings
+        const [currentMonthStats] = await db
             .select({
                 totalBookings: count(bookings.id),
                 totalRevenue: sum(bookings.amountPaid),
             })
-            .from(bookings);
+            .from(bookings)
+            .where(sql`${bookings.createdAt} >= ${startOfMonth.toISOString()}`);
 
-        const [slotStats] = await db
-            .select({ availableSlots: count(timeSlots.id) })
-            .from(timeSlots)
-            .where(eq(timeSlots.status, "available"));
-
-        const recentBookings = await db
+        // Get last month bookings for comparison
+        const [lastMonthStats] = await db
             .select({
-                id: bookings.id,
-                phoneNumber: bookings.phoneNumber,
-                amountPaid: bookings.amountPaid,
-                status: bookings.status,
-                createdAt: bookings.createdAt,
-                slotFrom: timeSlots.from,
-                slotTo: timeSlots.to,
-                slotDate: timeSlots.date,
+                totalBookings: count(bookings.id),
+                totalRevenue: sum(bookings.amountPaid),
+            })
+            .from(bookings)
+            .where(
+                sql`${bookings.createdAt} >= ${startOfLastMonth.toISOString()} AND ${bookings.createdAt} <= ${endOfLastMonth.toISOString()}`
+            );
+
+        // Get today's pending amount
+        const [todayPending] = await db
+            .select({
+                pendingAmount: sum(sql<number>`CASE 
+                    WHEN ${bookings.status} = 'advancePaid' THEN ${bookings.totalAmount} - ${bookings.amountPaid}
+                    WHEN ${bookings.status} = 'advancePending' THEN ${bookings.totalAmount}
+                    WHEN ${bookings.status} = 'fullPending' THEN ${bookings.totalAmount}
+                    ELSE 0 
+                END`),
             })
             .from(bookings)
             .leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
-            .orderBy(desc(bookings.createdAt))
-            .limit(10);
+            .where(sql`${timeSlots.date} = ${startOfToday.toISOString().split('T')[0]}`);
+
+        // Get yesterday's pending amount
+        const [yesterdayPending] = await db
+            .select({
+                pendingAmount: sum(sql<number>`CASE 
+                    WHEN ${bookings.status} = 'advancePaid' THEN ${bookings.totalAmount} - ${bookings.amountPaid}
+                    WHEN ${bookings.status} = 'advancePending' THEN ${bookings.totalAmount}
+                    WHEN ${bookings.status} = 'fullPending' THEN ${bookings.totalAmount}
+                    ELSE 0 
+                END`),
+            })
+            .from(bookings)
+            .leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+            .where(sql`${timeSlots.date} = ${startOfYesterday.toISOString().split('T')[0]}`);
+
+        // Get upcoming bookings today
+        const [todayBookingsCount] = await db
+            .select({
+                count: count(bookings.id),
+            })
+            .from(bookings)
+            .leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+            .where(
+                sql`${timeSlots.date} = ${startOfToday.toISOString().split('T')[0]} 
+                AND ${timeSlots.from} > ${now.toTimeString().split(' ')[0]}`
+            );
+
+        // Get last 7 days revenue for trend
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const last7DaysRevenue = await db
+            .select({
+                date: sql<string>`DATE(${bookings.createdAt})`,
+                revenue: sum(bookings.amountPaid),
+            })
+            .from(bookings)
+            .where(sql`${bookings.createdAt} >= ${sevenDaysAgo.toISOString()}`)
+            .groupBy(sql`DATE(${bookings.createdAt})`)
+            .orderBy(sql`DATE(${bookings.createdAt})`);
+
+        // Get slot utilization heatmap (last 7 days, 4 time blocks per day)
+        const sevenDaysAgoDate = sevenDaysAgo.toISOString().split('T')[0];
+        const heatmapData = await db
+            .select({
+                date: timeSlots.date,
+                hour: sql<number>`EXTRACT(HOUR FROM ${timeSlots.from})`,
+                bookedCount: count(bookings.id),
+            })
+            .from(timeSlots)
+            .leftJoin(bookings, eq(timeSlots.id, bookings.timeSlotId))
+            .where(sql`${timeSlots.date} >= ${sevenDaysAgoDate}`)
+            .groupBy(timeSlots.date, sql`EXTRACT(HOUR FROM ${timeSlots.from})`)
+            .orderBy(timeSlots.date);
+
+        // Get conversion rates by payment type
+        const conversionStats = await db
+            .select({
+                status: bookings.status,
+                count: count(bookings.id),
+            })
+            .from(bookings)
+            .groupBy(bookings.status);
 
         return {
-            totals: {
-                totalBookings: bookingStats?.totalBookings ?? 0,
-                totalRevenue: bookingStats?.totalRevenue ?? 0,
-                availableSlots: slotStats?.availableSlots ?? 0,
+            metrics: {
+                currentMonth: {
+                    revenue: Number(currentMonthStats?.totalRevenue ?? 0),
+                    bookings: Number(currentMonthStats?.totalBookings ?? 0),
+                },
+                lastMonth: {
+                    revenue: Number(lastMonthStats?.totalRevenue ?? 0),
+                    bookings: Number(lastMonthStats?.totalBookings ?? 0),
+                },
+                today: {
+                    pendingAmount: Number(todayPending?.pendingAmount ?? 0),
+                    upcomingBookings: Number(todayBookingsCount?.count ?? 0),
+                },
+                yesterday: {
+                    pendingAmount: Number(yesterdayPending?.pendingAmount ?? 0),
+                },
             },
-            recentBookings,
+            trends: {
+                last7Days: last7DaysRevenue.map(d => ({
+                    date: d.date,
+                    revenue: Number(d.revenue ?? 0),
+                })),
+            },
+            heatmap: heatmapData.map(d => ({
+                date: d.date,
+                hour: d.hour,
+                bookedCount: Number(d.bookedCount ?? 0),
+            })),
+            conversions: conversionStats.map(s => ({
+                status: s.status,
+                count: Number(s.count),
+            })),
         } as const;
     }),
 
@@ -327,12 +427,11 @@ export const superAdminRouter = createTRPCRouter({
                     });
                 }
 
-                // Send invitation email (fire and forget)
+                // Send invitation email with password reset link (fire and forget)
                 void Promise.resolve().then(async () => {
                     try {
                         await sendAdminInvitationEmail(input.email, {
                             adminName: input.name,
-                            password,
                             role: input.role,
                         });
                     } catch {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 
@@ -9,31 +8,32 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 
-export function AdminLoginForm() {
-  const router = useRouter();
+export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setSuccess(false);
     setIsSubmitting(true);
 
     try {
-      await authClient.signIn.email({
+      await authClient.requestPasswordReset({
         email,
-        password,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
-      router.replace("/admin/dashboard");
-      router.refresh();
+      setSuccess(true);
+      setEmail("");
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Unable to login. Please check your credentials.",
+          : "Failed to send password reset email. Please try again.",
       );
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -44,17 +44,17 @@ export function AdminLoginForm() {
         <p className="text-muted-foreground text-xs tracking-widest uppercase">
           Admin Console
         </p>
-        <h1 className="text-2xl font-semibold">Sign in to continue</h1>
+        <h1 className="text-2xl font-semibold">Reset Your Password</h1>
         <p className="text-muted-foreground text-sm">
-          Use your staff email and password managed by Pitch Perfect.
+          Enter your email address and we&apos;ll send you a link to reset your password.
         </p>
       </div>
 
       <div className="space-y-4">
         <div className="space-y-1">
-          <Label htmlFor="admin-email">Email</Label>
+          <Label htmlFor="forgot-email">Email</Label>
           <Input
-            id="admin-email"
+            id="forgot-email"
             type="email"
             autoComplete="email"
             inputMode="email"
@@ -62,26 +62,7 @@ export function AdminLoginForm() {
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
             required
-          />
-        </div>
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="admin-password">Password</Label>
-            <Link
-              href="/admin/forgot-password"
-              className="text-xs font-semibold hover:underline"
-            >
-              Forgot?
-            </Link>
-          </div>
-          <Input
-            id="admin-password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="••••••••"
-            required
+            disabled={success}
           />
         </div>
       </div>
@@ -92,13 +73,32 @@ export function AdminLoginForm() {
         </p>
       )}
 
-      <Button
-        type="submit"
-        className="w-full rounded-2xl py-6 text-base font-semibold"
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? "Signing in…" : "Login"}
-      </Button>
+      {success && (
+        <div className="border-green-500/40 bg-green-500/10 text-green-700 rounded-2xl border px-3 py-2 text-sm">
+          <p className="font-semibold">Check your email</p>
+          <p>
+            We sent a password reset link to <strong>{email}</strong>. Please check
+            your email and follow the link to reset your password.
+          </p>
+        </div>
+      )}
+
+      {!success && (
+        <Button
+          type="submit"
+          className="w-full rounded-2xl py-6 text-base font-semibold"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Sending..." : "Send Reset Link"}
+        </Button>
+      )}
+
+      <div className="flex items-center justify-center gap-2 text-sm">
+        <span className="text-muted-foreground">Remember your password?</span>
+        <Link href="/admin/login" className="font-semibold hover:underline">
+          Sign in
+        </Link>
+      </div>
     </form>
   );
 }

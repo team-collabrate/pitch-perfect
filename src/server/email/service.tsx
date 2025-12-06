@@ -1,5 +1,6 @@
 import { WelcomeEmail } from "./templates/welcome";
 import { AdminInvitationEmail } from "./templates/admin-invitation";
+import { PasswordResetEmail } from "./templates/password-reset";
 import { renderEmailTemplate } from "./render";
 import { sendEmail } from "./transporter";
 
@@ -51,9 +52,10 @@ export async function sendAdminInvitationEmail(
   email: string,
   options: {
     adminName?: string;
-    password: string;
+    password?: string;
     role: "admin" | "superAdmin";
     loginUrl?: string;
+    resetPasswordUrl?: string;
   },
 ) {
   const html = await renderEmailTemplate(
@@ -63,12 +65,34 @@ export async function sendAdminInvitationEmail(
       password={options.password}
       role={options.role}
       loginUrl={options.loginUrl}
+      resetPasswordUrl={options.resetPasswordUrl}
     />,
   );
 
   return sendEmail({
     to: email,
     subject: "Welcome to Pitch Perfect Admin Panel",
+    html,
+  });
+}
+
+export async function sendPasswordResetEmail(
+  email: string,
+  options: {
+    resetUrl: string;
+    userName?: string;
+  },
+) {
+  const html = await renderEmailTemplate(
+    <PasswordResetEmail
+      resetUrl={options.resetUrl}
+      userName={options.userName}
+    />,
+  );
+
+  return sendEmail({
+    to: email,
+    subject: "Reset Your Password",
     html,
   });
 }

@@ -14,9 +14,10 @@ import * as React from "react";
 interface AdminInvitationEmailProps {
   adminName?: string;
   email: string;
-  password: string;
+  password?: string;
   loginUrl?: string;
   role: "admin" | "superAdmin";
+  resetPasswordUrl?: string;
 }
 
 export const AdminInvitationEmail = ({
@@ -25,6 +26,7 @@ export const AdminInvitationEmail = ({
   password,
   loginUrl = "https://pitch-perfect.com/admin/login",
   role,
+  resetPasswordUrl,
 }: AdminInvitationEmailProps) => (
   <Html>
     <Head />
@@ -39,22 +41,52 @@ export const AdminInvitationEmail = ({
             You have been invited to join the Pitch Perfect admin team as a{" "}
             <strong>{role === "superAdmin" ? "Super Admin" : "Admin"}</strong>.
           </Text>
-          <Text style={paragraph}>Use the credentials below to log in:</Text>
-          <Section style={credentialsBox}>
-            <Text style={credentialLabel}>Email:</Text>
-            <Text style={credentialValue}>{email}</Text>
-            <Text style={credentialLabel}>Password:</Text>
-            <Text style={credentialValue}>{password}</Text>
-          </Section>
-          <Text style={warningText}>
-            ⚠️ Please change your password immediately after your first login
-            for security.
-          </Text>
-          <Section style={buttonContainer}>
-            <Link style={button} href={loginUrl}>
-              Login to Admin Panel
-            </Link>
-          </Section>
+          {password ? (
+            <>
+              <Text style={paragraph}>
+                Use the credentials below to log in:
+              </Text>
+              <Section style={credentialsBox}>
+                <Text style={credentialLabel}>Email:</Text>
+                <Text style={credentialValue}>{email}</Text>
+                <Text style={credentialLabel}>Password:</Text>
+                <Text style={credentialValue}>{password}</Text>
+              </Section>
+              <Text style={warningText}>
+                ⚠️ Please change your password immediately after your first
+                login for security.
+              </Text>
+              <Section style={buttonContainer}>
+                <Link style={button} href={loginUrl}>
+                  Login to Admin Panel
+                </Link>
+              </Section>
+            </>
+          ) : (
+            <>
+              <Text style={paragraph}>
+                To get started, please set your password by clicking the button
+                below:
+              </Text>
+              <Section style={buttonContainer}>
+                <Link style={button} href={resetPasswordUrl ?? loginUrl}>
+                  Set Your Password
+                </Link>
+              </Section>
+              <Text style={paragraph}>
+                Or copy and paste this link in your browser:
+              </Text>
+              <Text
+                style={{
+                  ...paragraph,
+                  wordBreak: "break-all",
+                  color: "#0066cc",
+                }}
+              >
+                {resetPasswordUrl ?? loginUrl}
+              </Text>
+            </>
+          )}
           <Hr style={hr} />
           <Text style={footer}>
             If you did not expect this invitation or have any questions, please

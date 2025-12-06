@@ -1,52 +1,10 @@
-import { BarChart3, LineChart, TrendingUp } from "lucide-react";
+import { LineChart, TrendingUp } from "lucide-react";
 
 import { Card } from "~/components/ui/card";
 import { cn } from "~/lib/utils";
 import { requireManager } from "~/server/admin/session";
+import { api } from "~/trpc/server";
 
-const metricCards = [
-  {
-    label: "Total revenue (month)",
-    value: "₹8.4L",
-    change: "+5.2% vs last month",
-    isPositive: true,
-  },
-  {
-    label: "Bookings (month)",
-    value: "412",
-    change: "+9.8%",
-    isPositive: true,
-  },
-  {
-    label: "Pending amount (today)",
-    value: "₹62,000",
-    change: "-3.4% vs yesterday",
-    isPositive: false,
-  },
-  {
-    label: "Upcoming bookings (today)",
-    value: "21",
-    change: "+4 till EOD",
-    isPositive: true,
-  },
-];
-
-const heatmap = Array.from({ length: 7 }).map((_, day) =>
-  Array.from({ length: 4 }).map((_, block) => (day + block) % 5),
-);
-
-const trendLine = [70, 82, 60, 90, 110, 105, 130];
-const maxTrendValue = Math.max(...trendLine);
-const heightScale = [
-  "h-10",
-  "h-12",
-  "h-16",
-  "h-20",
-  "h-24",
-  "h-28",
-  "h-32",
-  "h-36",
-];
 const widthScale = [
   "w-1/4",
   "w-1/3",
@@ -59,15 +17,6 @@ const widthScale = [
   "w-full",
 ];
 
-const getHeightClass = (value: number) => {
-  const ratio = value / maxTrendValue;
-  const index = Math.min(
-    heightScale.length - 1,
-    Math.max(0, Math.floor(ratio * heightScale.length)),
-  );
-  return heightScale[index]!;
-};
-
 const getWidthClass = (value: number) => {
   const ratio = value / 100;
   const index = Math.min(
@@ -77,8 +26,132 @@ const getWidthClass = (value: number) => {
   return widthScale[index]!;
 };
 
+function formatCurrency(amount: number): string {
+  if (amount >= 100000) {
+    return `₹${(amount / 100000).toFixed(1)}L`;
+  } else if (amount >= 1000) {
+    return `₹${(amount / 1000).toFixed(1)}K`;
+  }
+  return `₹${amount}`;
+}
+
+function calculatePercentageChange(current: number, previous: number): string {
+  if (previous === 0) return "+100%";
+  const change = ((current - previous) / previous) * 100;
+  return `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`;
+}
+
 export default async function DashboardPage() {
   await requireManager({ superOnly: true });
+
+  const dashboardData = await api.superAdmin.dashboardSummary();
+
+  // Calculate metrics
+  const revenueChange = calculatePercentageChange(
+    dashboardData.metrics.currentMonth.revenue,
+    dashboardData.metrics.lastMonth.revenue,
+  );
+  const bookingsChange = calculatePercentageChange(
+    dashboardData.metrics.currentMonth.bookings,
+    dashboardData.metrics.lastMonth.bookings,
+  );
+  const pendingChange = calculatePercentageChange(
+    dashboardData.metrics.today.pendingAmount,
+    dashboardData.metrics.yesterday.pendingAmount,
+  );
+
+  const metricCards = [
+    {
+      label: "Total revenue (month)",
+      value: formatCurrency(dashboardData.metrics.currentMonth.revenue),
+      change: `${revenueChange} vs last month`,
+      isPositive:
+        dashboardData.metrics.currentMonth.revenue >=
+        dashboardData.metrics.lastMonth.revenue,
+    },
+    {
+      label: "Bookings (month)",
+      value: dashboardData.metrics.currentMonth.bookings.toString(),
+      change: bookingsChange,
+      isPositive:
+        dashboardData.metrics.currentMonth.bookings >=
+        dashboardData.metrics.lastMonth.bookings,
+    },
+    {
+      label: "Pending amount (today)",
+      value: formatCurrency(dashboardData.metrics.today.pendingAmount),
+      change: `${pendingChange} vs yesterday`,
+      isPositive:
+        dashboardData.metrics.today.pendingAmount <=
+        dashboardData.metrics.yesterday.pendingAmount,
+    },
+    {
+      label: "Upcoming bookings (today)",
+      value: dashboardData.metrics.today.upcomingBookings.toString(),
+      change: "till EOD",
+      isPositive: true,
+    },
+  ];
+
+  // Process trend data for last 7 days
+  const heatmapDates = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    return date.toISOString().split("T")[0];
+  });
+
+  // Process trend data for last 7 days
+  const trendLine = dashboardData.trends.last7Days.map((d) => d.revenue);
+  const maxTrendValue = Math.max(...trendLine, 1);
+
+  // Calculate conversion rates
+  const totalConversions = dashboardData.conversions.reduce(
+    (sum, c) => sum + c.count,
+    0,
+  );
+  const conversionData = [
+    {
+      label: "Advance",
+      percentage:
+        totalConversions > 0
+          ? Math.round(
+              ((dashboardData.conversions.find(
+                (c) => c.status === "advancePaid",
+              )?.count ?? 0) /
+                totalConversions) *
+                100,
+            )
+          : 0,
+    },
+    {
+      label: "Full Payment",
+      percentage:
+        totalConversions > 0
+          ? Math.round(
+              ((dashboardData.conversions.find((c) => c.status === "fullPaid")
+                ?.count ?? 0) /
+                totalConversions) *
+                100,
+            )
+          : 0,
+    },
+    {
+      label: "Pending",
+      percentage:
+        totalConversions > 0
+          ? Math.round(
+              (((dashboardData.conversions.find(
+                (c) => c.status === "advancePending",
+              )?.count ?? 0) +
+                (dashboardData.conversions.find(
+                  (c) => c.status === "fullPending",
+                )?.count ?? 0)) /
+                totalConversions) *
+                100,
+            )
+          : 0,
+    },
+  ];
 
   return (
     <div className="space-y-6 pb-20">
@@ -108,40 +181,9 @@ export default async function DashboardPage() {
         <header className="flex items-center justify-between">
           <div>
             <p className="text-muted-foreground text-xs tracking-widest uppercase">
-              Utilisation heatmap
+              Last 7 days
             </p>
-            <p className="text-lg font-semibold">Slot density</p>
-          </div>
-          <BarChart3 className="text-muted-foreground h-5 w-5" />
-        </header>
-        <div className="grid grid-cols-7 gap-2">
-          {heatmap.map((blocks, day) => (
-            <div key={day} className="space-y-1">
-              {blocks.map((value, block) => (
-                <div
-                  key={`${day}-${block}`}
-                  className={cn(
-                    "h-6 rounded-full",
-                    value >= 4
-                      ? "bg-primary"
-                      : value >= 2
-                        ? "bg-primary/60"
-                        : "bg-muted",
-                  )}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="border-border/60 bg-card/60 space-y-4 rounded-3xl p-4">
-        <header className="flex items-center justify-between">
-          <div>
-            <p className="text-muted-foreground text-xs tracking-widest uppercase">
-              Week over week
-            </p>
-            <p className="text-lg font-semibold">Revenue this week</p>
+            <p className="text-lg font-semibold">Revenue trend</p>
           </div>
           <TrendingUp className="text-muted-foreground h-5 w-5" />
         </header>
@@ -151,39 +193,28 @@ export default async function DashboardPage() {
             viewBox="0 0 280 160"
             preserveAspectRatio="none"
           >
-            {/* Previous week line */}
-            <polyline
-              points={trendLine
-                .map((v, i) => `${i * 40},${160 - (v / maxTrendValue) * 140}`)
-                .join(" ")}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-muted-foreground/40"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            {/* This week line */}
-            <polyline
-              points={trendLine
-                .map(
-                  (v, i) =>
-                    `${i * 40},${160 - ((v + 15) / maxTrendValue) * 140}`,
-                )
-                .join(" ")}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              className="text-primary"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            {trendLine.length > 0 && (
+              <polyline
+                points={trendLine
+                  .map((v, i) => `${i * 40},${160 - (v / maxTrendValue) * 140}`)
+                  .join(" ")}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                className="text-primary"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
           </svg>
         </div>
         <div className="text-muted-foreground flex justify-between text-xs font-medium">
-          {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
-            <span key={index}>{day}</span>
-          ))}
+          {heatmapDates.map((date, index) => {
+            const dayName = new Date(date!).toLocaleDateString("en", {
+              weekday: "short",
+            })[0];
+            return <span key={index}>{dayName}</span>;
+          })}
         </div>
       </Card>
 
@@ -191,24 +222,24 @@ export default async function DashboardPage() {
         <header className="flex items-center justify-between">
           <div>
             <p className="text-muted-foreground text-xs tracking-widest uppercase">
-              Conversion
+              Payment status
             </p>
-            <p className="text-lg font-semibold">Verification success</p>
+            <p className="text-lg font-semibold">Booking conversions</p>
           </div>
           <LineChart className="text-muted-foreground h-5 w-5" />
         </header>
         <div className="mt-4 space-y-3">
-          {["Advance", "Full Payment", "Coupons"].map((channel, index) => (
-            <div key={channel} className="space-y-1">
+          {conversionData.map((item) => (
+            <div key={item.label} className="space-y-1">
               <div className="flex items-center justify-between text-sm">
-                <span>{channel}</span>
-                <span className="font-semibold">{80 - index * 8}%</span>
+                <span>{item.label}</span>
+                <span className="font-semibold">{item.percentage}%</span>
               </div>
               <div className="bg-muted h-2 rounded-full">
                 <div
                   className={cn(
                     "bg-primary h-2 rounded-full",
-                    getWidthClass(80 - index * 8),
+                    getWidthClass(item.percentage),
                   )}
                 />
               </div>

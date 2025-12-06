@@ -1,8 +1,9 @@
 "use client";
 
-import { Clock, Loader } from "lucide-react";
+import { Clock } from "lucide-react";
 
 import { Card } from "~/components/ui/card";
+import { Spinner } from "~/components/spinner";
 import { api } from "~/trpc/react";
 import { format, parseISO } from "date-fns";
 import { formatSlotRange } from "~/lib/utils";
@@ -32,7 +33,7 @@ export default function BookingsPage() {
           <h1 className="text-2xl font-semibold">Bookings Timeline</h1>
         </header>
         <div className="flex items-center justify-center py-12">
-          <Loader className="text-muted-foreground h-6 w-6 animate-spin" />
+          <Spinner />
         </div>
       </div>
     );

@@ -2,6 +2,7 @@ import { ShieldCheck } from "lucide-react";
 
 import { Card } from "~/components/ui/card";
 import { InviteAdminDrawer } from "~/components/admin/invite-admin-drawer";
+import { AdminProfileDrawer } from "~/components/admin/admin-profile-drawer";
 import { requireManager } from "~/server/admin/session";
 import { api } from "~/trpc/server";
 
@@ -40,9 +41,15 @@ export default async function AdminsPage() {
                   {admin.user.email}
                 </p>
               </div>
-              <span className="border-primary/40 text-primary rounded-full border px-3 py-1 text-xs font-semibold">
-                {roleLabel[admin.role]}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="border-primary/40 text-primary rounded-full border px-3 py-1 text-xs font-semibold">
+                  {roleLabel[admin.role]}
+                </span>
+                <AdminProfileDrawer
+                  adminId={admin.id}
+                  adminName={admin.user.name}
+                />
+              </div>
             </Card>
           ))
         ) : (

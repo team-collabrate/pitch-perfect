@@ -13,6 +13,7 @@ import {
     timeSlots,
     user,
     account,
+    session,
 } from "~/server/db/schema";
 import { generatePassword } from "~/lib/password-generator";
 import { sendAdminInvitationEmail } from "~/server/email";
@@ -544,5 +545,126 @@ export const superAdminRouter = createTRPCRouter({
                     message: "Failed to change password",
                 });
             }
+        }),
+
+    getAdminProfile: superAdminProcedure
+        .input(z.object({ managerId: z.number().int() }))
+        .query(async ({ input }) => {
+            const manager = await db.query.managers.findFirst({
+                where: eq(managers.id, input.managerId),
+            });
+
+            if (!manager) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Manager not found",
+                });
+            }
+
+            // Get user info
+            const userData = await db.query.user.findFirst({
+                where: eq(user.id, manager.authId),
+            });
+
+            if (!userData) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "User not found",
+                });
+            }
+
+            // Get active sessions count
+            const [activeSessions] = await db
+                .select({ count: count(session.id) })
+                .from(session)
+                .where(eq(session.userId, manager.authId));
+
+            // Get all sessions for this user
+            const userSessions = await db
+                .select({
+                    id: session.id,
+                    createdAt: session.createdAt,
+                    expiresAt: session.expiresAt,
+                    userAgent: session.userAgent,
+                    ipAddress: session.ipAddress,
+                })
+                .from(session)
+                .where(eq(session.userId, manager.authId))
+                .orderBy(desc(session.createdAt));
+
+            return {
+                id: manager.id,
+                name: userData.name,
+                email: userData.email,
+                role: manager.role,
+                createdAt: manager.createdAt,
+                activeSessionsCount: activeSessions?.count ?? 0,
+                sessions: userSessions,
+            };
+        }),
+
+    removeAllSessions: superAdminProcedure
+        .input(z.object({ managerId: z.number().int() }))
+        .mutation(async ({ input }) => {
+            const manager = await db.query.managers.findFirst({
+                where: eq(managers.id, input.managerId),
+            });
+
+            if (!manager) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Manager not found",
+                });
+            }
+
+            const result = await db
+                .delete(session)
+                .where(eq(session.userId, manager.authId))
+                .returning({ id: session.id });
+
+            return {
+                success: true,
+                removedCount: result.length,
+            };
+        }),
+
+    updateAdminName: superAdminProcedure
+        .input(
+            z.object({
+                managerId: z.number().int(),
+                name: z.string().min(1).max(255),
+            }),
+        )
+        .mutation(async ({ input }) => {
+            const manager = await db.query.managers.findFirst({
+                where: eq(managers.id, input.managerId),
+            });
+
+            if (!manager) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Manager not found",
+                });
+            }
+
+            const updated = await db
+                .update(user)
+                .set({
+                    name: input.name,
+                })
+                .where(eq(user.id, manager.authId))
+                .returning({ id: user.id, name: user.name });
+
+            if (!updated || updated.length === 0) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Failed to update admin name",
+                });
+            }
+
+            return {
+                success: true,
+                name: updated[0]!.name,
+            };
         }),
 });

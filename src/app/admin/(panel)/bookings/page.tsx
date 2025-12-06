@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "~/components/ui/card";
 import { Spinner } from "~/components/spinner";
 import { api, type RouterOutputs } from "~/trpc/react";
 import { format, parseISO, parse, isAfter, isBefore } from "date-fns";
 import { formatSlotRange } from "~/lib/utils";
-import { Phone } from "lucide-react";
+import { Phone, RotateCw } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -52,10 +52,13 @@ function getDotColor(booking: {
   return "bg-primary"; // Default color
 }
 
+const REFETCH_INTERVAL = 2 * 60 * 1000; // 2 minutes
+
 export default function BookingsPage() {
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
     null,
   );
+  const [isRefetching, setIsRefetching] = useState(false);
 
   const now = new Date();
   const currentDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -65,11 +68,27 @@ export default function BookingsPage() {
     data: bookings = [],
     isLoading,
     error,
+    refetch,
   } = api.admin.bookingsList.useQuery({
     limit: 50,
     date: currentDate,
     time: currentTime,
   });
+
+  // Auto-refetch every 2 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void refetch();
+    }, REFETCH_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [refetch]);
+
+  const handleManualRefresh = async () => {
+    setIsRefetching(true);
+    await refetch();
+    setIsRefetching(false);
+  };
 
   const utils = api.useContext();
   const bookingDetailsQuery = api.admin.bookingDetails.useQuery(
@@ -112,11 +131,13 @@ export default function BookingsPage() {
   if (isLoading) {
     return (
       <div className="space-y-6 pb-20">
-        <header>
-          <p className="text-muted-foreground text-xs tracking-wide uppercase">
-            View bookings
-          </p>
-          <h1 className="text-2xl font-semibold">Bookings Timeline</h1>
+        <header className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-muted-foreground text-xs tracking-wide uppercase">
+              View bookings
+            </p>
+            <h1 className="text-2xl font-semibold">Bookings Timeline</h1>
+          </div>
         </header>
         <div className="flex items-center justify-center py-12">
           <Spinner />
@@ -128,11 +149,25 @@ export default function BookingsPage() {
   if (error) {
     return (
       <div className="space-y-6 pb-20">
-        <header>
-          <p className="text-muted-foreground text-xs tracking-wide uppercase">
-            View bookings
-          </p>
-          <h1 className="text-2xl font-semibold">Bookings Timeline</h1>
+        <header className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-muted-foreground text-xs tracking-wide uppercase">
+              View bookings
+            </p>
+            <h1 className="text-2xl font-semibold">Bookings Timeline</h1>
+          </div>
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefetching}
+            aria-label="Refresh bookings"
+            className="bg-muted hover:bg-muted/80 mt-1 flex h-10 w-10 items-center justify-center rounded-full transition-all disabled:opacity-50"
+          >
+            <RotateCw
+              className={`h-4 w-4 transition-transform ${
+                isRefetching ? "animate-spin" : ""
+              }`}
+            />
+          </button>
         </header>
         <Card className="border-border/60 bg-destructive/10 text-destructive rounded-3xl p-4 text-center text-sm">
           Failed to load bookings. Please try again.
@@ -143,14 +178,28 @@ export default function BookingsPage() {
 
   return (
     <div className="space-y-6 pb-20">
-      <header>
-        <p className="text-muted-foreground text-xs tracking-wide uppercase">
-          View bookings
-        </p>
-        <h1 className="text-2xl font-semibold">Bookings Timeline</h1>
-        <p className="text-muted-foreground text-sm">
-          Share verification codes with players as they arrive.
-        </p>
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-muted-foreground text-xs tracking-wide uppercase">
+            View bookings
+          </p>
+          <h1 className="text-2xl font-semibold">Bookings Timeline</h1>
+          <p className="text-muted-foreground text-sm">
+            Share verification codes with players as they arrive.
+          </p>
+        </div>
+        <button
+          onClick={handleManualRefresh}
+          disabled={isRefetching}
+          aria-label="Refresh bookings"
+          className="bg-muted hover:bg-muted/80 mt-1 flex h-10 w-10 items-center justify-center rounded-full transition-all disabled:opacity-50"
+        >
+          <RotateCw
+            className={`h-4 w-4 transition-transform ${
+              isRefetching ? "animate-spin" : ""
+            }`}
+          />
+        </button>
       </header>
 
       {bookings.length === 0 ? (

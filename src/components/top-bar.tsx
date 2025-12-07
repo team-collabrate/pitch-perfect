@@ -29,12 +29,12 @@ export function TopBar() {
               key={code}
               type="button"
               onClick={() => setLanguage(code)}
-              aria-pressed={language === code ? "true" : "false"}
+              aria-pressed={language === code}
               className={cn(
                 "rounded-full px-3 py-1 font-medium transition-colors",
                 language === code
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
+                  : " hover:text-foreground",
               )}
             >
               {code.toUpperCase()}

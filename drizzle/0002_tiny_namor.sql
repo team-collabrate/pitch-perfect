@@ -1,0 +1,1 @@
+ALTER TABLE "Aruppukottai_turf_gallery" ALTER COLUMN "title" DROP NOT NULL;

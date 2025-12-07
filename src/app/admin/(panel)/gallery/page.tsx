@@ -2,12 +2,26 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { Button } from "~/components/ui/button";
-import { api } from "~/trpc/react";
+import { toast } from "sonner";
+
 import { GalleryUploadForm } from "~/components/admin/gallery-upload-form";
+import { Button } from "~/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import { api } from "~/trpc/react";
 
 export default function AdminGalleryPage() {
   const [showUploadForm, setShowUploadForm] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<{
+    id: number;
+    title: string;
+  } | null>(null);
 
   const {
     data: galleryItems,
@@ -17,26 +31,27 @@ export default function AdminGalleryPage() {
   const deleteMutation = api.gallery.delete.useMutation();
   const toggleActiveMutation = api.gallery.toggleActive.useMutation();
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this item?")) return;
+  const confirmDelete = async () => {
+    if (!deleteItem) return;
 
-    try {
-      await deleteMutation.mutateAsync({ id });
-      alert("Gallery item deleted successfully");
-      refetch();
-    } catch (error) {
-      alert("Failed to delete gallery item");
-    }
+    await toast.promise(deleteMutation.mutateAsync({ id: deleteItem.id }), {
+      loading: "Deleting gallery item...",
+      success: "Gallery item deleted",
+      error: "Failed to delete gallery item",
+    });
+
+    setDeleteItem(null);
+    refetch();
   };
 
   const handleToggleActive = async (ids: number[], isActive: boolean) => {
-    try {
-      await toggleActiveMutation.mutateAsync({ ids, isActive });
-      alert(`Gallery items ${isActive ? "activated" : "deactivated"}`);
-      refetch();
-    } catch (error) {
-      alert("Failed to update gallery items");
-    }
+    await toast.promise(toggleActiveMutation.mutateAsync({ ids, isActive }), {
+      loading: `Updating ${ids.length} item(s)...`,
+      success: `Gallery items ${isActive ? "activated" : "deactivated"}`,
+      error: "Failed to update gallery items",
+    });
+
+    refetch();
   };
 
   if (isLoading) {
@@ -170,7 +185,9 @@ export default function AdminGalleryPage() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() =>
+                            setDeleteItem({ id: item.id, title: item.title })
+                          }
                           disabled={deleteMutation.isPending}
                         >
                           Delete
@@ -214,6 +231,42 @@ export default function AdminGalleryPage() {
           </div>
         </>
       )}
+
+      <Dialog
+        open={deleteItem !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteItem(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete gallery item</DialogTitle>
+            <DialogDescription>
+              {deleteItem
+                ? `Are you sure you want to delete “${deleteItem.title}”? This action cannot be undone.`
+                : "Are you sure you want to delete this item?"}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteItem(null)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

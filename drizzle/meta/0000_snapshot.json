@@ -1,11 +1,11 @@
 {
-  "id": "daab3c22-6157-428f-aff8-4cb25fb07992",
+  "id": "dbed3ba7-2e0f-49fe-b114-c046b7540506",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.account": {
-      "name": "account",
+    "public.Aruppukottai_turf_account": {
+      "name": "Aruppukottai_turf_account",
       "schema": "",
       "columns": {
         "id": {
@@ -14,50 +14,50 @@
           "primaryKey": true,
           "notNull": true
         },
-        "account_id": {
-          "name": "account_id",
+        "accountId": {
+          "name": "accountId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "provider_id": {
-          "name": "provider_id",
+        "providerId": {
+          "name": "providerId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "user_id": {
-          "name": "user_id",
+        "userId": {
+          "name": "userId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "access_token": {
-          "name": "access_token",
+        "accessToken": {
+          "name": "accessToken",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "refresh_token": {
-          "name": "refresh_token",
+        "refreshToken": {
+          "name": "refreshToken",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "id_token": {
-          "name": "id_token",
+        "idToken": {
+          "name": "idToken",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "access_token_expires_at": {
-          "name": "access_token_expires_at",
+        "accessTokenExpiresAt": {
+          "name": "accessTokenExpiresAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
-        "refresh_token_expires_at": {
-          "name": "refresh_token_expires_at",
+        "refreshTokenExpiresAt": {
+          "name": "refreshTokenExpiresAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
@@ -74,14 +74,14 @@
           "primaryKey": false,
           "notNull": false
         },
-        "created_at": {
-          "name": "created_at",
+        "createdAt": {
+          "name": "createdAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true
         },
-        "updated_at": {
-          "name": "updated_at",
+        "updatedAt": {
+          "name": "updatedAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true
@@ -89,12 +89,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "account_user_id_user_id_fk": {
-          "name": "account_user_id_user_id_fk",
-          "tableFrom": "account",
-          "tableTo": "user",
+        "Aruppukottai_turf_account_userId_Aruppukottai_turf_user_id_fk": {
+          "name": "Aruppukottai_turf_account_userId_Aruppukottai_turf_user_id_fk",
+          "tableFrom": "Aruppukottai_turf_account",
+          "tableTo": "Aruppukottai_turf_user",
           "columnsFrom": [
-            "user_id"
+            "userId"
           ],
           "columnsTo": [
             "id"
@@ -805,6 +805,193 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.Aruppukottai_turf_gallery": {
+      "name": "Aruppukottai_turf_gallery",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "byDefault",
+            "name": "Aruppukottai_turf_gallery_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "altText": {
+          "name": "altText",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mediaType": {
+          "name": "mediaType",
+          "type": "gallery_media_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'image'"
+        },
+        "status": {
+          "name": "status",
+          "type": "gallery_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'approved'"
+        },
+        "cloudinaryPublicId": {
+          "name": "cloudinaryPublicId",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cloudinaryUrl": {
+          "name": "cloudinaryUrl",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "thumbnailUrl": {
+          "name": "thumbnailUrl",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credits": {
+          "name": "credits",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phoneNumber": {
+          "name": "phoneNumber",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "displayOrder": {
+          "name": "displayOrder",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "uploadedBy": {
+          "name": "uploadedBy",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "gallery_display_order_idx": {
+          "name": "gallery_display_order_idx",
+          "columns": [
+            {
+              "expression": "displayOrder",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "gallery_status_idx": {
+          "name": "gallery_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "gallery_phone_number_idx": {
+          "name": "gallery_phone_number_idx",
+          "columns": [
+            {
+              "expression": "phoneNumber",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "Aruppukottai_turf_gallery_uploadedBy_Aruppukottai_turf_manager_id_fk": {
+          "name": "Aruppukottai_turf_gallery_uploadedBy_Aruppukottai_turf_manager_id_fk",
+          "tableFrom": "Aruppukottai_turf_gallery",
+          "tableTo": "Aruppukottai_turf_manager",
+          "columnsFrom": [
+            "uploadedBy"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "Aruppukottai_turf_gallery_cloudinaryPublicId_unique": {
+          "name": "Aruppukottai_turf_gallery_cloudinaryPublicId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "cloudinaryPublicId"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.Aruppukottai_turf_manager_log": {
       "name": "Aruppukottai_turf_manager_log",
       "schema": "",
@@ -938,10 +1125,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "Aruppukottai_turf_manager_authId_user_id_fk": {
-          "name": "Aruppukottai_turf_manager_authId_user_id_fk",
+        "Aruppukottai_turf_manager_authId_Aruppukottai_turf_user_id_fk": {
+          "name": "Aruppukottai_turf_manager_authId_Aruppukottai_turf_user_id_fk",
           "tableFrom": "Aruppukottai_turf_manager",
-          "tableTo": "user",
+          "tableTo": "Aruppukottai_turf_user",
           "columnsFrom": [
             "authId"
           ],
@@ -966,8 +1153,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.session": {
-      "name": "session",
+    "public.Aruppukottai_turf_session": {
+      "name": "Aruppukottai_turf_session",
       "schema": "",
       "columns": {
         "id": {
@@ -976,8 +1163,8 @@
           "primaryKey": true,
           "notNull": true
         },
-        "expires_at": {
-          "name": "expires_at",
+        "expiresAt": {
+          "name": "expiresAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true
@@ -988,32 +1175,32 @@
           "primaryKey": false,
           "notNull": true
         },
-        "created_at": {
-          "name": "created_at",
+        "createdAt": {
+          "name": "createdAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true
         },
-        "updated_at": {
-          "name": "updated_at",
+        "updatedAt": {
+          "name": "updatedAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true
         },
-        "ip_address": {
-          "name": "ip_address",
+        "ipAddress": {
+          "name": "ipAddress",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "user_agent": {
-          "name": "user_agent",
+        "userAgent": {
+          "name": "userAgent",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "user_id": {
-          "name": "user_id",
+        "userId": {
+          "name": "userId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -1021,12 +1208,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "session_user_id_user_id_fk": {
-          "name": "session_user_id_user_id_fk",
-          "tableFrom": "session",
-          "tableTo": "user",
+        "Aruppukottai_turf_session_userId_Aruppukottai_turf_user_id_fk": {
+          "name": "Aruppukottai_turf_session_userId_Aruppukottai_turf_user_id_fk",
+          "tableFrom": "Aruppukottai_turf_session",
+          "tableTo": "Aruppukottai_turf_user",
           "columnsFrom": [
-            "user_id"
+            "userId"
           ],
           "columnsTo": [
             "id"
@@ -1037,8 +1224,8 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "session_token_unique": {
-          "name": "session_token_unique",
+        "Aruppukottai_turf_session_token_unique": {
+          "name": "Aruppukottai_turf_session_token_unique",
           "nullsNotDistinct": false,
           "columns": [
             "token"
@@ -1166,8 +1353,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.user": {
-      "name": "user",
+    "public.Aruppukottai_turf_user": {
+      "name": "Aruppukottai_turf_user",
       "schema": "",
       "columns": {
         "id": {
@@ -1188,8 +1375,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "email_verified": {
-          "name": "email_verified",
+        "emailVerified": {
+          "name": "emailVerified",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true
@@ -1200,14 +1387,14 @@
           "primaryKey": false,
           "notNull": false
         },
-        "created_at": {
-          "name": "created_at",
+        "createdAt": {
+          "name": "createdAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true
         },
-        "updated_at": {
-          "name": "updated_at",
+        "updatedAt": {
+          "name": "updatedAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true
@@ -1217,8 +1404,8 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "user_email_unique": {
-          "name": "user_email_unique",
+        "Aruppukottai_turf_user_email_unique": {
+          "name": "Aruppukottai_turf_user_email_unique",
           "nullsNotDistinct": false,
           "columns": [
             "email"
@@ -1229,8 +1416,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.verification": {
-      "name": "verification",
+    "public.Aruppukottai_turf_verification": {
+      "name": "Aruppukottai_turf_verification",
       "schema": "",
       "columns": {
         "id": {
@@ -1251,20 +1438,20 @@
           "primaryKey": false,
           "notNull": true
         },
-        "expires_at": {
-          "name": "expires_at",
+        "expiresAt": {
+          "name": "expiresAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true
         },
-        "created_at": {
-          "name": "created_at",
+        "createdAt": {
+          "name": "createdAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
-        "updated_at": {
-          "name": "updated_at",
+        "updatedAt": {
+          "name": "updatedAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
@@ -1347,6 +1534,23 @@
         "regular",
         "vip",
         "new"
+      ]
+    },
+    "public.gallery_media_type": {
+      "name": "gallery_media_type",
+      "schema": "public",
+      "values": [
+        "image",
+        "video"
+      ]
+    },
+    "public.gallery_status": {
+      "name": "gallery_status",
+      "schema": "public",
+      "values": [
+        "approved",
+        "inactive",
+        "discarded"
       ]
     },
     "public.language": {

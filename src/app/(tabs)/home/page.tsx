@@ -9,6 +9,7 @@ import { Card } from "~/components/ui/card";
 import { Carousel } from "~/components/ui/carousel";
 import { useLanguage } from "~/lib/language-context";
 import { LocationWidget } from "~/components/location-widget";
+import { api } from "~/trpc/react";
 
 const copy = {
   en: {
@@ -60,28 +61,20 @@ const highlights = [
   },
 ];
 
-const bannerSlides = [
-  {
-    id: "banner-1",
-    src: "https://picsum.photos/seed/banner-1/800/300",
-    alt: "Pitch Perfect Banner 1",
-  },
-  {
-    id: "banner-2",
-    src: "https://picsum.photos/seed/banner-2/800/300",
-    alt: "Pitch Perfect Banner 2",
-  },
-  {
-    id: "banner-3",
-    src: "https://picsum.photos/seed/banner-3/800/300",
-    alt: "Pitch Perfect Banner 3",
-  },
-];
-
 export default function HomePage() {
   const { language } = useLanguage();
+  const { data: bannerItems } = api.banner.getAll.useQuery();
 
   const strings = useMemo(() => copy[language], [language]);
+  const slides = useMemo(() => {
+    return (
+      bannerItems?.filter((item) => item.mediaType === "image").map((item) => ({
+        id: String(item.id),
+        src: item.cloudinaryUrl,
+        alt: item.altText || item.title || "Banner",
+      })) ?? []
+    );
+  }, [bannerItems]);
   const quickActions = [
     {
       key: "book",
@@ -108,7 +101,9 @@ export default function HomePage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
-      <Carousel slides={bannerSlides} autoPlayInterval={4000} />
+      {slides.length > 0 ? (
+        <Carousel slides={slides} autoPlayInterval={4000} />
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3">
         {quickActions.map(({ key, href, label, desc, Icon, cardGlow }) => (

@@ -14,6 +14,7 @@ import {
   Plus,
 } from "lucide-react";
 
+import { BannerUploadForm } from "~/components/admin/banner-upload-form";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -26,6 +27,7 @@ import {
 import { api } from "~/trpc/react";
 
 export default function AdminBannerPage() {
+  const [showUploadForm, setShowUploadForm] = useState(false);
   const [deleteItem, setDeleteItem] = useState<{
     id: number;
     title: string | null;
@@ -79,7 +81,27 @@ export default function AdminBannerPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Banner Management</h1>
+        <Button onClick={() => setShowUploadForm(true)} size="sm">
+          <Plus className="h-5 w-5" />
+        </Button>
       </div>
+
+      <Dialog open={showUploadForm} onOpenChange={setShowUploadForm}>
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Upload Banner</DialogTitle>
+            <DialogDescription>
+              Add new images, videos, or GIFs to the banner rotation
+            </DialogDescription>
+          </DialogHeader>
+          <BannerUploadForm
+            onUploadSuccess={() => {
+              setShowUploadForm(false);
+              refetch();
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
       {!bannerItems || bannerItems.length === 0 ? (
         <div className="flex items-center justify-center rounded-lg border border-dashed p-12">
@@ -140,7 +162,9 @@ export default function AdminBannerPage() {
                       </td>
                       <td className="px-2 py-3">
                         <div className="max-w-xs">
-                          <p className="truncate font-medium">{item.title || "Untitled"}</p>
+                          <p className="truncate font-medium">
+                            {item.title || "Untitled"}
+                          </p>
                           {item.description && (
                             <p className="text-muted-foreground truncate text-xs">
                               {item.description}
@@ -164,7 +188,9 @@ export default function AdminBannerPage() {
                           {item.status === "active" ? (
                             <Check className="h-5 w-5 text-green-600" />
                           ) : item.status === "draft" ? (
-                            <span className="text-muted-foreground text-xs">Draft</span>
+                            <span className="text-muted-foreground text-xs">
+                              Draft
+                            </span>
                           ) : (
                             <X className="h-5 w-5 text-red-600" />
                           )}
@@ -175,6 +201,15 @@ export default function AdminBannerPage() {
                       </td>
                       <td className="px-2 py-3">
                         <div className="flex gap-2">
+                          <Link href={`/admin/config/banner/${item.id}/edit`}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <Button
                             variant="destructive"
                             size="sm"

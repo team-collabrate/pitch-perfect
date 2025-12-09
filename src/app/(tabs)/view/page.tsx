@@ -345,6 +345,7 @@ export default function ViewPage() {
       const url = await toPngImage(ticketRef.current, {
         cacheBust: true,
         backgroundColor: background,
+        skipFonts: true,
       });
       const link = document.createElement("a");
       link.href = url;
@@ -602,20 +603,16 @@ export default function ViewPage() {
                   </span>
                 </div>
                 <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed px-4 py-3">
-                  <span className="text-muted-foreground text-xs uppercase tracking-wide">
+                  <span className="text-muted-foreground text-xs tracking-wide uppercase">
                     Scan for booking details
                   </span>
                   <QRCodeSVG
                     value={ticketQrValue}
-                    size={156}
-                    bgColor={background}
-                    fgColor="#111827"
-                    level="M"
-                    includeMargin
+                    size={192}
+                    bgColor="#ffffff"
+                    fgColor="#000000"
+                    marginSize={2}
                   />
-                  <span className="text-muted-foreground text-[11px] text-center">
-                    Contains name, phone, slot, amount, payment mode, and verification code.
-                  </span>
                 </div>
               </div>
               <div className="flex flex-col gap-2 px-6">

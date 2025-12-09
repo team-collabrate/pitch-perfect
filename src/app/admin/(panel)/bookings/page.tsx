@@ -30,7 +30,7 @@ function getDotColor(booking: {
   slot?: { from?: string; to?: string; date?: string } | null;
 }): string {
   if (!booking.slot?.date || !booking.slot?.from || !booking.slot?.to) {
-    return "bg-primary"; // Default color if no slot data
+    return "bg-gray-400"; // Default color if no slot data
   }
 
   const now = new Date();
@@ -38,18 +38,23 @@ function getDotColor(booking: {
   const slotStart = parse(booking.slot.from, "HH:mm:ss", slotDate);
   const slotEnd = parse(booking.slot.to, "HH:mm:ss", slotDate);
 
+  // Check if booking has ended (current time is after the slot end)
+  if (isAfter(now, slotEnd)) {
+    return "bg-red-500"; // Ended - red
+  }
+
   // Check if booking is active (current time is within the slot)
   if (isAfter(now, slotStart) && isBefore(now, slotEnd)) {
-    return "bg-green-500"; // Active - green
+    return "bg-green-500"; // Active now - green
   }
 
   // Check if booking is within next hour
   const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
-  if (!isAfter(now, slotStart) && isBefore(slotStart, oneHourFromNow)) {
-    return "bg-yellow-500"; // Next hour - yellow
+  if (isBefore(slotStart, oneHourFromNow)) {
+    return "bg-yellow-500"; // Next active - yellow
   }
 
-  return "bg-primary"; // Default color
+  return "bg-gray-400"; // Upcoming - gray
 }
 
 const REFETCH_INTERVAL = 2 * 60 * 1000; // 2 minutes
@@ -363,7 +368,7 @@ export default function BookingsPage() {
                         <div key={booking.id}>
                           <div className="flex gap-4">
                             <div className="relative flex flex-col items-center pt-1">
-                              <div className="bg-primary h-3 w-3 rounded-full"></div>
+                              <div className={`${getDotColor(booking)} h-3 w-3 rounded-full`}></div>
                             </div>
                             <Card
                               onClick={() => setSelectedBookingId(booking.id)}

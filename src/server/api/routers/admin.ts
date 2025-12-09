@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { count, desc, eq, sum, sql, asc } from "drizzle-orm";
+import { count, desc, eq, sum, sql, asc, and, or, gte } from "drizzle-orm";
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
@@ -54,52 +54,43 @@ export const adminRouter = createTRPCRouter({
             }),
         )
         .query(async ({ input }) => {
-            const BUFFER_MINUTES = 15;
+            const { limit, date, time } = input;
 
-            console.log("[bookingsList] Input:", { limit: input.limit, date: input.date, time: input.time });
+            // Build WHERE conditions
+            const conditions = [];
 
-            let whereCondition;
+            if (date && time) {
+                // Calculate time with 60-minute buffer (subtract 60 minutes)
+                const [hours, minutes] = time.split(':').map(Number);
+                const totalMinutes = (hours ?? 0) * 60 + (minutes ?? 0);
+                const bufferedMinutes = Math.max(0, totalMinutes - 60);
+                const bufferedHours = Math.floor(bufferedMinutes / 60);
+                const bufferedMins = bufferedMinutes % 60;
+                const bufferedTime = `${String(bufferedHours).padStart(2, '0')}:${String(bufferedMins).padStart(2, '0')}`;
 
-            if (input.date && input.time) {
-                // Parse date and time - keep it as local time, don't use UTC
-                const dateParts = input.date.split("-");
-                const year = parseInt(dateParts[0] ?? "2025", 10);
-                const month = parseInt(dateParts[1] ?? "01", 10);
-                const day = parseInt(dateParts[2] ?? "01", 10);
-                const timeParts = input.time.split(":");
-                const hours = parseInt(timeParts[0] ?? "0", 10);
-                const minutes = parseInt(timeParts[1] ?? "0", 10);
+                // Calculate next day
+                const currentDate = new Date(date);
+                const nextDate = new Date(currentDate);
+                nextDate.setDate(nextDate.getDate() + 1);
+                const nextDateStr = nextDate.toISOString().split('T')[0];
 
-                // Create date in local timezone
-                const currentDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
-
-                console.log("[bookingsList] Date and time provided:", { date: input.date, time: input.time, currentDate: currentDate.toISOString() });
-
-                // Calculate from time: subtract buffer minutes
-                const fromDate = new Date(currentDate.getTime() - BUFFER_MINUTES * 60 * 1000);
-                const fromTime = `${String(fromDate.getHours()).padStart(2, "0")}:${String(fromDate.getMinutes()).padStart(2, "0")}`;
-                const fromDateStr = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, "0")}-${String(fromDate.getDate()).padStart(2, "0")}`;
-
-                console.log("[bookingsList] Calculated from point:", { fromDateStr, fromTime, fromDate: fromDate.toISOString() });
-
-                whereCondition = sql`(${timeSlots.date}::text > ${fromDateStr} 
-                    OR (${timeSlots.date}::text = ${fromDateStr} AND ${timeSlots.from}::text >= ${fromTime}))
-                    AND ${timeSlots.date} IS NOT NULL 
-                    AND ${timeSlots.from} IS NOT NULL`;
-
-                console.log("[bookingsList] Where condition (with date/time):", { fromDateStr, fromTime });
-            } else {
-                // Default: show all future bookings from today onwards
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const todayStr = today.toISOString().split("T")[0];
-                console.log("[bookingsList] No date/time provided, showing all future bookings from:", todayStr);
-                whereCondition = sql`${timeSlots.date}::text >= ${todayStr} 
-                    AND ${timeSlots.date} IS NOT NULL 
-                    AND ${timeSlots.from} IS NOT NULL`;
+                conditions.push(
+                    or(
+                        // Current day bookings after buffered time
+                        and(
+                            eq(timeSlots.date, date),
+                            gte(timeSlots.from, bufferedTime)
+                        ),
+                        // All next day bookings
+                        eq(timeSlots.date, nextDateStr!)
+                    )
+                );
+            } else if (date) {
+                // If only date provided, show all bookings for that date
+                conditions.push(eq(timeSlots.date, date));
             }
 
-            const results = await db
+            const records = await db
                 .select({
                     id: bookings.id,
                     phoneNumber: bookings.phoneNumber,
@@ -117,27 +108,11 @@ export const adminRouter = createTRPCRouter({
                 .from(bookings)
                 .leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
                 .leftJoin(customers, eq(bookings.phoneNumber, customers.number))
-                .where(whereCondition)
+                .where(conditions.length > 0 ? and(...conditions) : undefined)
                 .orderBy(asc(timeSlots.date), asc(timeSlots.from))
-                .limit(input.limit);
+                .limit(limit);
 
-            console.log(`[bookingsList] Query returned ${results.length} bookings`);
-            if (results.length > 0) {
-                console.log("[bookingsList] First booking:", {
-                    name: results[0]?.name,
-                    phone: results[0]?.phoneNumber,
-                    date: results[0]?.slot?.date,
-                    time: results[0]?.slot?.from,
-                });
-                console.log("[bookingsList] Last booking:", {
-                    name: results[results.length - 1]?.name,
-                    phone: results[results.length - 1]?.phoneNumber,
-                    date: results[results.length - 1]?.slot?.date,
-                    time: results[results.length - 1]?.slot?.from,
-                });
-            }
-
-            return results;
+            return records;
         }),
 
     bookingDetails: managerProcedure

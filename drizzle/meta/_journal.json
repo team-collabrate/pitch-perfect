@@ -22,6 +22,13 @@
       "when": 1765107841007,
       "tag": "0002_tiny_namor",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1765269918178,
+      "tag": "0003_purple_flatman",
+      "breakpoints": true
     }
   ]
 }

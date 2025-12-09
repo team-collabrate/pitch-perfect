@@ -130,26 +130,32 @@ export const bookings = createTable("booking", (d) => ({
 
 /* 5. Banners (references managers) */
 export const bannerTypeEnum = pgEnum("banner_type", ["image", "video", "gif"]);
+export const bannerStatusEnum = pgEnum("banner_status", ["active", "inactive", "draft"]);
 
 export const banners = createTable("banner", (d) => ({
   id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
 
-  title: d.varchar({ length: 100 }).notNull(),
+  title: d.varchar({ length: 200 }),
   description: d.text(),
   altText: d.varchar({ length: 256 }),
-  type: d.varchar({ length: 10 }).notNull(),
-  url: d.varchar({ length: 256 }).notNull(),
-  bannerType: bannerTypeEnum().notNull().default("image"),
-  language: languageEnum().notNull().default("en"),
-  bannerIndex: d.integer().notNull().default(0),
+
+  mediaType: bannerTypeEnum().notNull().default("image"),
+  status: bannerStatusEnum().notNull().default("active"),
+  cloudinaryPublicId: d.varchar({ length: 255 }).notNull().unique(),
+  cloudinaryUrl: d.varchar({ length: 512 }).notNull(),
+
+  displayOrder: d.integer().notNull().default(0),
 
   uploadedBy: d.integer().references(() => managers.id),
   createdAt: d
     .timestamp({ withTimezone: true })
     .$defaultFn(() => new Date())
     .notNull(),
-  expireAt: d.timestamp({ withTimezone: true }),
-}));
+  updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+}), (t) => [
+  index("banner_display_order_idx").on(t.displayOrder),
+  index("banner_status_idx").on(t.status),
+]);
 
 export const actionsEnum = pgEnum("manager_actions", [
   // Time Slot Actions

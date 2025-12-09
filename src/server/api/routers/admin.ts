@@ -54,41 +54,38 @@ export const adminRouter = createTRPCRouter({
             }),
         )
         .query(async ({ input }) => {
-            const { limit, date, time } = input;
+            const { limit, date: inputDate, time: inputTime } = input;
+
+            // Get server time if not provided
+            const now = new Date();
+            const currentDate = inputDate ?? now.toISOString().split('T')[0]!;
+            const currentTime = inputTime ?? `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            // Calculate time with 60-minute buffer (subtract 60 minutes)
+            const [hours, minutes] = currentTime.split(':').map(Number);
+            const totalMinutes = (hours ?? 0) * 60 + (minutes ?? 0);
+            const bufferedMinutes = Math.max(0, totalMinutes - 60);
+            const bufferedHours = Math.floor(bufferedMinutes / 60);
+            const bufferedMins = bufferedMinutes % 60;
+            const bufferedTime = `${String(bufferedHours).padStart(2, '0')}:${String(bufferedMins).padStart(2, '0')}`;
+
+            // Calculate next day
+            const currentDateObj = new Date(currentDate);
+            currentDateObj.setDate(currentDateObj.getDate() + 1);
+            const nextDateStr = currentDateObj.toISOString().split('T')[0]!;
 
             // Build WHERE conditions
-            const conditions = [];
-
-            if (date && time) {
-                // Calculate time with 60-minute buffer (subtract 60 minutes)
-                const [hours, minutes] = time.split(':').map(Number);
-                const totalMinutes = (hours ?? 0) * 60 + (minutes ?? 0);
-                const bufferedMinutes = Math.max(0, totalMinutes - 60);
-                const bufferedHours = Math.floor(bufferedMinutes / 60);
-                const bufferedMins = bufferedMinutes % 60;
-                const bufferedTime = `${String(bufferedHours).padStart(2, '0')}:${String(bufferedMins).padStart(2, '0')}`;
-
-                // Calculate next day
-                const currentDate = new Date(date);
-                const nextDate = new Date(currentDate);
-                nextDate.setDate(nextDate.getDate() + 1);
-                const nextDateStr = nextDate.toISOString().split('T')[0];
-
-                conditions.push(
-                    or(
-                        // Current day bookings after buffered time
-                        and(
-                            eq(timeSlots.date, date),
-                            gte(timeSlots.from, bufferedTime)
-                        ),
-                        // All next day bookings
-                        eq(timeSlots.date, nextDateStr!)
-                    )
-                );
-            } else if (date) {
-                // If only date provided, show all bookings for that date
-                conditions.push(eq(timeSlots.date, date));
-            }
+            const conditions = [
+                or(
+                    // Current day bookings after buffered time
+                    and(
+                        eq(timeSlots.date, currentDate),
+                        gte(timeSlots.from, bufferedTime)
+                    ),
+                    // All next day bookings
+                    eq(timeSlots.date, nextDateStr)
+                )
+            ];
 
             const records = await db
                 .select({
@@ -108,7 +105,7 @@ export const adminRouter = createTRPCRouter({
                 .from(bookings)
                 .leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
                 .leftJoin(customers, eq(bookings.phoneNumber, customers.number))
-                .where(conditions.length > 0 ? and(...conditions) : undefined)
+                .where(and(...conditions))
                 .orderBy(asc(timeSlots.date), asc(timeSlots.from))
                 .limit(limit);
 

@@ -368,7 +368,9 @@ export default function BookingsPage() {
                         <div key={booking.id}>
                           <div className="flex gap-4">
                             <div className="relative flex flex-col items-center pt-1">
-                              <div className={`${getDotColor(booking)} h-3 w-3 rounded-full`}></div>
+                              <div
+                                className={`${getDotColor(booking)} h-3 w-3 rounded-full`}
+                              ></div>
                             </div>
                             <Card
                               onClick={() => setSelectedBookingId(booking.id)}

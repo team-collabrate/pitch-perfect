@@ -109,12 +109,12 @@ export const bookingRouter = createTRPCRouter({
             if (customer[0].email) {
                 try {
                     await sendBookingConfirmation(customer[0].email, {
-                        customerName: customer[0].name,
+                        customerName: customer[0].name ?? "Customer",
                         bookingIds: result.map(b => b.id.toString()),
                         timeSlots: bookingsWithSlots.map(b => ({
-                            date: b.timeSlot.date ?? "",
-                            from: b.timeSlot.from ?? "",
-                            to: b.timeSlot.to ?? "",
+                            date: b.timeSlot?.date ?? "",
+                            from: b.timeSlot?.from ?? "",
+                            to: b.timeSlot?.to ?? "",
                         })),
                         bookingType: input.bookingType,
                         totalAmount: totalAmount,
@@ -165,5 +165,97 @@ export const bookingRouter = createTRPCRouter({
                 .orderBy(desc(bookings.createdAt));
 
             return result;
+        }),
+
+    // Reschedule a booking to a new time slot
+    reschedule: publicProcedure
+        .input(
+            z.object({
+                bookingId: z.string().uuid("Invalid booking ID"),
+                phoneNumber: z.string().min(1, "Phone number is required"),
+                newTimeSlotId: z.number().int().positive("Invalid time slot ID"),
+            })
+        )
+        .mutation(async ({ input }) => {
+            // Check if booking exists and belongs to the phone number
+            const booking = await db
+                .select()
+                .from(bookings)
+                .where(
+                    and(
+                        eq(bookings.id, input.bookingId),
+                        eq(bookings.phoneNumber, input.phoneNumber)
+                    )
+                );
+
+            if (!booking[0]) {
+                throw new Error("Booking not found or does not belong to this phone number");
+            }
+
+            // Check if the new time slot is available
+            const newSlot = await db
+                .select()
+                .from(timeSlots)
+                .where(
+                    and(
+                        eq(timeSlots.id, input.newTimeSlotId),
+                        eq(timeSlots.status, "available")
+                    )
+                );
+
+            if (!newSlot[0]) {
+                throw new Error("Selected time slot is not available");
+            }
+
+            // Get the old time slot ID
+            const oldTimeSlotId = booking[0].timeSlotId;
+
+            // Update the booking to the new time slot
+            await db
+                .update(bookings)
+                .set({
+                    timeSlotId: input.newTimeSlotId,
+                    updatedAt: new Date(),
+                })
+                .where(eq(bookings.id, input.bookingId));
+
+            // Mark old slot as available
+            await db
+                .update(timeSlots)
+                .set({ status: "available" })
+                .where(eq(timeSlots.id, oldTimeSlotId));
+
+            // Mark new slot as booked
+            await db
+                .update(timeSlots)
+                .set({ status: "booked" })
+                .where(eq(timeSlots.id, input.newTimeSlotId));
+
+            // Return the updated booking with time slot info
+            const updatedBooking = await db
+                .select({
+                    id: bookings.id,
+                    phoneNumber: bookings.phoneNumber,
+                    timeSlotId: bookings.timeSlotId,
+                    status: bookings.status,
+                    amountPaid: bookings.amountPaid,
+                    totalAmount: bookings.totalAmount,
+                    verificationCode: bookings.verificationCode,
+                    bookingType: bookings.bookingType,
+                    createdAt: bookings.createdAt,
+                    updatedAt: bookings.updatedAt,
+                    timeSlot: {
+                        id: timeSlots.id,
+                        from: timeSlots.from,
+                        to: timeSlots.to,
+                        date: timeSlots.date,
+                        status: timeSlots.status,
+                    },
+                })
+                .from(bookings)
+                .leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+                .where(eq(bookings.id, input.bookingId));
+
+            return updatedBooking[0];
         }),
 });

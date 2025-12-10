@@ -83,24 +83,6 @@ const toPngImage = toPng as (
   options: { cacheBust?: boolean; backgroundColor?: string },
 ) => Promise<string>;
 
-const buildRescheduleSlots = () => {
-  const today = new Date();
-  return Array.from({ length: 7 }).map((_, index) => {
-    const date = format(addDays(today, index), "yyyy-MM-dd");
-    return {
-      date,
-      slots: SLOT_TEMPLATE.map(([from, to]) => ({
-        id: `${date}-${from}-${to}`,
-        date,
-        from,
-        to,
-      })),
-    };
-  });
-};
-
-const rescheduleSource = buildRescheduleSlots();
-
 const formatDate = (isoDate: string) => format(parseISO(isoDate), "EEE, MMM d");
 
 const MotionCard = motion(Card);
@@ -278,10 +260,19 @@ export default function ViewPage() {
     { enabled: !!storedPhone },
   );
 
-  const [activeTicket, setActiveTicket] = useState<DisplayBooking | null>(null);
+  // Reschedule mutation
+  const rescheduleMutation = api.booking.reschedule.useMutation();
+
   const [rescheduleTarget, setRescheduleTarget] =
     useState<DisplayBooking | null>(null);
+  const [activeTicket, setActiveTicket] = useState<DisplayBooking | null>(null);
   const ticketRef = useRef<HTMLDivElement | null>(null);
+
+  // Fetch available time slots
+  const { data: availableSlots } = api.timeSlot.getAllAvailable.useQuery(
+    { limit: 50 },
+    { enabled: !!rescheduleTarget },
+  );
 
   const ticketQrValue = useMemo(() => {
     if (!activeTicket) return "";
@@ -345,7 +336,6 @@ export default function ViewPage() {
       const url = await toPngImage(ticketRef.current, {
         cacheBust: true,
         backgroundColor: background,
-        skipFonts: true,
       });
       const link = document.createElement("a");
       link.href = url;
@@ -359,12 +349,40 @@ export default function ViewPage() {
   const [rescheduleDate, setRescheduleDate] = useState<string>("");
   const [rescheduleSlotId, setRescheduleSlotId] = useState<string>("");
 
+  // Process available slots grouped by date
+  const availableSlotsByDate = useMemo(() => {
+    if (!availableSlots) return [];
+
+    const grouped = availableSlots.reduce(
+      (acc, slot) => {
+        const date = slot.date;
+        acc[date] ??= [];
+        acc[date].push({
+          id: slot.id,
+          date: slot.date,
+          from: slot.from,
+          to: slot.to,
+        });
+        return acc;
+      },
+      {} as Record<
+        string,
+        Array<{ id: number; date: string; from: string; to: string }>
+      >,
+    );
+
+    return Object.entries(grouped).map(([date, slots]) => ({
+      date,
+      slots,
+    }));
+  }, [availableSlots]);
+
   const selectedSlot = useMemo(() => {
     if (!rescheduleDate || !rescheduleSlotId) return undefined;
-    return rescheduleSource
+    return availableSlotsByDate
       .find((entry) => entry.date === rescheduleDate)
-      ?.slots.find((slot) => slot.id === rescheduleSlotId);
-  }, [rescheduleDate, rescheduleSlotId]);
+      ?.slots.find((slot) => slot.id === parseInt(rescheduleSlotId));
+  }, [rescheduleDate, rescheduleSlotId, availableSlotsByDate]);
 
   const resetRescheduleState = () => {
     setRescheduleTarget(null);
@@ -372,11 +390,22 @@ export default function ViewPage() {
     setRescheduleSlotId("");
   };
 
-  const handleRescheduleConfirm = () => {
+  const handleRescheduleConfirm = async () => {
     if (!rescheduleTarget || !selectedSlot) return;
-    // TODO: Implement backend reschedule mutation
-    console.log("Reschedule:", rescheduleTarget.id, "to", selectedSlot);
-    resetRescheduleState();
+
+    try {
+      await rescheduleMutation.mutateAsync({
+        bookingId: rescheduleTarget.id,
+        phoneNumber: storedPhone,
+        newTimeSlotId: selectedSlot.id,
+      });
+      resetRescheduleState();
+      // Invalidate the getByNumber query to refetch bookings
+      await api.booking.getByNumber.invalidate();
+    } catch (error) {
+      console.error("Failed to reschedule:", error);
+      // TODO: Show error toast
+    }
   };
 
   // Handle phone number change
@@ -491,7 +520,7 @@ export default function ViewPage() {
               setRescheduleTarget(booking);
               setRescheduleDate(booking.date);
             }}
-            customerName={customer?.name}
+            customerName={customer?.name ?? undefined}
           />
 
           <BookingList
@@ -499,7 +528,7 @@ export default function ViewPage() {
             bookings={sorted.past}
             accent="muted"
             onOpenTicket={setActiveTicket}
-            customerName={customer?.name}
+            customerName={customer?.name ?? undefined}
           />
         </>
       )}
@@ -641,104 +670,93 @@ export default function ViewPage() {
 
       <AnimatePresence>
         {rescheduleTarget && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <Drawer
+            open={!!rescheduleTarget}
+            onOpenChange={(open) => !open && resetRescheduleState()}
           >
-            <MotionCard
-              className="w-full max-w-md space-y-4 p-6"
-              initial={{ opacity: 0, translateY: 50 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              exit={{ opacity: 0, translateY: 50 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-            >
-              <div>
-                <h3 className="text-lg font-semibold">Reschedule slot</h3>
-                <p className="text-muted-foreground text-sm">
+            <DrawerContent className="max-h-[85vh]">
+              <DrawerCloseButton />
+              <DrawerHeader>
+                <DrawerTitle>Reschedule slot</DrawerTitle>
+                <DrawerDescription>
                   Move booking for {formatDate(rescheduleTarget.date)}
-                </p>
+                </DrawerDescription>
+              </DrawerHeader>
+              <div className="px-6 pb-4">
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {availableSlotsByDate.map((entry) => {
+                    const isActive = rescheduleDate === entry.date;
+                    return (
+                      <motion.button
+                        key={entry.date}
+                        onClick={() => {
+                          setRescheduleDate(entry.date);
+                          setRescheduleSlotId("");
+                        }}
+                        className={cn(
+                          "flex min-w-24 flex-col items-center rounded-2xl border px-4 py-3 text-sm transition",
+                          isActive
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground",
+                        )}
+                        whileTap={{ scale: 0.94 }}
+                        transition={springy}
+                      >
+                        <span className="font-semibold uppercase">
+                          {format(parseISO(entry.date), "EEE")}
+                        </span>
+                        <span>{format(parseISO(entry.date), "MMM d")}</span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+                <div className="grid max-h-80 grid-cols-2 gap-3 overflow-y-auto pr-1">
+                  {(
+                    availableSlotsByDate.find(
+                      (entry) => entry.date === rescheduleDate,
+                    )?.slots ?? []
+                  ).map((slot) => {
+                    const isChosen = rescheduleSlotId === slot.id.toString();
+                    return (
+                      <motion.button
+                        key={slot.id}
+                        onClick={() => setRescheduleSlotId(slot.id.toString())}
+                        className={cn(
+                          "flex flex-col rounded-2xl border px-3 py-3 text-left text-sm transition",
+                          isChosen
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground",
+                        )}
+                        whileTap={{ scale: 0.96 }}
+                        transition={springy}
+                      >
+                        <span className="font-semibold">
+                          {formatSlotRange(slot.from, slot.to)}
+                        </span>
+                        <span className="text-muted-foreground mt-1 text-xs">
+                          {isChosen ? "Selected" : "Tap to choose"}
+                        </span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {rescheduleSource.map((entry) => {
-                  const isActive = rescheduleDate === entry.date;
-                  return (
-                    <motion.button
-                      key={entry.date}
-                      onClick={() => {
-                        setRescheduleDate(entry.date);
-                        setRescheduleSlotId("");
-                      }}
-                      className={cn(
-                        "flex min-w-24 flex-col items-center rounded-2xl border px-4 py-3 text-sm transition",
-                        isActive
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted-foreground",
-                      )}
-                      whileTap={{ scale: 0.94 }}
-                      transition={springy}
-                    >
-                      <span className="font-semibold uppercase">
-                        {format(parseISO(entry.date), "EEE")}
-                      </span>
-                      <span>{format(parseISO(entry.date), "MMM d")}</span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {(
-                  rescheduleSource.find(
-                    (entry) => entry.date === rescheduleDate,
-                  )?.slots ?? []
-                ).map((slot) => {
-                  const isChosen = rescheduleSlotId === slot.id;
-                  return (
-                    <motion.button
-                      key={slot.id}
-                      onClick={() => setRescheduleSlotId(slot.id)}
-                      className={cn(
-                        "flex flex-col rounded-2xl border px-3 py-3 text-left text-sm transition",
-                        isChosen
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted-foreground",
-                      )}
-                      whileTap={{ scale: 0.96 }}
-                      transition={springy}
-                    >
-                      <span className="font-semibold">
-                        {formatSlotRange(slot.from, slot.to)}
-                      </span>
-                      <span className="text-muted-foreground mt-1 text-xs">
-                        {isChosen ? "Selected" : "Tap to choose"}
-                      </span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-              <div className="flex items-center gap-3">
-                <MotionButton
-                  className="flex-1 rounded-xl"
-                  disabled={!selectedSlot}
+              <DrawerFooter>
+                <Button
+                  className="w-full rounded-xl"
+                  disabled={!selectedSlot || rescheduleMutation.isPending}
                   onClick={handleRescheduleConfirm}
-                  whileTap={{ scale: selectedSlot ? 0.97 : 1 }}
-                  transition={springy}
                 >
-                  Confirm move
-                </MotionButton>
-                <MotionButton
-                  variant="ghost"
-                  className="rounded-xl"
-                  onClick={resetRescheduleState}
-                  whileTap={{ scale: 0.97 }}
-                  transition={springy}
-                >
+                  {rescheduleMutation.isPending
+                    ? "Rescheduling..."
+                    : "Confirm move"}
+                </Button>
+                <Button variant="ghost" onClick={resetRescheduleState}>
                   Cancel
-                </MotionButton>
-              </div>
-            </MotionCard>
-          </motion.div>
+                </Button>
+              </DrawerFooter>
+            </DrawerContent>
+          </Drawer>
         )}
       </AnimatePresence>
     </motion.div>

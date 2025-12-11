@@ -284,37 +284,28 @@ export const adminRouter = createTRPCRouter({
                 fullPaymentMode: z.boolean().optional(),
                 maintenanceMode: z.boolean().optional(),
                 maintenanceMessage: z.string().max(200).optional(),
+                bookingBufferMinutes: z.number().int().min(0).optional(),
+                slots: z.record(z.any()).optional(),
             }),
         )
         .mutation(async ({ input, ctx }) => {
             const existing = await db.query.configTable.findFirst();
 
             if (!existing) {
-                const [created] = await db
-                    .insert(configTable)
-                    .values({
-                        updatedBy: ctx.manager.id,
-                        fullPaymentMode: input.fullPaymentMode ?? false,
-                        maintenanceMode: input.maintenanceMode ?? false,
-                        maintenanceMessage: input.maintenanceMessage ?? "",
-                    })
-                    .returning();
-                return created;
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Config not found",
+                });
             }
 
             const updatePayload: Partial<typeof configTable.$inferInsert> = {
                 updatedBy: ctx.manager.id,
+                fullPaymentMode: input.fullPaymentMode ?? existing.fullPaymentMode,
+                maintenanceMode: input.maintenanceMode ?? existing.maintenanceMode,
+                maintenanceMessage: input.maintenanceMessage ?? existing.maintenanceMessage,
+                bookingBufferMinutes: input.bookingBufferMinutes ?? existing.bookingBufferMinutes,
+                slots: input.slots ?? existing.slots,
             };
-
-            if (input.fullPaymentMode !== undefined) {
-                updatePayload.fullPaymentMode = input.fullPaymentMode;
-            }
-            if (input.maintenanceMode !== undefined) {
-                updatePayload.maintenanceMode = input.maintenanceMode;
-            }
-            if (input.maintenanceMessage !== undefined) {
-                updatePayload.maintenanceMessage = input.maintenanceMessage;
-            }
 
             const [updated] = await db
                 .update(configTable)

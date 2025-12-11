@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { cn } from "~/lib/utils";
 import { requireManager } from "~/server/admin/session";
+import { SlotManager } from "./slot-manager";
 
 const toggles = [
   {
@@ -43,7 +44,7 @@ export default async function ConfigPage() {
         {toggles.map((toggle) => (
           <Card
             key={toggle.label}
-            className="border-border/60 bg-card/60 flex items-center justify-between rounded-3xl px-4 py-3"
+            className="border-border/60 bg-card/60 flex flex-row items-center justify-between rounded-3xl px-4 py-3"
           >
             <div>
               <p className="text-sm font-semibold">{toggle.label}</p>
@@ -68,16 +69,7 @@ export default async function ConfigPage() {
         ))}
       </div>
 
-      <Card className="border-border/60 bg-card/60 rounded-3xl p-4">
-        <p className="text-sm font-semibold">Slot templates</p>
-        <p className="text-muted-foreground text-xs">
-          Coming soon: adjust slot duration and daylight overrides directly from
-          mobile.
-        </p>
-        <Button className="mt-4 w-full rounded-2xl" variant="secondary">
-          Request change
-        </Button>
-      </Card>
+      <SlotManager />
 
       <Link href="/admin/config/gallery">
         <Card className="border-border/60 bg-card/60 rounded-3xl p-4">

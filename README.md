@@ -1,4 +1,4 @@
-# 🏟️ Pitch Perfect
+# Pitch Perfect
 
 **Your Complete Turf Booking Solution**
 
@@ -6,7 +6,7 @@ Pitch Perfect is a modern, mobile-first turf booking platform designed to stream
 
 ---
 
-## 🌟 Why Pitch Perfect?
+## Why Pitch Perfect?
 
 Traditional turf booking methods are often cumbersome, involving phone calls, unclear availability, and manual payment tracking. Pitch Perfect eliminates these pain points by providing:
 
@@ -18,9 +18,10 @@ Traditional turf booking methods are often cumbersome, involving phone calls, un
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 📱 Smart Booking System
+### Smart Booking System
+
 - **7-Day Calendar View** - Browse available slots for the next week at a glance
 - **Time Slot Selection** - Choose from clearly marked available, booked, or unavailable slots
 - **Sport Selection** - Book for cricket, football, or both activities
@@ -28,38 +29,44 @@ Traditional turf booking methods are often cumbersome, involving phone calls, un
 - **Instant Verification** - Receive a unique 4-digit verification code for security
 - **Booking Confirmation** - Get beautiful, downloadable booking receipts
 
-### 📋 Booking Management
+### Booking Management
+
 - **View All Bookings** - Track both upcoming and past reservations
 - **Digital Tickets** - Access complete booking details including verification codes
 - **Booking History** - Review your past visits and activities
 - **Downloadable Receipts** - Save booking confirmations as images for your records
 - **Reschedule Option** - Modify upcoming bookings when needed
 
-### 🎨 Visual Gallery
+### Visual Gallery
+
 - **Browse Turf Photos** - Explore high-quality images of the facilities
 - **Video Content** - Watch videos showcasing the turf experience
 - **Instagram-Style View** - Thumbnail grid with full-screen viewer
 - **Zoom & Swipe** - Interactive media viewing experience
 
-### 📞 Easy Contact
+### Easy Contact
+
 - **Management Details** - Direct access to phone numbers and email
 - **Business Hours** - Know when the turf is open
 - **Location Map** - Integrated map widget for easy navigation
 - **WhatsApp Integration** - Quick access to instant messaging
 
-### 🎯 Customer Features
+### Customer Features
+
 - **User Profiles** - Store your contact details for faster bookings
 - **Alternate Contacts** - Add backup contact information for coordination
 - **Language Support** - Available in English and Tamil
 - **Theme Options** - Switch between light and dark modes for comfortable viewing
 
-### 💳 Payment & Discounts
+### Payment & Discounts
+
 - **Coupon Support** - Apply discount codes to your bookings
 - **Usage Tracking** - View your coupon redemption history
 - **Transparent Pricing** - See total amount and discounts clearly before payment
 - **Payment Records** - Complete transaction history with payment IDs
 
-### 🔒 Secure & Reliable
+### Secure & Reliable
+
 - **Verification Codes** - 4-digit codes ensure booking authenticity
 - **Customer Tagging** - Special recognition for regular customers (Star, VIP, Regular)
 - **Data Privacy** - Your information is stored securely
@@ -67,7 +74,7 @@ Traditional turf booking methods are often cumbersome, involving phone calls, un
 
 ---
 
-## 🎯 Perfect For
+## Perfect For
 
 - **Sports Teams** - Organize regular practice sessions or matches
 - **Friends Groups** - Plan casual games with your buddies
@@ -77,19 +84,24 @@ Traditional turf booking methods are often cumbersome, involving phone calls, un
 
 ---
 
-## 🚀 What Makes It Special
+## What Makes It Special
 
 ### Mobile-First Design
+
 Built specifically for smartphones with an intuitive touch interface, making bookings as easy as ordering food online.
 
 ### Real-Time Updates
+
 See availability instantly as slots are booked, ensuring you never face double-booking surprises.
 
 ### Celebration Moments
+
 Experience delightful confetti animations when your booking is confirmed - because every game deserves a celebration!
 
 ### Admin Dashboard
+
 Behind the scenes, venue managers have a powerful admin panel to:
+
 - Manage time slots and availability
 - Track all bookings and customer activity
 - Handle coupon creation and management
@@ -99,9 +111,10 @@ Behind the scenes, venue managers have a powerful admin panel to:
 
 ---
 
-## 🏆 Benefits
+## Benefits
 
 **For Players:**
+
 - Save time with instant bookings
 - No more phone tag with facility managers
 - Know your booking is confirmed immediately
@@ -109,6 +122,7 @@ Behind the scenes, venue managers have a powerful admin panel to:
 - Access booking history anytime, anywhere
 
 **For Turf Owners:**
+
 - Reduce manual booking workload
 - Minimize booking errors and conflicts
 - Better customer data management
@@ -117,7 +131,7 @@ Behind the scenes, venue managers have a powerful admin panel to:
 
 ---
 
-## 📱 Getting Started
+## Getting Started
 
 1. **Browse** - Open the app and explore available time slots
 2. **Select** - Pick your preferred date, time, and sport
@@ -126,15 +140,16 @@ Behind the scenes, venue managers have a powerful admin panel to:
 
 ---
 
-## 🌐 Multi-Language Support
+## Multi-Language Support
 
 Pitch Perfect speaks your language! Available in:
-- 🇬🇧 English
-- 🇮🇳 Tamil (தமிழ்)
+
+- English
+- Tamil (தமிழ்)
 
 ---
 
-## 💡 Smart Features
+## Smart Features
 
 - **Automatic Slot Generation** - Time slots are automatically created and managed
 - **Status Tracking** - Real-time slot status (Available, Booked, Unavailable, In Progress)
@@ -144,4 +159,4 @@ Pitch Perfect speaks your language! Available in:
 
 ---
 
-**Pitch Perfect** - Making turf booking as smooth as your perfect game! 🎯⚽🏏
+**Pitch Perfect** - Making turf booking as smooth as your perfect game!

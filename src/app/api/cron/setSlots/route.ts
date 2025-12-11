@@ -1,18 +1,32 @@
 import { db } from "~/server/db";
 import { timeSlots, configTable, type SlotsConfigType } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
+import { NextResponse } from "next/dist/server/web/spec-extension/response";
+import { env } from "~/env";
+import type { NextRequest } from "next/dist/server/web/spec-extension/request";
 
 /**
  * Creates time slots based on config settings
  * Uses available slots from config and filters out avoid slots
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+
+    // Verify authorization
+    const authHeader = req.headers.get('Authorization');
+
+    if (authHeader !== `Bearer ${env.CRON_SECRET}`) {
+        return NextResponse.json(
+            { error: 'Unauthorized' },
+            { status: 401 }
+        );
+    }
+
     try {
         const now = new Date();
-        
+
         // Fetch config from database
         const config = await db.query.configTable.findFirst();
-        
+
         if (!config) {
             return Response.json(
                 {
@@ -43,7 +57,7 @@ export async function GET() {
                 ...slotsConfig,
                 avoidSlots: filteredAvoidSlots,
             };
-            
+
             await db
                 .update(configTable)
                 .set({ slots: updatedSlotsConfig })

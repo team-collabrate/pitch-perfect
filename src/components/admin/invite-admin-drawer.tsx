@@ -18,7 +18,7 @@ export function InviteAdminDrawer() {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState<"admin" | "superAdmin">("admin");
+  const [role] = useState<"admin">("admin");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -40,7 +40,6 @@ export function InviteAdminDrawer() {
       setSuccess(true);
       setEmail("");
       setName("");
-      setRole("admin");
 
       setTimeout(() => {
         setOpen(false);
@@ -98,23 +97,6 @@ export function InviteAdminDrawer() {
                 required
                 disabled={isPending}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="admin-role">Role</Label>
-              <select
-                id="admin-role"
-                title="Admin role"
-                value={role}
-                onChange={(e) =>
-                  setRole(e.target.value as "admin" | "superAdmin")
-                }
-                className="border-input bg-background rounded-lg border px-3 py-2 text-sm"
-                disabled={isPending}
-              >
-                <option value="admin">Admin</option>
-                <option value="superAdmin">Super Admin</option>
-              </select>
             </div>
 
             {error && (

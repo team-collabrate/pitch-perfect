@@ -159,15 +159,17 @@ export default async function DashboardPage() {
         {metricCards.map((metric) => (
           <Card
             key={metric.label}
-            className="border-border/60 bg-card/60 rounded-3xl p-4"
+            className="border-border/60 bg-card/60 flex flex-col justify-between rounded-3xl p-4"
           >
-            <p className="text-muted-foreground text-xs tracking-wide uppercase">
-              {metric.label}
-            </p>
-            <p className="mt-2 text-3xl font-semibold">{metric.value}</p>
+            <div>
+              <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                {metric.label}
+              </p>
+              <p className="mt-2 text-3xl font-semibold">{metric.value}</p>
+            </div>
             <p
               className={cn(
-                "text-xs font-medium",
+                "mt-2 text-xs font-medium",
                 metric.isPositive ? "text-emerald-500" : "text-red-500",
               )}
             >

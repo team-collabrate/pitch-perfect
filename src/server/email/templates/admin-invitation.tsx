@@ -10,6 +10,7 @@ import {
   Text,
 } from "@react-email/components";
 import * as React from "react";
+import { env } from "~/env";
 
 interface AdminInvitationEmailProps {
   adminName?: string;
@@ -24,7 +25,7 @@ export const AdminInvitationEmail = ({
   adminName = "Admin",
   email,
   password,
-  loginUrl = "https://pitch-perfect.com/admin/login",
+  loginUrl = `${env.NEXT_PUBLIC_BASE_URL}/admin/forgot-password`,
   role,
   resetPasswordUrl,
 }: AdminInvitationEmailProps) => (

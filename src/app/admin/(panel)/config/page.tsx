@@ -141,7 +141,7 @@ export default function ConfigPage() {
         </div>
       </header>
 
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         {/* Maintenance Mode Toggle */}
         <Card className="border-border/60 bg-card/60 flex flex-row items-center justify-between rounded-3xl px-4 py-3">
           <div>
@@ -295,7 +295,7 @@ export default function ConfigPage() {
       <SlotManager />
       <Link href="/admin/config/gallery">
         <Card className="border-border/60 bg-card/60 rounded-3xl p-4 gap-6">
-          <div className="flex items-center">
+          <div className="flex items-center gap-3">
             <ImageIcon className="text-primary h-5 w-5" />
             <div className="flex-1">
               <p className="text-sm font-semibold">Manage Gallery</p>

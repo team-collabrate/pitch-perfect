@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
+import { useMemo } from "react";
+import { useLanguage } from "~/lib/language-context";
+import { contactPageTranslations } from "~/lib/translations/contact";
 import { Phone } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
@@ -26,6 +29,10 @@ const MotionCard = motion(Card);
 const MotionButton = motion(Button);
 
 export default function ContactPage() {
+  const { language } = useLanguage();
+  const strings = useMemo(() => contactPageTranslations[language], [
+    language,
+  ]);
   return (
     <motion.div
       className="space-y-6 pb-6"
@@ -40,9 +47,9 @@ export default function ContactPage() {
         transition={{ duration: 0.35, delay: 0.05 }}
       >
         <p className="text-muted-foreground text-xs tracking-wide uppercase">
-          We are one call away
+          {strings.subtitle}
         </p>
-        <h1 className="text-2xl font-semibold">Contact</h1>
+        <h1 className="text-2xl font-semibold">{strings.title}</h1>
       </motion.header>
 
       <MotionCard
@@ -53,7 +60,7 @@ export default function ContactPage() {
       >
         <div>
           <h2 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">
-            Management contacts
+            {strings.managementTitle}
           </h2>
           <ul className="mt-3 space-y-3 text-sm">
             {contacts.map((contact, index) => (
@@ -88,8 +95,8 @@ export default function ContactPage() {
                       href={`tel:${contact.phone.replace(/\s+/g, "")}`}
                       className="flex items-center gap-1"
                     >
-                      <Phone className="h-3.5 w-3.5" />
-                      Call
+                        <Phone className="h-3.5 w-3.5" />
+                        {strings.callButton}
                     </Link>
                   </MotionButton>
                 </motion.div>
@@ -98,12 +105,12 @@ export default function ContactPage() {
           </ul>
         </div>
         <div className="space-y-2 text-sm">
-          <p className="text-foreground font-semibold">Email</p>
+          <p className="text-foreground font-semibold">{strings.emailLabel}</p>
           <Link
             href="mailto:hello@pitchperfect.turf"
             className="text-muted-foreground hover:text-primary"
           >
-            hello@pitchperfect.turf
+            {strings.emailAddress}
           </Link>
         </div>
         {/* <div className="space-y-2 text-sm">
@@ -130,11 +137,10 @@ export default function ContactPage() {
       >
         <div>
           <h2 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">
-            WhatsApp
+            {strings.whatsappTitle}
           </h2>
           <p className="text-muted-foreground mt-2 text-sm">
-            Reach us instantly for slot checks, reschedules and quick
-            clarifications.
+            {strings.whatsappDesc}
           </p>
         </div>
         <MotionButton
@@ -151,7 +157,7 @@ export default function ContactPage() {
             className="flex items-center justify-center gap-2"
           >
             <WhatsAppIcon className="h-5 w-5" />
-            Chat on WhatsApp
+            {strings.whatsappCTA}
           </Link>
         </MotionButton>
       </MotionCard>

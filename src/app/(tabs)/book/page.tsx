@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import { useLanguage } from "~/lib/language-context";
+import { bookPageTranslations } from "~/lib/translations/book";
 import { addDays, format, parseISO } from "date-fns";
 import { toPng } from "html-to-image";
 import confetti from "canvas-confetti";
@@ -168,6 +170,8 @@ type ConfirmationBooking = {
 };
 
 export default function BookingPage() {
+  const { language } = useLanguage();
+  const strings = useMemo(() => bookPageTranslations[language], [language]);
   const slots = useSlotBoard();
   const { addBooking } = useBookings();
   const { phoneNumber: storedPhone, setPhoneNumber: setStoredPhone } =
@@ -453,14 +457,14 @@ export default function BookingPage() {
     >
       <header className="space-y-1">
         <p className="text-muted-foreground text-xs tracking-wide uppercase">
-          Turf booking
+          {strings.subtitle}
         </p>
-        <h1 className="text-2xl font-semibold">Booking</h1>
+        <h1 className="text-2xl font-semibold">{strings.title}</h1>
       </header>
 
       <section className="space-y-4">
         <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-          Pick a date
+          {strings.pickDate}
         </h2>
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 ">
           {dates.map((date) => {
@@ -725,7 +729,7 @@ export default function BookingPage() {
           <div className="space-y-3">
             <div className="space-y-1">
               <Label htmlFor="number">
-                Phone Number <span className="text-red-500">*</span>
+                {strings.numberLabel} <span className="text-red-500">*</span>
               </Label>
               <div className="flex gap-2">
                 <Input
@@ -735,7 +739,7 @@ export default function BookingPage() {
                   onChange={(event) =>
                     handleCustomerChange("number", event.target.value)
                   }
-                  placeholder="Primary contact"
+                  placeholder={strings.primaryContactPlaceholder}
                   disabled={!!storedPhone && !!existingCustomer}
                   className={storedPhone && existingCustomer ? "bg-muted" : ""}
                 />
@@ -764,7 +768,7 @@ export default function BookingPage() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="name">
-                Name <span className="text-red-500">*</span>
+                {strings.nameLabel} <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="name"
@@ -772,11 +776,11 @@ export default function BookingPage() {
                 onChange={(event) =>
                   handleCustomerChange("name", event.target.value)
                 }
-                placeholder="Full name"
+                placeholder={strings.namePlaceholder}
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{strings.emailLabel}</Label>
               <Input
                 id="email"
                 type="email"
@@ -789,7 +793,7 @@ export default function BookingPage() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="alternateName">
-                Alternate contact name <span className="text-red-500">*</span>
+                {strings.alternateNameLabel} <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="alternateName"
@@ -800,12 +804,12 @@ export default function BookingPage() {
                     event.target.value,
                   )
                 }
-                placeholder="Person on standby"
+                placeholder={strings.alternateNamePlaceholder}
               />
             </div>
             <div className="space-y-1">
               <Label htmlFor="alternateNumber">
-                Alternate contact number <span className="text-red-500">*</span>
+                {strings.alternateNumberLabel} <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="alternateNumber"
@@ -817,7 +821,7 @@ export default function BookingPage() {
                     event.target.value,
                   )
                 }
-                placeholder="Secondary contact"
+                placeholder={strings.alternateNumberPlaceholder}
               />
             </div>
           </div>
@@ -832,7 +836,7 @@ export default function BookingPage() {
         whileHover={{ scale: formReady && !isSubmitting ? 1.02 : 1 }}
         transition={springy}
       >
-        {isSubmitting ? "Processing..." : "Pay Now"}
+        {isSubmitting ? strings.processing : strings.payNow}
       </MotionButton>
 
       <div className="h-2" />
@@ -841,32 +845,30 @@ export default function BookingPage() {
         <DrawerContent>
           <DrawerCloseButton />
           <DrawerHeader>
-            <DrawerTitle>Change Phone Number</DrawerTitle>
-            <DrawerDescription>
-              Enter a different phone number to use for booking
-            </DrawerDescription>
+            <DrawerTitle>{strings.drawerTitle}</DrawerTitle>
+            <DrawerDescription>{strings.drawerDesc}</DrawerDescription>
           </DrawerHeader>
           <div className="px-6 pb-4">
             <div className="space-y-1">
-              <Label htmlFor="tempPhone">Phone Number</Label>
+              <Label htmlFor="tempPhone">{strings.numberLabel}</Label>
               <Input
                 id="tempPhone"
                 inputMode="tel"
                 value={tempPhone}
                 onChange={(event) => setTempPhone(event.target.value)}
-                placeholder="Enter phone number"
+                placeholder={strings.tempPhonePlaceholder}
               />
             </div>
           </div>
           <DrawerFooter>
-            <Button
+              <Button
               onClick={handleConfirmPhoneChange}
               disabled={!tempPhone.trim()}
             >
-              Use This Number
+              {strings.drawerConfirm}
             </Button>
             <Button variant="ghost" onClick={() => setPhoneDrawerOpen(false)}>
-              Cancel
+              {strings.drawerCancel}
             </Button>
           </DrawerFooter>
         </DrawerContent>

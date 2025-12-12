@@ -1,0 +1,26 @@
+export const viewPageTranslations = {
+  en: {
+    title: "View Your Bookings",
+    titleAlt: "Your bookings",
+    noBookings: "No bookings yet.",
+    viewTicket: "View ticket",
+    reschedule: "Reschedule",
+    rescheduled: "Rescheduled",
+    download: "Download",
+    phoneNumber: "Phone Number",
+    close: "Close",
+    phonePlaceholder: "Enter your phone number",
+  },
+  ta: {
+    title: "உங்கள் பதிவுகளைப் பார்வையிடுங்கள்",
+    titleAlt: "உங்கள் பதிவுகள்",
+    noBookings: "இன்னைக்கும் பதிவுகள் இல்லை.",
+    viewTicket: "டிக்கெட்டை காண்க",
+    reschedule: "மறுசீரமை",
+    rescheduled: "மறுசீரமை செய்யப்பட்ட",
+    download: "பதிவிறக்க",
+    phoneNumber: "தொலைபேசி எண்",
+    close: "மூடு",
+    phonePlaceholder: "உங்கள் தொலைபேசி எண்ணை உள்ளிடவும்",
+  },
+} as const satisfies Record<string, Record<string, string>>;

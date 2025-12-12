@@ -2,12 +2,18 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
+import { useLanguage } from "~/lib/language-context";
+import { galleryPageTranslations } from "~/lib/translations/gallery";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "~/components/ui/button";
 import { api } from "~/trpc/react";
 
 export default function GalleryPage() {
+  const { language } = useLanguage();
+  const strings = useMemo(() => galleryPageTranslations[language], [
+    language,
+  ]);
   const { data: galleryItems, isLoading } = api.gallery.getAll.useQuery();
   const [active, setActive] = useState<(typeof galleryItems)[number] | null>(
     null,
@@ -28,12 +34,12 @@ export default function GalleryPage() {
       <div className="space-y-6 pb-6">
         <header className="space-y-1">
           <p className="text-muted-foreground text-xs tracking-wide uppercase">
-            Highlight reel
+            {strings.subtitle}
           </p>
-          <h1 className="text-2xl font-semibold">Gallery</h1>
+          <h1 className="text-2xl font-semibold">{strings.title}</h1>
         </header>
         <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">Loading gallery...</p>
+          <p className="text-muted-foreground">{strings.loading}</p>
         </div>
       </div>
     );
@@ -44,12 +50,12 @@ export default function GalleryPage() {
       <div className="space-y-6 pb-6">
         <header className="space-y-1">
           <p className="text-muted-foreground text-xs tracking-wide uppercase">
-            Highlight reel
+            {strings.subtitle}
           </p>
-          <h1 className="text-2xl font-semibold">Gallery</h1>
+          <h1 className="text-2xl font-semibold">{strings.title}</h1>
         </header>
         <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">No gallery items yet</p>
+          <p className="text-muted-foreground">{strings.noItems}</p>
         </div>
       </div>
     );
@@ -58,10 +64,10 @@ export default function GalleryPage() {
   return (
     <div className="space-y-6 pb-6">
       <header className="space-y-1">
-        <p className="text-muted-foreground text-xs tracking-wide uppercase">
-          Highlight reel
-        </p>
-        <h1 className="text-2xl font-semibold">Gallery</h1>
+          <p className="text-muted-foreground text-xs tracking-wide uppercase">
+            {strings.subtitle}
+          </p>
+        <h1 className="text-2xl font-semibold">{strings.title}</h1>
       </header>
 
       <div className="grid grid-cols-3 gap-2">
@@ -74,7 +80,7 @@ export default function GalleryPage() {
                   setActive(item);
                   setZoomed(false);
                 }}
-                aria-label={`View ${item.title}`}
+                aria-label={`${strings.view} ${item.title}`}
                 className="relative overflow-hidden rounded-2xl focus:outline-none"
               >
                 <Image
@@ -144,12 +150,12 @@ export default function GalleryPage() {
                   )}
                 </motion.div>
                 <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
-                  <Button
+                    <Button
                     variant="ghost"
                     onClick={() => setActive(null)}
                     className="rounded-full bg-black/40 text-white"
                   >
-                    Close
+                    {strings.close}
                   </Button>
                   {active.mediaType === "image" && (
                     <Button
@@ -157,7 +163,7 @@ export default function GalleryPage() {
                       onClick={() => setZoomed((value) => !value)}
                       className="rounded-full bg-black/40 text-white"
                     >
-                      {zoomed ? "Reset" : "Zoom"}
+                      {zoomed ? strings.reset : strings.zoom}
                     </Button>
                   )}
                 </div>

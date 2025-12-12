@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useLanguage } from "~/lib/language-context";
+import { viewPageTranslations } from "~/lib/translations/view";
 import { addDays, format, parseISO } from "date-fns";
 import { motion, AnimatePresence } from "motion/react";
 import { toPng } from "html-to-image";
@@ -135,6 +137,8 @@ function BookingList({
   onReschedule?: (booking: DisplayBooking) => void;
   customerName?: string;
 }) {
+  const { language } = useLanguage();
+  const strings = useMemo(() => viewPageTranslations[language], [language]);
   if (bookings.length === 0) {
     return (
       <motion.section
@@ -154,7 +158,7 @@ function BookingList({
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.35 }}
         >
-          <p>No bookings yet.</p>
+          <p>{strings.noBookings}</p>
         </MotionCard>
       </motion.section>
     );
@@ -193,7 +197,7 @@ function BookingList({
                 </h3>
                 {booking.rescheduled && (
                   <div className="mt-2">
-                    <Badge variant="secondary">Rescheduled</Badge>
+                    <Badge variant="secondary">{strings.rescheduled}</Badge>
                   </div>
                 )}
               </div>
@@ -220,7 +224,7 @@ function BookingList({
                 whileTap={{ scale: 0.96 }}
                 transition={springy}
               >
-                View ticket
+                {strings.viewTicket}
               </MotionButton>
               {onReschedule && (
                 <MotionButton
@@ -231,7 +235,7 @@ function BookingList({
                   whileTap={{ scale: 0.96 }}
                   transition={springy}
                 >
-                  Reschedule
+                  {strings.reschedule}
                 </MotionButton>
               )}
             </div>
@@ -247,6 +251,8 @@ export default function ViewPage() {
     usePhone();
   const [phoneDrawerOpen, setPhoneDrawerOpen] = useState(false);
   const [tempPhone, setTempPhone] = useState("");
+  const { language } = useLanguage();
+  const strings = useMemo(() => viewPageTranslations[language], [language]);
 
   // Fetch customer data
   const { data: customer } = api.customer.getByPhoneNumber.useQuery(
@@ -431,20 +437,20 @@ export default function ViewPage() {
         transition={{ duration: 0.45, ease: "easeOut" }}
       >
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold">View Your Bookings</h1>
+          <h1 className="text-2xl font-semibold">{strings.title}</h1>
           <p className="text-muted-foreground text-sm">
             Enter your phone number to see your bookings
           </p>
         </div>
         <Card className="w-full max-w-sm space-y-4 p-6">
           <div className="space-y-1">
-            <Label htmlFor="phone">Phone Number</Label>
+            <Label htmlFor="phone">{strings.phoneNumber}</Label>
             <Input
               id="phone"
               inputMode="tel"
               value={tempPhone}
               onChange={(event) => setTempPhone(event.target.value)}
-              placeholder="Enter your phone number"
+              placeholder={strings.phonePlaceholder}
             />
           </div>
           <Button
@@ -475,7 +481,7 @@ export default function ViewPage() {
         <p className="text-muted-foreground text-xs tracking-wide uppercase">
           Manage visits
         </p>
-        <h1 className="text-2xl font-semibold">Your bookings</h1>
+        <h1 className="text-2xl font-semibold">{strings.titleAlt}</h1>
         <div className="flex items-center gap-2 pt-2">
           <div className="">
             <span className="text-muted-foreground text-xs font-medium">
@@ -651,7 +657,7 @@ export default function ViewPage() {
                   whileTap={{ scale: 0.97 }}
                   transition={springy}
                 >
-                  Download ticket
+                  {strings.download} ticket
                 </MotionButton>
                 <MotionButton
                   variant="ghost"
@@ -660,7 +666,7 @@ export default function ViewPage() {
                   whileTap={{ scale: 0.97 }}
                   transition={springy}
                 >
-                  Close
+                  {strings.close}
                 </MotionButton>
               </div>
             </MotionCard>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useLanguage } from "~/lib/language-context";
-import { bookPageTranslations } from "~/lib/translations/book";
+import allTranslations from "~/lib/translations/all";
 import { addDays, format, parseISO } from "date-fns";
 import { toPng } from "html-to-image";
 import confetti from "canvas-confetti";
@@ -115,7 +115,7 @@ const fireSideCannons = () => {
 
 function useSlotBoard() {
   const { data } = api.timeSlot.getAllAvailable.useQuery(
-    { limit: 24 * 7 ,},
+    { limit: 24 * 7 },
     { staleTime: 60_000 },
   );
 
@@ -171,7 +171,7 @@ type ConfirmationBooking = {
 
 export default function BookingPage() {
   const { language } = useLanguage();
-  const strings = useMemo(() => bookPageTranslations[language], [language]);
+  const strings = useMemo(() => allTranslations.book[language], [language]);
   const slots = useSlotBoard();
   const { addBooking } = useBookings();
   const { phoneNumber: storedPhone, setPhoneNumber: setStoredPhone } =
@@ -466,7 +466,7 @@ export default function BookingPage() {
         <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
           {strings.pickDate}
         </h2>
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 ">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4">
           {dates.map((date) => {
             const isActive = selectedDate === date;
             const formatted = format(parseISO(date), "EEE d MMM");
@@ -476,7 +476,7 @@ export default function BookingPage() {
                 key={date}
                 onClick={() => setSelectedDate(date)}
                 className={cn(
-                  "flex min-w-24 flex-col items-center rounded-2xl border px-4 my-0.5 py-3 text-sm transition-all",
+                  "my-0.5 flex min-w-24 flex-col items-center rounded-2xl border px-4 py-3 text-sm transition-all",
                   isActive
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border text-muted-foreground",
@@ -793,7 +793,8 @@ export default function BookingPage() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="alternateName">
-                {strings.alternateNameLabel} <span className="text-red-500">*</span>
+                {strings.alternateNameLabel}{" "}
+                <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="alternateName"
@@ -809,7 +810,8 @@ export default function BookingPage() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="alternateNumber">
-                {strings.alternateNumberLabel} <span className="text-red-500">*</span>
+                {strings.alternateNumberLabel}{" "}
+                <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="alternateNumber"
@@ -861,7 +863,7 @@ export default function BookingPage() {
             </div>
           </div>
           <DrawerFooter>
-              <Button
+            <Button
               onClick={handleConfirmPhoneChange}
               disabled={!tempPhone.trim()}
             >

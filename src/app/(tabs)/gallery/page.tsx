@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { useLanguage } from "~/lib/language-context";
-import { galleryPageTranslations } from "~/lib/translations/gallery";
+import allTranslations from "~/lib/translations/all";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "~/components/ui/button";
@@ -11,9 +11,7 @@ import { api } from "~/trpc/react";
 
 export default function GalleryPage() {
   const { language } = useLanguage();
-  const strings = useMemo(() => galleryPageTranslations[language], [
-    language,
-  ]);
+  const strings = useMemo(() => allTranslations.gallery[language], [language]);
   const { data: galleryItems, isLoading } = api.gallery.getAll.useQuery();
   const [active, setActive] = useState<(typeof galleryItems)[number] | null>(
     null,
@@ -64,9 +62,9 @@ export default function GalleryPage() {
   return (
     <div className="space-y-6 pb-6">
       <header className="space-y-1">
-          <p className="text-muted-foreground text-xs tracking-wide uppercase">
-            {strings.subtitle}
-          </p>
+        <p className="text-muted-foreground text-xs tracking-wide uppercase">
+          {strings.subtitle}
+        </p>
         <h1 className="text-2xl font-semibold">{strings.title}</h1>
       </header>
 
@@ -150,7 +148,7 @@ export default function GalleryPage() {
                   )}
                 </motion.div>
                 <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
-                    <Button
+                  <Button
                     variant="ghost"
                     onClick={() => setActive(null)}
                     className="rounded-full bg-black/40 text-white"

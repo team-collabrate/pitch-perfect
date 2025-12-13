@@ -1,4 +1,4 @@
 export const instructionsPageTranslations = {
-  en: {},
-  ta: {},
+    en: {},
+    ta: {},
 } as const satisfies Record<string, Record<string, string>>;

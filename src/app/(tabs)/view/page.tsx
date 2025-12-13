@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useLanguage } from "~/lib/language-context";
-import { viewPageTranslations } from "~/lib/translations/view";
+import allTranslations from "~/lib/translations/all";
 import { addDays, format, parseISO } from "date-fns";
 import { motion, AnimatePresence } from "motion/react";
 import { toPng } from "html-to-image";
@@ -138,7 +138,7 @@ function BookingList({
   customerName?: string;
 }) {
   const { language } = useLanguage();
-  const strings = useMemo(() => viewPageTranslations[language], [language]);
+  const strings = useMemo(() => allTranslations.view[language], [language]);
   if (bookings.length === 0) {
     return (
       <motion.section
@@ -252,7 +252,7 @@ export default function ViewPage() {
   const [phoneDrawerOpen, setPhoneDrawerOpen] = useState(false);
   const [tempPhone, setTempPhone] = useState("");
   const { language } = useLanguage();
-  const strings = useMemo(() => viewPageTranslations[language], [language]);
+  const strings = useMemo(() => allTranslations.view[language], [language]);
 
   // Fetch customer data
   const { data: customer } = api.customer.getByPhoneNumber.useQuery(

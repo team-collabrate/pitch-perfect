@@ -10,7 +10,7 @@ import { Carousel } from "~/components/ui/carousel";
 import { useLanguage } from "~/lib/language-context";
 import { LocationWidget } from "~/components/location-widget";
 import { api } from "~/trpc/react";
-import { homePageTranslations } from "~/lib/translations/home";
+import allTranslations from "~/lib/translations/all";
 
 const highlights = [
   {
@@ -35,7 +35,7 @@ export default function HomePage() {
   const { language } = useLanguage();
   const { data: bannerItems } = api.banner.getAll.useQuery();
 
-  const strings = useMemo(() => homePageTranslations[language], [language]);
+  const strings = useMemo(() => allTranslations.home[language], [language]);
   const slides = useMemo(() => {
     return (
       bannerItems
@@ -43,7 +43,7 @@ export default function HomePage() {
         .map((item) => ({
           id: String(item.id),
           src: item.cloudinaryUrl,
-          alt: item.altText || item.title || "Banner",
+          alt: item.altText ?? item.title ?? "Banner",
         })) ?? []
     );
   }, [bannerItems]);

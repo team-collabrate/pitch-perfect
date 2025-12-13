@@ -1,6 +1,11 @@
-export { homePageTranslations } from "./home";
-export { bookPageTranslations } from "./book";
-export { contactPageTranslations } from "./contact";
-export { galleryPageTranslations } from "./gallery";
-export { viewPageTranslations } from "./view";
-export { instructionsPageTranslations } from "./instructions";
+export { allTranslations } from "./all";
+export { default } from "./all";
+
+// Per-page named exports for compatibility
+import all from "./all";
+export const homePageTranslations = all.home;
+export const bookPageTranslations = all.book;
+export const contactPageTranslations = all.contact;
+export const galleryPageTranslations = all.gallery;
+export const viewPageTranslations = all.view;
+export const instructionsPageTranslations = all.instructions;

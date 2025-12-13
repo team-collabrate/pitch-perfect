@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { useMemo } from "react";
 import { useLanguage } from "~/lib/language-context";
-import { contactPageTranslations } from "~/lib/translations/contact";
+import allTranslations from "~/lib/translations/all";
 import { Phone } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
@@ -30,9 +30,7 @@ const MotionButton = motion(Button);
 
 export default function ContactPage() {
   const { language } = useLanguage();
-  const strings = useMemo(() => contactPageTranslations[language], [
-    language,
-  ]);
+  const strings = useMemo(() => allTranslations.contact[language], [language]);
   return (
     <motion.div
       className="space-y-6 pb-6"
@@ -95,8 +93,8 @@ export default function ContactPage() {
                       href={`tel:${contact.phone.replace(/\s+/g, "")}`}
                       className="flex items-center gap-1"
                     >
-                        <Phone className="h-3.5 w-3.5" />
-                        {strings.callButton}
+                      <Phone className="h-3.5 w-3.5" />
+                      {strings.callButton}
                     </Link>
                   </MotionButton>
                 </motion.div>

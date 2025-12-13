@@ -10,7 +10,6 @@ import { LanguageProvider } from "~/lib/language-context";
 import { PhoneProvider } from "~/lib/phone-context";
 import { TopBar } from "~/components/top-bar";
 import { PwaRegister } from "~/components/pwa-register";
-import { MaintenanceWarning } from "~/components/maintenance-warning";
 import { Toaster } from "sonner";
 
 const siteUrl = "https://pitchperfect.turf";
@@ -102,7 +101,6 @@ export default function RootLayout({
                   <div className="bg-background mx-auto flex min-h-screen w-full max-w-md flex-col">
                     <PwaRegister />
                     <TopBar />
-                    <MaintenanceWarning />
                     <div className="flex-1 overflow-hidden">{children}</div>
                   </div>
                   <Toaster position="top-center" />

@@ -9,6 +9,7 @@ import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "motion/react";
 import { Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -84,6 +85,48 @@ const MotionButton = motion(Button);
 const MotionCard = motion(Card);
 
 const springy = { type: "spring", stiffness: 260, damping: 20 } as const;
+
+const sanitizePhone = (value: string) => value.replace(/\D/g, "");
+
+const customerContactsSchema = z
+  .object({
+    name: z.string().trim().min(1, { message: "Enter the main client name" }),
+    number: z
+      .string()
+      .refine((value) => sanitizePhone(value).length === 10, {
+        message: "Primary number must be 10 digits",
+      }),
+    alternateContactName: z
+      .string()
+      .trim()
+      .min(1, { message: "Enter the alternate contact name" }),
+    alternateContactNumber: z
+      .string()
+      .refine((value) => sanitizePhone(value).length === 10, {
+        message: "Alternate number must be 10 digits",
+      }),
+  })
+  .superRefine((values, ctx) => {
+    const primaryName = values.name.trim().toLowerCase();
+    const alternateName = values.alternateContactName.trim().toLowerCase();
+    if (primaryName && primaryName === alternateName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["alternateContactName"],
+        message: "Alternate name must differ from the main client",
+      });
+    }
+
+    const primaryNumber = sanitizePhone(values.number);
+    const alternateNumber = sanitizePhone(values.alternateContactNumber);
+    if (primaryNumber && alternateNumber && primaryNumber === alternateNumber) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["alternateContactNumber"],
+        message: "Alternate number must differ from the main client",
+      });
+    }
+  });
 
 const fireSideCannons = () => {
   const colors = ["#a786ff", "#fd8bbc", "#eca184", "#f8deb1"];
@@ -316,12 +359,15 @@ export default function BookingPage() {
   };
 
   const handleConfirmPhoneChange = () => {
-    if (tempPhone.trim()) {
-      setStoredPhone(tempPhone.trim());
-      // Set the phone number in customer state so it remains visible
-      setCustomer(() => ({ ...blankCustomer, number: tempPhone.trim() }));
-      setPhoneDrawerOpen(false);
+    const normalized = sanitizePhone(tempPhone);
+    if (normalized.length !== 10) {
+      toast.error("Phone number must be 10 digits");
+      return;
     }
+    setStoredPhone(normalized);
+    // Set the phone number in customer state so it remains visible
+    setCustomer(() => ({ ...blankCustomer, number: normalized }));
+    setPhoneDrawerOpen(false);
   };
 
   const handleSubmit = async () => {
@@ -334,21 +380,41 @@ export default function BookingPage() {
       return;
     }
 
+    const validationResult = customerContactsSchema.safeParse({
+      name: customer.name,
+      number: customer.number,
+      alternateContactName: customer.alternateContactName,
+      alternateContactNumber: customer.alternateContactNumber,
+    });
+
+    if (!validationResult.success) {
+      toast.error(
+        validationResult.error.errors[0]?.message ??
+          "Fix the contact details before continuing",
+      );
+      return;
+    }
+
+    const normalizedNumber = sanitizePhone(customer.number);
+    const normalizedAlternateNumber = sanitizePhone(
+      customer.alternateContactNumber,
+    );
+
     setIsSubmitting(true);
 
     try {
       // Step 1: Upsert customer details
       await upsertCustomer.mutateAsync({
         name: customer.name,
-        number: customer.number,
+        number: normalizedNumber,
         email: customer.email,
         alternateContactName: customer.alternateContactName,
-        alternateContactNumber: customer.alternateContactNumber,
+        alternateContactNumber: normalizedAlternateNumber,
         languagePreference: customer.language,
       });
 
       // Store the phone number for future use
-      setStoredPhone(customer.number);
+      setStoredPhone(normalizedNumber);
 
       // Step 2: Book the slots
       const timeSlotIds = selectedSlots.map((slot) => slot.id);
@@ -358,7 +424,7 @@ export default function BookingPage() {
           ? "cricket&football"
           : Array.from(bookingType)[0]!;
       const bookingResult = await bookSlots.mutateAsync({
-        number: customer.number,
+        number: normalizedNumber,
         timeSlotIds,
         paymentType: paymentOption,
         bookingType: bookingTypeStr,

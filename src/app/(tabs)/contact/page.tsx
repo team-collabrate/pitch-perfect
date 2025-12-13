@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { useMemo } from "react";
 import { useLanguage } from "~/lib/language-context";
 import allTranslations from "~/lib/translations/all";
-import { Phone } from "lucide-react";
+import { Instagram, Phone } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -24,6 +24,7 @@ const contacts = [
 ];
 
 const whatsappNumber = "+917358848765";
+const instagramUrl = "https://www.instagram.com/pitchperfect.turf/?hl=en";
 
 const MotionCard = motion(Card);
 const MotionButton = motion(Button);
@@ -126,6 +127,39 @@ export default function ContactPage() {
       >
         <LocationWidget />
       </motion.div>
+
+      <MotionCard
+        className="items-start gap-4 p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.22 }}
+      >
+        <div>
+          <h2 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">
+            Instagram
+          </h2>
+          <p className="text-muted-foreground mt-2 text-sm">
+            Follow us for booking highlights and updates.
+          </p>
+        </div>
+        <MotionButton
+          asChild
+          className="w-full rounded-full"
+          whileTap={{ scale: 0.96 }}
+          whileHover={{ scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 220, damping: 18 }}
+        >
+          <Link
+            href={instagramUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-center gap-2"
+          >
+            <Instagram className="h-5 w-5" />
+            Visit our Instagram
+          </Link>
+        </MotionButton>
+      </MotionCard>
 
       <MotionCard
         className="items-start gap-4 p-6"

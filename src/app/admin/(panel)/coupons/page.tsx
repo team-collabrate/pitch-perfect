@@ -1,86 +1,10 @@
-import { PlusCircle, TicketPercent } from "lucide-react";
+"use client";
 
-import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
-import { Badge } from "~/components/ui/badge";
-import { requireManager } from "~/server/admin/session";
 import allTranslations from "~/lib/translations/all";
+import { CouponsClient } from "./coupons-client";
 
-const coupons = [
-  {
-    code: "MORNING10",
-    desc: "10% off 6-8 AM slots",
-    usage: "12 / 30",
-    status: "Active",
-  },
-  {
-    code: "WEEKEND20",
-    desc: "₹200 off Sat/Sun",
-    usage: "5 / 15",
-    status: "Expiring",
-  },
-  {
-    code: "TEAMPASS",
-    desc: "Flat ₹500 for league teams",
-    usage: "18 / 25",
-    status: "Paused",
-  },
-];
-
-export default async function CouponsPage() {
-  await requireManager();
+export default function CouponsPage() {
   const strings = allTranslations.admin.en;
 
-  return (
-    <div className="space-y-6 pb-20">
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-muted-foreground text-xs tracking-wide uppercase">
-            {strings.couponsTitle}
-          </p>
-          <h1 className="text-2xl font-semibold">{strings.couponsTitle}</h1>
-        </div>
-        <Button className="rounded-full" size="sm">
-          <PlusCircle className="mr-1 h-4 w-4" /> New
-        </Button>
-      </header>
-
-      <div className="space-y-4">
-        {coupons.map((coupon) => (
-          <Card
-            key={coupon.code}
-            className="border-border/60 bg-card/60 rounded-3xl px-4 py-4"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-muted-foreground text-xs tracking-widest uppercase">
-                  {coupon.code}
-                </p>
-                <p className="text-lg font-semibold">{coupon.desc}</p>
-              </div>
-              <Badge variant="secondary" className="rounded-full">
-                {coupon.status}
-              </Badge>
-            </div>
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Usage</span>
-              <span className="font-semibold">{coupon.usage}</span>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      <Card className="border-border/60 bg-card/60 rounded-3xl p-4">
-        <div className="flex items-center gap-3">
-          <TicketPercent className="bg-muted h-10 w-10 rounded-2xl p-2" />
-          <div>
-            <p className="text-sm font-semibold">Smart rules</p>
-            <p className="text-muted-foreground text-xs">
-              Configure weekday/weekend pricing without touching code.
-            </p>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
+  return <CouponsClient strings={{ couponsTitle: strings.couponsTitle }} />;
 }

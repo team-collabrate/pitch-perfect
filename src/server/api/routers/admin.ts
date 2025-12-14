@@ -164,21 +164,6 @@ export const adminRouter = createTRPCRouter({
             return updated;
         }),
 
-    couponsList: managerProcedure.query(async () => {
-        return db
-            .select({
-                id: coupons.id,
-                code: coupons.code,
-                description: coupons.description,
-                usageLimit: coupons.usageLimit,
-                numberOfUses: coupons.numberOfUses,
-                validFrom: coupons.validFrom,
-                validTo: coupons.validTo,
-            })
-            .from(coupons)
-            .orderBy(desc(coupons.createdAt));
-    }),
-
     staffList: managerProcedure.query(async () => {
         return db
             .select({
@@ -539,8 +524,6 @@ export const adminRouter = createTRPCRouter({
 });
 
 export const superAdminRouter = createTRPCRouter({
-    
-
     adminsList: superAdminProcedure.query(async () => {
         return db
             .select({
@@ -617,7 +600,7 @@ export const superAdminRouter = createTRPCRouter({
                     });
                 }
 
-                // Send invitation email with password reset link (fire and forget)
+                // Send invitation email (fire and forget)
                 void Promise.resolve().then(async () => {
                     try {
                         await sendAdminInvitationEmail(input.email, {
@@ -857,4 +840,266 @@ export const superAdminRouter = createTRPCRouter({
                 name: updated[0]!.name,
             };
         }),
+
+    couponsList: superAdminProcedure.query(async () => {
+        return db
+            .select({
+                id: coupons.id,
+                code: coupons.code,
+                description: coupons.description,
+                flatDiscountAmount: coupons.flatDiscountAmount,
+                maxFlatDiscountAmount: coupons.maxFlatDiscountAmount,
+                minimumBookingAmount: coupons.minimumBookingAmount,
+                firstNBookingsOnly: coupons.firstNBookingsOnly,
+                nthPurchaseOnly: coupons.nthPurchaseOnly,
+                usageLimit: coupons.usageLimit,
+                numberOfUses: coupons.numberOfUses,
+                validFrom: coupons.validFrom,
+                validTo: coupons.validTo,
+                showCoupon: coupons.showCoupon,
+                createdAt: coupons.createdAt,
+            })
+            .from(coupons)
+            .orderBy(desc(coupons.createdAt));
+    }),
+
+    couponCreate: superAdminProcedure
+        .input(
+            z.object({
+                code: z.string().min(1).max(50),
+                description: z.string().max(200).optional(),
+
+                flatDiscountAmount: z.number().int().min(0).optional(), // in paise
+                maxFlatDiscountAmount: z.number().int().min(0).optional(), // in paise
+
+                minimumBookingAmount: z.number().int().min(0).optional(), // in paise
+                firstNBookingsOnly: z.number().int().min(0).optional(),
+                nthPurchaseOnly: z.number().int().min(0).optional(),
+
+                validFrom: z.string().min(1).optional().default(() => new Date().toISOString().split("T")[0]!), // YYYY-MM-DD, defaults to today
+                validTo: z.string().min(1).optional().default(() => {
+                    const date = new Date();
+                    date.setFullYear(date.getFullYear() + 100); // 100 years from now
+                    return date.toISOString().split("T")[0]!;
+                }), // YYYY-MM-DD, defaults to 100 years from today
+
+                usageLimit: z.number().int().min(0).optional(), // 0 means unlimited
+                showCoupon: z.boolean().optional(),
+            }),
+        )
+        .mutation(async ({ ctx, input }) => {
+            // Check if coupon code already exists
+            const existing = await db.query.coupons.findFirst({
+                where: eq(coupons.code, input.code.toUpperCase()),
+            });
+
+            if (existing) {
+                throw new TRPCError({
+                    code: "BAD_REQUEST",
+                    message: "Coupon code already exists",
+                });
+            }
+
+            const [newCoupon] = await db
+                .insert(coupons)
+                .values([
+                    {
+                        code: input.code.toUpperCase(),
+                        description: input.description ?? null,
+
+                        flatDiscountAmount: input.flatDiscountAmount ?? 0,
+                        maxFlatDiscountAmount: input.maxFlatDiscountAmount ?? 0,
+
+                        minimumBookingAmount: input.minimumBookingAmount ?? 0,
+                        firstNBookingsOnly: input.firstNBookingsOnly ?? 0,
+                        nthPurchaseOnly: input.nthPurchaseOnly ?? 0,
+
+                        usageLimit: input.usageLimit ?? 0,
+                        numberOfUses: 0,
+                        validFrom: input.validFrom,
+                        validTo: input.validTo,
+                        showCoupon: input.showCoupon ?? true,
+
+                        createdBy: ctx.manager.id,
+                        updatedBy: ctx.manager.id,
+                    },
+                ])
+                .returning();
+
+            return newCoupon;
+        }),
+
+    couponUpdate: superAdminProcedure
+        .input(
+            z.object({
+                couponId: z.string().uuid(),
+                description: z.string().max(200).optional(),
+
+                flatDiscountAmount: z.number().int().min(0).optional(),
+                maxFlatDiscountAmount: z.number().int().min(0).optional(),
+                minimumBookingAmount: z.number().int().min(0).optional(),
+                firstNBookingsOnly: z.number().int().min(0).optional(),
+                nthPurchaseOnly: z.number().int().min(0).optional(),
+
+                usageLimit: z.number().int().min(0).optional(),
+                validFrom: z.string().min(1).optional(),
+                validTo: z.string().min(1).optional(),
+                showCoupon: z.boolean().optional(),
+            }),
+        )
+        .mutation(async ({ ctx, input }) => {
+            const coupon = await db.query.coupons.findFirst({
+                where: eq(coupons.id, input.couponId),
+            });
+
+            if (!coupon) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Coupon not found",
+                });
+            }
+
+            const [updated] = await db
+                .update(coupons)
+                .set({
+                    description: input.description ?? coupon.description,
+
+                    flatDiscountAmount: input.flatDiscountAmount ?? coupon.flatDiscountAmount,
+                    maxFlatDiscountAmount:
+                        input.maxFlatDiscountAmount ?? coupon.maxFlatDiscountAmount,
+                    minimumBookingAmount:
+                        input.minimumBookingAmount ?? coupon.minimumBookingAmount,
+                    firstNBookingsOnly: input.firstNBookingsOnly ?? coupon.firstNBookingsOnly,
+                    nthPurchaseOnly: input.nthPurchaseOnly ?? coupon.nthPurchaseOnly,
+
+                    usageLimit: input.usageLimit ?? coupon.usageLimit,
+                    validFrom: input.validFrom ?? coupon.validFrom,
+                    validTo: input.validTo ?? coupon.validTo,
+                    showCoupon: input.showCoupon ?? coupon.showCoupon,
+                    updatedBy: ctx.manager.id,
+                })
+                .where(eq(coupons.id, input.couponId))
+                .returning();
+
+            return updated;
+        }),
+
+    couponDelete: superAdminProcedure
+        .input(z.object({ couponId: z.string().uuid() }))
+        .mutation(async ({ input }) => {
+            const coupon = await db.query.coupons.findFirst({
+                where: eq(coupons.id, input.couponId),
+            });
+
+            if (!coupon) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Coupon not found",
+                });
+            }
+
+            await db.delete(coupons).where(eq(coupons.id, input.couponId));
+
+            return { success: true };
+        }),
+
+    couponGetById: superAdminProcedure
+        .input(z.object({ couponId: z.string().uuid() }))
+        .query(async ({ input }) => {
+            const coupon = await db.query.coupons.findFirst({
+                where: eq(coupons.id, input.couponId),
+            });
+
+            if (!coupon) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Coupon not found",
+                });
+            }
+
+            return coupon;
+        }),
+
+    couponToggleStatus: superAdminProcedure
+        .input(
+            z.object({
+                couponId: z.string().uuid(),
+                showCoupon: z.boolean(),
+            }),
+        )
+        .mutation(async ({ input }) => {
+            const coupon = await db.query.coupons.findFirst({
+                where: eq(coupons.id, input.couponId),
+            });
+
+            if (!coupon) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Coupon not found",
+                });
+            }
+
+            const [updated] = await db
+                .update(coupons)
+                .set({
+                    showCoupon: input.showCoupon,
+                })
+                .where(eq(coupons.id, input.couponId))
+                .returning();
+
+            return updated;
+        }),
+
+    couponResetUsage: superAdminProcedure
+        .input(z.object({ couponId: z.string().uuid() }))
+        .mutation(async ({ input }) => {
+            const coupon = await db.query.coupons.findFirst({
+                where: eq(coupons.id, input.couponId),
+            });
+
+            if (!coupon) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Coupon not found",
+                });
+            }
+
+            const [updated] = await db
+                .update(coupons)
+                .set({
+                    numberOfUses: 0,
+                })
+                .where(eq(coupons.id, input.couponId))
+                .returning();
+
+            return {
+                success: true,
+                coupon: updated,
+            };
+        }),
+
+    couponStats: superAdminProcedure.query(async () => {
+        const allCoupons = await db.select().from(coupons);
+
+        const totalCoupons = allCoupons.length;
+        const activeCoupons = allCoupons.filter(
+            (c) =>
+                new Date(c.validFrom) <= new Date() &&
+                new Date(c.validTo) >= new Date() &&
+                c.showCoupon
+        ).length;
+        const expiredCoupons = allCoupons.filter((c) => new Date(c.validTo) < new Date())
+            .length;
+        const totalUsage = allCoupons.reduce((sum, c) => sum + (c.numberOfUses ?? 0), 0);
+        const totalCapacity = allCoupons.reduce((sum, c) => sum + (c.usageLimit ?? 0), 0);
+
+        return {
+            totalCoupons,
+            activeCoupons,
+            expiredCoupons,
+            totalUsage,
+            totalCapacity,
+            utilizationRate: totalCapacity > 0 ? Math.round((totalUsage / totalCapacity) * 100) : 0,
+        };
+    }),
 });

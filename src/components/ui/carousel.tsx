@@ -1,8 +1,11 @@
 "use client";
 
+/* eslint-disable react/no-inline-styles */
+
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
-import { motion, PanInfo, useMotionValue } from "motion/react";
+import { motion, useMotionValue } from "motion/react";
+import type { PanInfo } from "motion/react";
 
 interface CarouselSlide {
   id: string;
@@ -29,9 +32,10 @@ export function Carousel({
   const [containerWidth, setContainerWidth] = useState(0);
   const [dragging, setDragging] = useState(false);
 
-  const itemsForRender = loop
-    ? [slides[slides.length - 1], ...slides, slides[0]]
-    : slides;
+  const itemsForRender =
+    loop && slides.length > 0
+      ? [slides[slides.length - 1]!, ...slides, slides[0]!]
+      : slides;
   const startPosition = loop ? 1 : 0;
 
   useEffect(() => {
@@ -101,8 +105,6 @@ export function Carousel({
     }
   };
 
-  if (!slides || slides.length === 0) return null;
-
   // If scrollable, observe scroll position and update `current`
   useEffect(() => {
     if (!scrollable) return;
@@ -132,11 +134,8 @@ export function Carousel({
         ref={containerRef}
         className={
           scrollable
-            ? "relative flex h-56 w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden scroll-smooth"
+            ? "relative flex h-56 w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden scroll-smooth [-webkit-overflow-scrolling:touch]"
             : "relative h-56 w-full overflow-hidden"
-        }
-        style={
-          scrollable ? ({ WebkitOverflowScrolling: "touch" } as any) : undefined
         }
       >
         {scrollable ? (
@@ -158,10 +157,7 @@ export function Carousel({
         ) : (
           <motion.div
             className="flex h-56"
-            style={{
-              width: containerWidth * itemsForRender.length,
-              x,
-            }}
+            style={{ x }}
             drag="x"
             dragConstraints={{
               left: -(itemsForRender.length - 1) * containerWidth,
@@ -171,11 +167,7 @@ export function Carousel({
             onDragEnd={handleDragEnd}
           >
             {itemsForRender.map((slide) => (
-              <div
-                key={slide.id}
-                className="relative h-56 w-full shrink-0"
-                style={{ width: containerWidth }}
-              >
+              <div key={slide.id} className="relative h-56 w-full shrink-0">
                 <Image
                   src={slide.src}
                   alt={slide.alt}

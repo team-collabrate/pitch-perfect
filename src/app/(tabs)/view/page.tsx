@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useLanguage } from "~/lib/language-context";
 import allTranslations from "~/lib/translations/all";
-import { format, parseISO } from "date-fns";
+import { addDays, format, parseISO } from "date-fns";
 import { motion, AnimatePresence } from "motion/react";
 import { toPng } from "html-to-image";
 import { Pencil } from "lucide-react";
@@ -72,7 +72,15 @@ type DisplayBooking = {
   hasCoupon?: boolean;
 };
 
-
+const SLOT_TEMPLATE: Array<[string, string]> = [
+  ["06:00", "07:00"],
+  ["07:00", "08:00"],
+  ["08:00", "09:00"],
+  ["17:00", "18:00"],
+  ["18:00", "19:00"],
+  ["19:00", "20:00"],
+  ["20:00", "21:00"],
+];
 
 const toPngImage = toPng as (
   node: HTMLElement,
@@ -266,7 +274,7 @@ export default function ViewPage() {
   );
 
   // Fetch bookings from backend
-  const { data: apiBookings, isLoading, refetch } = api.booking.getByNumber.useQuery(
+  const { data: apiBookings, isLoading } = api.booking.getByNumber.useQuery(
     { number: storedPhone },
     { enabled: !!storedPhone },
   );
@@ -411,8 +419,8 @@ export default function ViewPage() {
         newTimeSlotId: selectedSlot.id,
       });
       resetRescheduleState();
-      // Refetch bookings
-      await refetch();
+      // Invalidate the getByNumber query to refetch bookings
+      await api.booking.getByNumber.invalidate();
     } catch (error) {
       console.error("Failed to reschedule:", error);
       // TODO: Show error toast

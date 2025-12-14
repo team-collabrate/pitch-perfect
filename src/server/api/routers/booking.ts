@@ -6,7 +6,7 @@ import {
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { bookings, timeSlots, customers, coupons } from "~/server/db/schema";
-import { eq, and, inArray, desc, lte, gte, sql } from "drizzle-orm";
+import { eq, and, inArray, desc, count as countFn } from "drizzle-orm";
 import { sendBookingConfirmation } from "~/server/email";
 
 export const bookingRouter = createTRPCRouter({
@@ -323,7 +323,7 @@ export const bookingRouter = createTRPCRouter({
             // Check first N bookings only
             if (couponData.firstNBookingsOnly > 0) {
                 const bookingCountResult = await db
-                    .select({ count: sql<number>`count(*)` })
+                    .select({ count: countFn(bookings.id) })
                     .from(bookings)
                     .where(eq(bookings.couponId, couponData.id));
 
@@ -351,7 +351,7 @@ export const bookingRouter = createTRPCRouter({
             // Check usage limit
             if (couponData.usageLimit > 0) {
                 const usedCountResult = await db
-                    .select({ count: sql<number>`count(*)` })
+                    .select({ count: countFn(bookings.id) })
                     .from(bookings)
                     .where(eq(bookings.couponId, couponData.id));
 
@@ -384,5 +384,114 @@ export const bookingRouter = createTRPCRouter({
                 discount,
                 finalAmount,
             };
+        }),
+
+    // Get active coupons with eligibility check
+    getActiveCoupons: publicProcedure
+        .input(
+            z.object({
+                phoneNumber: z.string().min(1, "Phone number is required"),
+                totalAmount: z.number().int().min(1), // Amount in paise
+            })
+        )
+        .query(async ({ input }) => {
+            // Get customer's booking count
+            const customerBookingsResult = await db
+                .select({ count: countFn(bookings.id) })
+                .from(bookings)
+                .where(eq(bookings.phoneNumber, input.phoneNumber));
+
+            const customerBookingCount = (customerBookingsResult[0]?.count as number) ?? 0;
+
+            // Get all active, visible coupons
+            const activeCoupons = await db
+                .select()
+                .from(coupons)
+                .where(
+                    and(
+                        eq(coupons.showCoupon, true),
+                        eq(coupons.status, "active")
+                    )
+                );
+
+            const now = new Date();
+
+            // Filter and check eligibility for each coupon
+            const couponsList = await Promise.all(
+                activeCoupons.map(async (coupon) => {
+                    const validFrom = new Date(coupon.validFrom);
+                    const validTo = new Date(coupon.validTo);
+                    const isDateValid = now >= validFrom && now <= validTo;
+
+                    // Check minimum booking amount
+                    const isMinAmountMet = coupon.minimumBookingAmount === 0
+                        || input.totalAmount >= coupon.minimumBookingAmount;
+
+                    // Check first N bookings limit
+                    let isFirstNBookingsValid = true;
+                    if (coupon.firstNBookingsOnly > 0) {
+                        const couponUsageCountResult = await db
+                            .select({ count: countFn(bookings.id) })
+                            .from(bookings)
+                            .where(eq(bookings.couponId, coupon.id));
+
+                        const couponUsageCount = (couponUsageCountResult[0]?.count as number) ?? 0;
+                        isFirstNBookingsValid = couponUsageCount < coupon.firstNBookingsOnly;
+                    }
+
+                    // Check Nth purchase only
+                    const isNthPurchaseValid = coupon.nthPurchaseOnly === 0 
+                        || (customerBookingCount + 1) === coupon.nthPurchaseOnly;
+
+                    // Check usage limit
+                    let isUsageLimitValid = true;
+                    if (coupon.usageLimit > 0) {
+                        const couponUsageCountResult = await db
+                            .select({ count: countFn(bookings.id) })
+                            .from(bookings)
+                            .where(eq(bookings.couponId, coupon.id));
+
+                        const couponUsageCount = (couponUsageCountResult[0]?.count as number) ?? 0;
+                        isUsageLimitValid = couponUsageCount < coupon.usageLimit;
+                    }
+
+                    // Calculate discount
+                    let discount = 0;
+                    if (coupon.flatDiscountAmount > 0) {
+                        discount = coupon.flatDiscountAmount;
+                        if (coupon.maxFlatDiscountAmount > 0) {
+                            discount = Math.min(discount, coupon.maxFlatDiscountAmount);
+                        }
+                    }
+
+                    const isEligible = isDateValid && isMinAmountMet && isFirstNBookingsValid
+                        && isNthPurchaseValid && isUsageLimitValid;
+
+                    return {
+                        id: coupon.id,
+                        code: coupon.code,
+                        description: coupon.description,
+                        discount,
+                        isEligible,
+                        reason: !isDateValid
+                            ? "Coupon expired or not yet valid"
+                            : !isMinAmountMet
+                                ? `Minimum ₹${coupon.minimumBookingAmount / 100} required`
+                                : !isFirstNBookingsValid
+                                    ? "Usage limit reached"
+                                    : !isNthPurchaseValid
+                                        ? `Valid only for booking #${coupon.nthPurchaseOnly}`
+                                        : !isUsageLimitValid
+                                            ? "Coupon usage limit reached"
+                                            : null,
+                    };
+                })
+            );
+
+            // Sort: eligible first, then by discount (highest first)
+            return couponsList.sort((a, b) => {
+                if (a.isEligible !== b.isEligible) return a.isEligible ? -1 : 1;
+                return b.discount - a.discount;
+            });
         }),
 });

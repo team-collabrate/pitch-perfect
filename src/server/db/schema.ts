@@ -241,6 +241,8 @@ export const managerLogs = createTable("manager_log", (d) => ({
   updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
 }));
 
+export const couponStatusEnum = pgEnum("coupon_status", ["active", "inactive", "achieved"]);
+
 export const coupons = createTable("coupon", (d) => ({
   id: d.uuid().primaryKey().defaultRandom().notNull(),
 
@@ -259,10 +261,11 @@ export const coupons = createTable("coupon", (d) => ({
 
   validFrom: d.date().notNull(),
   validTo: d.date().notNull(),
-  
+
   usageLimit: d.integer().notNull().default(0), // 0 means unlimited
   numberOfUses: d.integer().notNull().default(0),
 
+  status: couponStatusEnum().notNull().default("active"),
 
   createdBy: d.integer().references(() => managers.id),
   updatedBy: d.integer().references(() => managers.id),
@@ -453,10 +456,10 @@ export const configTable = createTable("config", (d) => ({
       from: `${String(i).padStart(2, "0")}:00:00`,
       to: `${String(i + 1).padStart(2, "0")}:00:00`,
       status: "available" as const,
-      fullAmount:800_00,
-      advanceAmount:100_00,
+      fullAmount: 800_00,
+      advanceAmount: 100_00,
     })),
-    avoidSlots:[{}],//structure: {from: "HH:MM:SS", to: "HH:MM:SS",date: "YYYY-MM-DD"} sorted by date
+    avoidSlots: [{}],//structure: {from: "HH:MM:SS", to: "HH:MM:SS",date: "YYYY-MM-DD"} sorted by date
     daysInAdvanceToCreateSlots: 3// number of days in advance to create slots
   })),
 

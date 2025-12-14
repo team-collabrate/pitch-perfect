@@ -1,0 +1,2 @@
+CREATE TYPE "public"."coupon_status" AS ENUM('active', 'inactive', 'achieved');--> statement-breakpoint
+ALTER TABLE "Aruppukottai_turf_coupon" ADD COLUMN "status" "coupon_status" DEFAULT 'active' NOT NULL;

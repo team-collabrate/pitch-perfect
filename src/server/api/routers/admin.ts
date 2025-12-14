@@ -876,12 +876,18 @@ export const superAdminRouter = createTRPCRouter({
                 firstNBookingsOnly: z.number().int().min(0).optional(),
                 nthPurchaseOnly: z.number().int().min(0).optional(),
 
-                validFrom: z.string().min(1).optional().default(() => new Date().toISOString().split("T")[0]!), // YYYY-MM-DD, defaults to today
-                validTo: z.string().min(1).optional().default(() => {
-                    const date = new Date();
-                    date.setFullYear(date.getFullYear() + 100); // 100 years from now
-                    return date.toISOString().split("T")[0]!;
-                }), // YYYY-MM-DD, defaults to 100 years from today
+                validFrom: z.string()
+                    .transform(val => val || undefined)
+                    .pipe(z.string().min(1).optional())
+                    .default(() => new Date().toISOString().split("T")[0]!), // YYYY-MM-DD, defaults to today
+                validTo: z.string()
+                    .transform(val => val || undefined)
+                    .pipe(z.string().min(1).optional())
+                    .default(() => {
+                        const date = new Date();
+                        date.setFullYear(date.getFullYear() + 100); // 100 years from now
+                        return date.toISOString().split("T")[0]!;
+                    }), // YYYY-MM-DD, defaults to 100 years from today
 
                 usageLimit: z.number().int().min(0).optional(), // 0 means unlimited
                 showCoupon: z.boolean().optional(),
@@ -900,6 +906,12 @@ export const superAdminRouter = createTRPCRouter({
                 });
             }
 
+            // Apply defaults for validFrom and validTo
+            const today = new Date().toISOString().split("T")[0]!;
+            const maxDate = new Date();
+            maxDate.setFullYear(maxDate.getFullYear() + 100);
+            const maxDateStr = maxDate.toISOString().split("T")[0]!;
+
             const [newCoupon] = await db
                 .insert(coupons)
                 .values([
@@ -916,8 +928,8 @@ export const superAdminRouter = createTRPCRouter({
 
                         usageLimit: input.usageLimit ?? 0,
                         numberOfUses: 0,
-                        validFrom: input.validFrom,
-                        validTo: input.validTo,
+                        validFrom: input.validFrom ?? today,
+                        validTo: input.validTo ?? maxDateStr,
                         showCoupon: input.showCoupon ?? true,
 
                         createdBy: ctx.manager.id,
@@ -984,7 +996,7 @@ export const superAdminRouter = createTRPCRouter({
             return updated;
         }),
 
-    couponDelete: superAdminProcedure
+    couponArchive: superAdminProcedure
         .input(z.object({ couponId: z.string().uuid() }))
         .mutation(async ({ input }) => {
             const coupon = await db.query.coupons.findFirst({
@@ -998,9 +1010,45 @@ export const superAdminRouter = createTRPCRouter({
                 });
             }
 
-            await db.delete(coupons).where(eq(coupons.id, input.couponId));
+            const [updated] = await db
+                .update(coupons)
+                .set({
+                    status: "inactive",
+                })
+                .where(eq(coupons.id, input.couponId))
+                .returning();
 
-            return { success: true };
+            return { success: true, coupon: updated };
+        }),
+
+    couponToggleShow: superAdminProcedure
+        .input(
+            z.object({
+                couponId: z.string().uuid(),
+                showCoupon: z.boolean(),
+            }),
+        )
+        .mutation(async ({ input }) => {
+            const coupon = await db.query.coupons.findFirst({
+                where: eq(coupons.id, input.couponId),
+            });
+
+            if (!coupon) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Coupon not found",
+                });
+            }
+
+            const [updated] = await db
+                .update(coupons)
+                .set({
+                    showCoupon: input.showCoupon,
+                })
+                .where(eq(coupons.id, input.couponId))
+                .returning();
+
+            return updated;
         }),
 
     couponGetById: superAdminProcedure
@@ -1024,7 +1072,7 @@ export const superAdminRouter = createTRPCRouter({
         .input(
             z.object({
                 couponId: z.string().uuid(),
-                showCoupon: z.boolean(),
+                status: z.enum(["active", "inactive", "achieved"]),
             }),
         )
         .mutation(async ({ input }) => {
@@ -1042,7 +1090,7 @@ export const superAdminRouter = createTRPCRouter({
             const [updated] = await db
                 .update(coupons)
                 .set({
-                    showCoupon: input.showCoupon,
+                    status: input.status,
                 })
                 .where(eq(coupons.id, input.couponId))
                 .returning();

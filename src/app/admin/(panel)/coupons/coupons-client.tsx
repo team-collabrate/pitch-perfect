@@ -47,6 +47,7 @@ type Coupon = {
   validFrom: string;
   validTo: string;
   showCoupon: boolean;
+  status: "active" | "inactive" | "achieved";
   createdAt: Date;
 };
 
@@ -137,17 +138,25 @@ export function CouponsClient({ strings }: { strings: Strings }) {
     onError: (err) => toast.error(err.message),
   });
 
-  const deleteMutation = api.superAdmin.couponDelete.useMutation({
+  const archiveMutation = api.superAdmin.couponArchive.useMutation({
     onSuccess: async () => {
-      toast.success("Coupon deleted");
+      toast.success("Coupon archived");
       await utils.superAdmin.couponsList.invalidate();
     },
     onError: (err) => toast.error(err.message),
   });
 
-  const toggleMutation = api.superAdmin.couponToggleStatus.useMutation({
+  const toggleShowMutation = api.superAdmin.couponToggleShow.useMutation({
     onSuccess: async () => {
-      toast.success("Updated");
+      toast.success("Visibility updated");
+      await utils.superAdmin.couponsList.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const toggleStatusMutation = api.superAdmin.couponToggleStatus.useMutation({
+    onSuccess: async () => {
+      toast.success("Status updated");
       await utils.superAdmin.couponsList.invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -234,16 +243,24 @@ export function CouponsClient({ strings }: { strings: Strings }) {
     }
   }
 
-  async function onDelete(coupon: Coupon) {
-    const ok = window.confirm(`Delete coupon ${coupon.code}?`);
+  async function onArchive(coupon: Coupon) {
+    const ok = window.confirm(`Archive coupon ${coupon.code}?`);
     if (!ok) return;
-    await deleteMutation.mutateAsync({ couponId: coupon.id });
+    await archiveMutation.mutateAsync({ couponId: coupon.id });
   }
 
-  async function onToggle(coupon: Coupon) {
-    await toggleMutation.mutateAsync({
+  async function onToggleShow(coupon: Coupon) {
+    await toggleShowMutation.mutateAsync({
       couponId: coupon.id,
       showCoupon: !coupon.showCoupon,
+    });
+  }
+
+  async function onToggleStatus(coupon: Coupon) {
+    const newStatus = coupon.status === "active" ? "inactive" : "active";
+    await toggleStatusMutation.mutateAsync({
+      couponId: coupon.id,
+      status: newStatus,
     });
   }
 
@@ -256,8 +273,9 @@ export function CouponsClient({ strings }: { strings: Strings }) {
   const isBusy =
     createMutation.isPending ||
     updateMutation.isPending ||
-    deleteMutation.isPending ||
-    toggleMutation.isPending ||
+    archiveMutation.isPending ||
+    toggleShowMutation.isPending ||
+    toggleStatusMutation.isPending ||
     resetMutation.isPending;
 
   return (
@@ -628,6 +646,38 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                   <span className="font-semibold">{usageText}</span>
                 </div>
 
+                <div className="mt-4 space-y-3 border-t pt-4">
+                  <div className="flex items-center gap-3">
+                    <Toggle
+                      pressed={coupon.showCoupon}
+                      onPressedChange={() => onToggleShow(coupon)}
+                      disabled={isBusy}
+                      className="h-8 w-8 p-0"
+                    >
+                      ✓
+                    </Toggle>
+                    <span className="flex-1 text-sm">Show Coupon</span>
+                    <span className="text-xs text-muted-foreground">
+                      {coupon.showCoupon ? "Visible" : "Hidden"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Toggle
+                      pressed={coupon.status === "active"}
+                      onPressedChange={() => onToggleStatus(coupon)}
+                      disabled={isBusy || coupon.status === "achieved"}
+                      className="h-8 w-8 p-0"
+                    >
+                      ✓
+                    </Toggle>
+                    <span className="flex-1 text-sm">Active Coupon</span>
+                    <span className="text-xs text-muted-foreground">
+                      {coupon.status === "active" ? "Active" : coupon.status === "achieved" ? "Achieved" : "Inactive"}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button
                     variant="secondary"
@@ -636,15 +686,6 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                     disabled={isBusy}
                   >
                     <Pencil className="h-4 w-4" /> Edit
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onToggle(coupon)}
-                    disabled={isBusy}
-                  >
-                    {coupon.showCoupon ? "Pause" : "Activate"}
                   </Button>
 
                   <Button
@@ -659,10 +700,10 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => onDelete(coupon)}
+                    onClick={() => onArchive(coupon)}
                     disabled={isBusy}
                   >
-                    <Trash2 className="h-4 w-4" /> Delete
+                    <Trash2 className="h-4 w-4" /> Archive
                   </Button>
                 </div>
               </Card>

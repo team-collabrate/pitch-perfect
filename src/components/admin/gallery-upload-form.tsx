@@ -47,7 +47,7 @@ export function GalleryUploadForm({ onUploadSuccess }: GalleryUploadProps) {
     setError(null);
     setSuccess(false);
 
-      if (!formData.file) {
+    if (!formData.file) {
       setError("Please select a file to upload");
       return;
     }

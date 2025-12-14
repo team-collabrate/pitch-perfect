@@ -101,6 +101,8 @@ export const customers = createTable(
     email: d.varchar({ length: 256 }),
     alternateContactName: d.varchar({ length: 100 }),
     alternateContactNumber: d.varchar({ length: 20 }),
+
+    numberOfBookings: d.integer().notNull().default(0),
     languagePreference: languageEnum().notNull().default("en"),
 
     tag: customerTagEnum().notNull().default("new"),

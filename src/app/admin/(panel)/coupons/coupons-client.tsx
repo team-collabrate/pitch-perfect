@@ -1,13 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Pencil,
-  PlusCircle,
-  RotateCcw,
-  TicketPercent,
-  Trash2,
-} from "lucide-react";
+import { Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "~/components/ui/badge";
@@ -162,14 +156,6 @@ export function CouponsClient({ strings }: { strings: Strings }) {
     onError: (err) => toast.error(err.message),
   });
 
-  const resetMutation = api.superAdmin.couponResetUsage.useMutation({
-    onSuccess: async () => {
-      toast.success("Usage reset");
-      await utils.superAdmin.couponsList.invalidate();
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
   function openCreate() {
     setDraft(getEmptyDraft());
     setDrawerOpen(true);
@@ -264,19 +250,12 @@ export function CouponsClient({ strings }: { strings: Strings }) {
     });
   }
 
-  async function onResetUsage(coupon: Coupon) {
-    const ok = window.confirm(`Reset usage for ${coupon.code}?`);
-    if (!ok) return;
-    await resetMutation.mutateAsync({ couponId: coupon.id });
-  }
-
   const isBusy =
     createMutation.isPending ||
     updateMutation.isPending ||
     archiveMutation.isPending ||
     toggleShowMutation.isPending ||
-    toggleStatusMutation.isPending ||
-    resetMutation.isPending;
+    toggleStatusMutation.isPending;
 
   return (
     <div className="space-y-6 pb-20">
@@ -584,12 +563,16 @@ export function CouponsClient({ strings }: { strings: Strings }) {
               </div>
             </div>
 
-            <DrawerFooter>
-              <Button onClick={submitDraft} disabled={isBusy}>
+            <DrawerFooter className="flex flex-row gap-2">
+              <Button
+                onClick={submitDraft}
+                disabled={isBusy}
+                className="flex-1"
+              >
                 {isBusy ? "Saving…" : "Save"}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline" disabled={isBusy}>
+                <Button variant="outline" disabled={isBusy} className="flex-1">
                   Cancel
                 </Button>
               </DrawerClose>
@@ -609,7 +592,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
           </p>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {(couponsQuery.data as Coupon[]).map((coupon) => {
             const status = getCouponStatus(coupon);
             const usageText =
@@ -620,81 +603,75 @@ export function CouponsClient({ strings }: { strings: Strings }) {
             return (
               <Card
                 key={coupon.id}
-                className="border-border/60 bg-card/60 rounded-3xl px-4 py-4"
+                className="border-border/60 bg-card/60 rounded-2xl px-3 py-2"
               >
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-muted-foreground text-xs tracking-widest uppercase">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-muted-foreground text-xs leading-none tracking-widest uppercase">
                       {coupon.code}
                     </p>
-                    <p className="truncate text-lg font-semibold">
+                    <p className="truncate text-sm leading-tight font-semibold">
                       {coupon.description ?? "—"}
                     </p>
-                    <p className="text-muted-foreground mt-1 text-xs">
-                      Discount:{" "}
+                    <p className="text-muted-foreground mt-0.5 text-xs leading-tight">
                       {formatRupeesFromPaise(coupon.flatDiscountAmount)} (max{" "}
-                      {formatRupeesFromPaise(coupon.maxFlatDiscountAmount)})
+                      {formatRupeesFromPaise(coupon.maxFlatDiscountAmount)}) •{" "}
+                      {usageText}
                     </p>
                   </div>
-                  <Badge variant="secondary" className="shrink-0 rounded-full">
+                  <Badge
+                    variant="secondary"
+                    className="h-6 shrink-0 rounded-full text-xs"
+                  >
                     {status}
                   </Badge>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Usage</span>
-                  <span className="font-semibold">{usageText}</span>
-                </div>
-
-                <div className="mt-4 space-y-3 border-t pt-4">
-                  <div className="flex items-center gap-3">
+                <div className="mt-2 flex gap-4 border-t pt-2">
+                  <div className="flex items-center gap-2 text-xs">
                     <Toggle
                       pressed={coupon.showCoupon}
                       onPressedChange={() => onToggleShow(coupon)}
                       disabled={isBusy}
-                      className="h-8 w-8 p-0"
+                      className="h-6 w-6 p-0"
                     >
                       ✓
                     </Toggle>
-                    <span className="flex-1 text-sm">Show Coupon</span>
-                    <span className="text-xs text-muted-foreground">
-                      {coupon.showCoupon ? "Visible" : "Hidden"}
+                    <span>Show</span>
+                    <span className="text-muted-foreground">
+                      {coupon.showCoupon ? "✓" : "✗"}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-xs">
                     <Toggle
                       pressed={coupon.status === "active"}
                       onPressedChange={() => onToggleStatus(coupon)}
                       disabled={isBusy || coupon.status === "achieved"}
-                      className="h-8 w-8 p-0"
+                      className="h-6 w-6 p-0"
                     >
                       ✓
                     </Toggle>
-                    <span className="flex-1 text-sm">Active Coupon</span>
-                    <span className="text-xs text-muted-foreground">
-                      {coupon.status === "active" ? "Active" : coupon.status === "achieved" ? "Achieved" : "Inactive"}
+                    <span>Active</span>
+                    <span className="text-muted-foreground">
+                      {coupon.status === "active"
+                        ? "✓"
+                        : coupon.status === "achieved"
+                          ? "—"
+                          : "✗"}
                     </span>
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-2 flex gap-1">
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => openEdit(coupon)}
                     disabled={isBusy}
+                    className="h-7 text-xs"
                   >
-                    <Pencil className="h-4 w-4" /> Edit
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onResetUsage(coupon)}
-                    disabled={isBusy}
-                  >
-                    <RotateCcw className="h-4 w-4" /> Reset usage
+                    <Pencil className="h-3 w-3" /> Edit
                   </Button>
 
                   <Button
@@ -702,15 +679,16 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                     size="sm"
                     onClick={() => onArchive(coupon)}
                     disabled={isBusy}
+                    className="h-7 text-xs"
                   >
-                    <Trash2 className="h-4 w-4" /> Archive
+                    <Trash2 className="h-3 w-3" /> Archive
                   </Button>
                 </div>
               </Card>
             );
           })}
 
-          <Card className="border-border/60 bg-card/60 rounded-3xl p-4">
+          {/* <Card className="border-border/60 bg-card/60 rounded-3xl p-4">
             <div className="flex items-center gap-3">
               <TicketPercent className="bg-muted h-10 w-10 rounded-2xl p-2" />
               <div>
@@ -720,7 +698,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                 </p>
               </div>
             </div>
-          </Card>
+          </Card> */}
         </div>
       )}
     </div>

@@ -1097,35 +1097,6 @@ export const superAdminRouter = createTRPCRouter({
 
             return updated;
         }),
-
-    couponResetUsage: superAdminProcedure
-        .input(z.object({ couponId: z.string().uuid() }))
-        .mutation(async ({ input }) => {
-            const coupon = await db.query.coupons.findFirst({
-                where: eq(coupons.id, input.couponId),
-            });
-
-            if (!coupon) {
-                throw new TRPCError({
-                    code: "NOT_FOUND",
-                    message: "Coupon not found",
-                });
-            }
-
-            const [updated] = await db
-                .update(coupons)
-                .set({
-                    numberOfUses: 0,
-                })
-                .where(eq(coupons.id, input.couponId))
-                .returning();
-
-            return {
-                success: true,
-                coupon: updated,
-            };
-        }),
-
     couponStats: superAdminProcedure.query(async () => {
         const allCoupons = await db.select().from(coupons);
 

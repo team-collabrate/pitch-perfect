@@ -1,0 +1,1 @@
+ALTER TABLE "Aruppukottai_turf_customer" ADD COLUMN "numberOfBookings" integer DEFAULT 0 NOT NULL;

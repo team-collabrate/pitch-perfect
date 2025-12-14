@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useLanguage } from "~/lib/language-context";
 import allTranslations from "~/lib/translations/all";
-import { addDays, format, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { motion, AnimatePresence } from "motion/react";
 import { toPng } from "html-to-image";
 import { Pencil } from "lucide-react";
@@ -43,6 +43,7 @@ type BookingFromApi = {
   totalAmount: number;
   verificationCode: string | null;
   bookingType: "cricket" | "football" | null;
+  couponId: string | null;
   createdAt: Date;
   updatedAt: Date | null;
   timeSlot: {
@@ -68,17 +69,10 @@ type DisplayBooking = {
   bookingCode: string;
   phoneNumber: string;
   rescheduled?: boolean;
+  hasCoupon?: boolean;
 };
 
-const SLOT_TEMPLATE: Array<[string, string]> = [
-  ["06:00", "07:00"],
-  ["07:00", "08:00"],
-  ["08:00", "09:00"],
-  ["17:00", "18:00"],
-  ["18:00", "19:00"],
-  ["19:00", "20:00"],
-  ["20:00", "21:00"],
-];
+
 
 const toPngImage = toPng as (
   node: HTMLElement,
@@ -108,6 +102,7 @@ function transformBooking(booking: BookingFromApi): DisplayBooking | null {
     to: booking.timeSlot.to.slice(0, 5),
     bookingType: booking.bookingType ?? "cricket",
     paymentOption: booking.status === "fullPaid" ? "full" : "advance",
+    hasCoupon: !!booking.couponId,
     amountPaid: booking.amountPaid / 100, // Convert from paise
     totalAmount: booking.totalAmount / 100,
     verificationCode: booking.verificationCode ?? "----",
@@ -201,16 +196,26 @@ function BookingList({
                   </div>
                 )}
               </div>
-              <span
-                className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium",
-                  accent === "primary"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-muted text-muted-foreground",
+              <div className="flex flex-col items-end gap-1">
+                <span
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-medium",
+                    accent === "primary"
+                      ? "bg-primary/10 text-primary"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  ₹{booking.amountPaid}
+                </span>
+                {booking.hasCoupon && (
+                  <Badge
+                    variant="secondary"
+                    className="border-green-200 bg-green-50 text-green-700"
+                  >
+                    ✓ Coupon Applied
+                  </Badge>
                 )}
-              >
-                ₹{booking.amountPaid}
-              </span>
+              </div>
             </div>
             <div className="text-muted-foreground mt-3 flex items-center justify-between text-xs">
               <span>{customerName ?? booking.phoneNumber}</span>
@@ -261,7 +266,7 @@ export default function ViewPage() {
   );
 
   // Fetch bookings from backend
-  const { data: apiBookings, isLoading } = api.booking.getByNumber.useQuery(
+  const { data: apiBookings, isLoading, refetch } = api.booking.getByNumber.useQuery(
     { number: storedPhone },
     { enabled: !!storedPhone },
   );
@@ -406,8 +411,8 @@ export default function ViewPage() {
         newTimeSlotId: selectedSlot.id,
       });
       resetRescheduleState();
-      // Invalidate the getByNumber query to refetch bookings
-      await api.booking.getByNumber.invalidate();
+      // Refetch bookings
+      await refetch();
     } catch (error) {
       console.error("Failed to reschedule:", error);
       // TODO: Show error toast

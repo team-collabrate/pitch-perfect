@@ -5,8 +5,8 @@ import {
     publicProcedure,
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
-import { bookings, timeSlots, customers } from "~/server/db/schema";
-import { eq, and, inArray, desc } from "drizzle-orm";
+import { bookings, timeSlots, customers, coupons } from "~/server/db/schema";
+import { eq, and, inArray, desc, lte, gte, sql } from "drizzle-orm";
 import { sendBookingConfirmation } from "~/server/email";
 
 export const bookingRouter = createTRPCRouter({
@@ -20,6 +20,7 @@ export const bookingRouter = createTRPCRouter({
                     required_error: "Payment type is required",
                 }),
                 bookingType: z.enum(["cricket", "football", "cricket&football"]).default("cricket"),
+                couponId: z.string().uuid().optional(), // Optional coupon ID
             })
         )
         .mutation(async ({ input }) => {
@@ -69,6 +70,7 @@ export const bookingRouter = createTRPCRouter({
                 status,
                 verificationCode,
                 bookingType: input.bookingType,
+                couponId: input.couponId, // Add coupon ID
             }));
 
             const result = await db
@@ -257,5 +259,130 @@ export const bookingRouter = createTRPCRouter({
                 .where(eq(bookings.id, input.bookingId));
 
             return updatedBooking[0];
+        }),
+
+    // Validate coupon code for booking
+    validateCoupon: publicProcedure
+        .input(
+            z.object({
+                couponCode: z.string().min(1, "Coupon code is required"),
+                bookingCount: z.number().int().min(0).default(0), // Customer's current booking count
+                totalAmount: z.number().int().min(1), // Amount in paise
+            })
+        )
+        .query(async ({ input }) => {
+            // Find coupon by code
+            const coupon = await db
+                .select()
+                .from(coupons)
+                .where(
+                    and(
+                        eq(coupons.code, input.couponCode.toUpperCase()),
+                        eq(coupons.showCoupon, true),
+                        eq(coupons.status, "active")
+                    )
+                );
+
+            if (!coupon[0]) {
+                return {
+                    isValid: false,
+                    message: "Coupon not found or inactive",
+                    discount: 0,
+                    finalAmount: input.totalAmount,
+                };
+            }
+
+            const couponData = coupon[0];
+            const now = new Date();
+            const validFrom = new Date(couponData.validFrom);
+            const validTo = new Date(couponData.validTo);
+
+            // Check validity dates
+            if (now < validFrom || now > validTo) {
+                return {
+                    isValid: false,
+                    message: "Coupon expired or not yet valid",
+                    discount: 0,
+                    finalAmount: input.totalAmount,
+                };
+            }
+
+            // Check minimum booking amount
+            if (
+                couponData.minimumBookingAmount > 0 &&
+                input.totalAmount < couponData.minimumBookingAmount
+            ) {
+                return {
+                    isValid: false,
+                    message: `Minimum booking amount ₹${couponData.minimumBookingAmount / 100} required`,
+                    discount: 0,
+                    finalAmount: input.totalAmount,
+                };
+            }
+
+            // Check first N bookings only
+            if (couponData.firstNBookingsOnly > 0) {
+                const bookingCountResult = await db
+                    .select({ count: sql<number>`count(*)` })
+                    .from(bookings)
+                    .where(eq(bookings.couponId, couponData.id));
+
+                const bookingCount = bookingCountResult[0]?.count ?? 0;
+                if (bookingCount >= couponData.firstNBookingsOnly) {
+                    return {
+                        isValid: false,
+                        message: `Coupon usage limit reached`,
+                        discount: 0,
+                        finalAmount: input.totalAmount,
+                    };
+                }
+            }
+
+            // Check Nth purchase only
+            if (couponData.nthPurchaseOnly > 0 && input.bookingCount + 1 !== couponData.nthPurchaseOnly) {
+                return {
+                    isValid: false,
+                    message: `This coupon is valid only for booking #${couponData.nthPurchaseOnly}`,
+                    discount: 0,
+                    finalAmount: input.totalAmount,
+                };
+            }
+
+            // Check usage limit
+            if (couponData.usageLimit > 0) {
+                const usedCountResult = await db
+                    .select({ count: sql<number>`count(*)` })
+                    .from(bookings)
+                    .where(eq(bookings.couponId, couponData.id));
+
+                const usedCount = usedCountResult[0]?.count ?? 0;
+                if (usedCount >= couponData.usageLimit) {
+                    return {
+                        isValid: false,
+                        message: "Coupon usage limit reached",
+                        discount: 0,
+                        finalAmount: input.totalAmount,
+                    };
+                }
+            }
+
+            // Calculate discount
+            let discount = 0;
+            if (couponData.flatDiscountAmount > 0) {
+                discount = couponData.flatDiscountAmount;
+                if (couponData.maxFlatDiscountAmount > 0) {
+                    discount = Math.min(discount, couponData.maxFlatDiscountAmount);
+                }
+            }
+
+            const finalAmount = Math.max(0, input.totalAmount - discount);
+
+            return {
+                isValid: true,
+                couponId: couponData.id,
+                message: `Coupon applied! You save ₹${discount / 100}`,
+                discount,
+                finalAmount,
+            };
         }),
 });

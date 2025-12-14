@@ -50,6 +50,13 @@
       "when": 1765744282162,
       "tag": "0006_real_vision",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1765745167018,
+      "tag": "0007_foamy_galactus",
+      "breakpoints": true
     }
   ]
 }

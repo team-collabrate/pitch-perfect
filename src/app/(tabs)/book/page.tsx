@@ -91,11 +91,9 @@ const sanitizePhone = (value: string) => value.replace(/\D/g, "");
 const customerContactsSchema = z
   .object({
     name: z.string().trim().min(1, { message: "Enter the main client name" }),
-    number: z
-      .string()
-      .refine((value) => sanitizePhone(value).length === 10, {
-        message: "Primary number must be 10 digits",
-      }),
+    number: z.string().refine((value) => sanitizePhone(value).length === 10, {
+      message: "Primary number must be 10 digits",
+    }),
     alternateContactName: z
       .string()
       .trim()
@@ -103,7 +101,7 @@ const customerContactsSchema = z
     alternateContactNumber: z
       .string()
       .refine((value) => sanitizePhone(value).length === 10, {
-        message: "Alternate number must be 10 digits",
+        message: `Alternate number must be 10 digits`,
       }),
   })
   .superRefine((values, ctx) => {
@@ -238,6 +236,12 @@ export default function BookingPage() {
   const [phoneDrawerOpen, setPhoneDrawerOpen] = useState(false);
   const [tempPhone, setTempPhone] = useState("");
   const [isHydrated, setIsHydrated] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    couponId: string;
+    discount: number;
+    finalAmount: number;
+  } | null>(null);
 
   // Hydration effect
   useEffect(() => {
@@ -254,6 +258,20 @@ export default function BookingPage() {
   // Mutations
   const upsertCustomer = api.customer.upsert.useMutation();
   const bookSlots = api.booking.book.useMutation();
+
+  // Calculate total amount for coupon validation
+  const totalAmountPaise = selectedSlots.length * 80000; // ₹800 per slot in paise
+  const customerBookingCount = 0; // We can fetch this if needed
+
+  // Validate coupon query
+  const { data: couponValidation } = api.booking.validateCoupon.useQuery(
+    {
+      couponCode: couponCode.toUpperCase(),
+      bookingCount: customerBookingCount,
+      totalAmount: totalAmountPaise,
+    },
+    { enabled: couponCode.length > 0 && totalAmountPaise > 0 },
+  );
 
   const confirmationCardRef = useRef<HTMLDivElement | null>(null);
   const primaryConfirmation = confirmation?.[0] ?? null;
@@ -428,6 +446,7 @@ export default function BookingPage() {
         timeSlotIds,
         paymentType: paymentOption,
         bookingType: bookingTypeStr,
+        couponId: appliedCoupon?.couponId,
       });
 
       // Step 3: Create confirmation data
@@ -896,16 +915,112 @@ export default function BookingPage() {
         )}
       </section>
 
-      <MotionButton
-        disabled={!formReady || isSubmitting}
-        className="w-full rounded-2xl py-6 text-base font-semibold tracking-wide uppercase"
-        onClick={handleSubmit}
-        whileTap={{ scale: formReady && !isSubmitting ? 0.97 : 1 }}
-        whileHover={{ scale: formReady && !isSubmitting ? 1.02 : 1 }}
-        transition={springy}
-      >
-        {isSubmitting ? strings.processing : strings.payNow}
-      </MotionButton>
+      {(() => {
+        const advanceAmount = 10000; // ₹100 in paise per slot
+        const fullAmount = 80000; // ₹800 in paise per slot
+        const amountPerSlot =
+          paymentOption === "advance" ? advanceAmount : fullAmount;
+        const totalPayable = selectedSlots.length * amountPerSlot;
+        const finalAmount = appliedCoupon
+          ? appliedCoupon.finalAmount / selectedSlots.length
+          : totalPayable / 100;
+        const displayAmount =
+          paymentOption === "advance"
+            ? appliedCoupon
+              ? Math.ceil(
+                  appliedCoupon.finalAmount / selectedSlots.length / 100,
+                )
+              : 100
+            : appliedCoupon
+              ? Math.ceil(
+                  appliedCoupon.finalAmount / selectedSlots.length / 100,
+                )
+              : 800;
+
+      <section className="space-y-3">
+        <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
+          Coupon (optional)
+        </h2>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Enter coupon code"
+              value={couponCode}
+              onChange={(e) => {
+                setCouponCode(e.target.value);
+                setAppliedCoupon(null);
+              }}
+              className="rounded-2xl"
+              disabled={selectedSlots.length === 0}
+            />
+            {couponValidation?.isValid && !appliedCoupon && (
+              <Button
+                type="button"
+                onClick={() => {
+                  if (couponValidation.isValid) {
+                    setAppliedCoupon({
+                      couponId: couponValidation.couponId!,
+                      discount: couponValidation.discount,
+                      finalAmount: couponValidation.finalAmount,
+                    });
+                    toast.success(couponValidation.message);
+                  }
+                }}
+                className="shrink-0 rounded-2xl"
+              >
+                Apply
+              </Button>
+            )}
+            {appliedCoupon && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setAppliedCoupon(null);
+                  setCouponCode("");
+                }}
+                className="shrink-0 rounded-2xl"
+              >
+                Remove
+              </Button>
+            )}
+          </div>
+          {appliedCoupon && (
+            <div className="rounded-2xl border border-green-200 bg-green-50 p-3 text-sm">
+              <p className="font-medium text-green-700">
+                ✓ Coupon Applied: Save ₹
+                {(appliedCoupon.discount / 100).toFixed(2)}
+              </p>
+              <p className="text-xs text-green-600">
+                Pay: ₹{(appliedCoupon.finalAmount / 100).toFixed(2)}
+              </p>
+            </div>
+          )}
+          {couponValidation && !couponValidation.isValid && couponCode && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-2 text-xs text-red-700">
+              {couponValidation.message}
+            </div>
+          )}
+        </div>
+      </section>
+
+        return (
+          <MotionButton
+            disabled={!formReady || isSubmitting}
+            className="w-full rounded-2xl py-6 text-base font-semibold tracking-wide uppercase"
+            onClick={handleSubmit}
+            whileTap={{ scale: formReady && !isSubmitting ? 0.97 : 1 }}
+            whileHover={{ scale: formReady && !isSubmitting ? 1.02 : 1 }}
+            transition={springy}
+          >
+            {isSubmitting
+              ? strings.processing
+              : `Pay ₹${displayAmount * selectedSlots.length}`}
+          </MotionButton>
+        );
+      })()}
+
+      <div className="h-2" />
 
       <div className="h-2" />
       {/* Phone Number Change Drawer */}

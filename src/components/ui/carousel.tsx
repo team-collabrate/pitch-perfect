@@ -14,18 +14,25 @@ interface CarouselProps {
   slides: CarouselSlide[];
   autoPlayInterval?: number;
   scrollable?: boolean;
+  loop?: boolean;
 }
 
 export function Carousel({
   slides,
   autoPlayInterval = 4000,
   scrollable = false,
+  loop = true,
 }: CarouselProps) {
   const [current, setCurrent] = useState(0);
   const x = useMotionValue(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [dragging, setDragging] = useState(false);
+
+  const itemsForRender = loop
+    ? [slides[slides.length - 1], ...slides, slides[0]]
+    : slides;
+  const startPosition = loop ? 1 : 0;
 
   useEffect(() => {
     const updateWidth = () => {
@@ -39,34 +46,58 @@ export function Carousel({
   }, []);
 
   useEffect(() => {
+    setCurrent(startPosition);
+    x.set(-startPosition * containerWidth);
+  }, [startPosition, containerWidth, x]);
+
+  useEffect(() => {
     if (scrollable) return;
 
     const timer = setInterval(() => {
       if (!dragging) {
-        setCurrent((prev) => (prev + 1) % slides.length);
+        setCurrent((prev) => {
+          const next = prev + 1;
+          if (loop && next === itemsForRender.length - 1) return 1;
+          if (!loop && next === itemsForRender.length) return 0;
+          return next;
+        });
       }
     }, autoPlayInterval);
     return () => clearInterval(timer);
-  }, [slides.length, autoPlayInterval, scrollable, dragging]);
+  }, [itemsForRender.length, autoPlayInterval, scrollable, dragging, loop]);
 
   useEffect(() => {
     if (scrollable) return;
     x.set(-current * containerWidth);
   }, [current, containerWidth, scrollable]);
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDragEnd = (
+    event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo,
+  ) => {
     setDragging(false);
     const currentX = x.get();
-    const newIndex = Math.round(-currentX / containerWidth);
-    const clampedIndex = Math.max(0, Math.min(slides.length - 1, newIndex));
-    setCurrent(clampedIndex);
-    x.set(-clampedIndex * containerWidth);
+    const index = Math.round(-currentX / containerWidth);
+    let newIndex = index;
+    if (loop) {
+      if (index === 0) {
+        newIndex = slides.length;
+        x.set(-newIndex * containerWidth);
+      } else if (index === itemsForRender.length - 1) {
+        newIndex = 1;
+        x.set(-newIndex * containerWidth);
+      }
+    } else {
+      newIndex = Math.max(0, Math.min(itemsForRender.length - 1, index));
+    }
+    setCurrent(newIndex);
   };
 
   const goToSlide = (index: number) => {
-    setCurrent(index);
+    const newIndex = loop ? index + 1 : index;
+    setCurrent(newIndex);
     if (!scrollable) {
-      x.set(-index * containerWidth);
+      x.set(-newIndex * containerWidth);
     }
   };
 
@@ -128,18 +159,18 @@ export function Carousel({
           <motion.div
             className="flex h-56"
             style={{
-              width: containerWidth * slides.length,
+              width: containerWidth * itemsForRender.length,
               x,
             }}
             drag="x"
             dragConstraints={{
-              left: -(slides.length - 1) * containerWidth,
+              left: -(itemsForRender.length - 1) * containerWidth,
               right: 0,
             }}
             onDragStart={() => setDragging(true)}
             onDragEnd={handleDragEnd}
           >
-            {slides.map((slide) => (
+            {itemsForRender.map((slide) => (
               <div
                 key={slide.id}
                 className="relative h-56 w-full shrink-0"
@@ -160,28 +191,33 @@ export function Carousel({
 
         {/* Dots indicator */}
         <div className="absolute right-0 bottom-4 left-0 flex justify-center gap-2">
-          {slides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                const el = containerRef.current;
-                if (scrollable && el) {
-                  el.scrollTo({
-                    left: index * el.clientWidth,
-                    behavior: "smooth",
-                  });
-                } else {
-                  goToSlide(index);
-                }
-              }}
-              className={`h-2 w-2 rounded-full transition-all ${
-                index === current
-                  ? "w-6 bg-white"
-                  : "bg-white/50 hover:bg-white/70"
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
+          {slides.map((_, index) => {
+            const activeIndex = loop
+              ? (current - 1 + slides.length) % slides.length
+              : current;
+            return (
+              <button
+                key={index}
+                onClick={() => {
+                  const el = containerRef.current;
+                  if (scrollable && el) {
+                    el.scrollTo({
+                      left: index * el.clientWidth,
+                      behavior: "smooth",
+                    });
+                  } else {
+                    goToSlide(index);
+                  }
+                }}
+                className={`h-2 w-2 rounded-full transition-all ${
+                  index === activeIndex
+                    ? "w-6 bg-white"
+                    : "bg-white/50 hover:bg-white/70"
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

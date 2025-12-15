@@ -28,6 +28,7 @@ export const metadata: Metadata = {
     "football turf",
     "cricket practice",
     "Aruppukottai",
+    "apurkotai turf",
     "Pitch Perfect",
   ],
   authors: [{ name: "Pitch Perfect" }],
@@ -50,10 +51,10 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-apurkotai-turf.jpg",
         width: 1200,
         height: 630,
-        alt: "Pitch Perfect Turf booking hero",
+        alt: "Apurkotai Turf — Pitch Perfect",
       },
     ],
   },
@@ -61,7 +62,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Pitch Perfect Turf",
     description,
-    images: ["/og-image.png"],
+    images: ["/og-apurkotai-turf.jpg"],
   },
   appleWebApp: {
     capable: true,

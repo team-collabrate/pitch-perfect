@@ -19,7 +19,7 @@ export function TopBar() {
 
   return (
     <header className="border-border/60 bg-background/95 sticky top-0 z-50 flex items-center justify-between border-b px-4 py-4 backdrop-blur">
-      <p className="text-muted-foreground text-md tracking-[0.4em] uppercase">
+      <p className="text-muted-foreground text-xl agdasima-bold tracking-[0.4em] uppercase">
         Pitch Perfect
       </p>
       <div className="flex items-center gap-3">
@@ -34,7 +34,7 @@ export function TopBar() {
                 "rounded-full px-3 py-1 font-medium transition-colors",
                 language === code
                   ? "bg-primary text-primary-foreground"
-                  : " hover:text-foreground",
+                  : "hover:text-foreground",
               )}
             >
               {code.toUpperCase()}

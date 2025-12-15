@@ -64,7 +64,11 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Pitch Perfect Turf",
     description,
-    images: ["/og-apurkotai-turf.jpg"],
+    // Prefer absolute URL so validators reliably pick up the image
+    images: [`${siteUrl.replace(/\/$/, "")}/og-apurkotai-turf.jpg`],
+    // Optional: set a creator/site identifier. Replace with your Twitter handle if available.
+    creator: "Pitch Perfect",
+    site: "@pitchperfect",
   },
   appleWebApp: {
     capable: true,

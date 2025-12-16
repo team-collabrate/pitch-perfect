@@ -19,7 +19,7 @@ export function TopBar() {
 
   return (
     <header className="border-border/60 bg-background/95 sticky top-0 z-50 flex items-center justify-between border-b px-4 py-4 backdrop-blur">
-      <p className="text-muted-foreground bbh-hegarty-regular text-xl tracking-[0.4em] uppercase">
+      <p className="text-muted-foreground bbh-hegarty-regular text-xl tracking-[0.1em] uppercase">
         Pitch Perfect
       </p>
       <div className="flex items-center gap-3">

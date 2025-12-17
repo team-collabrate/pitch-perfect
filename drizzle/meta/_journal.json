@@ -57,6 +57,13 @@
       "when": 1765745167018,
       "tag": "0007_foamy_galactus",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1765989602680,
+      "tag": "0008_cultured_cerebro",
+      "breakpoints": true
     }
   ]
 }

@@ -69,8 +69,8 @@ export const timeSlots = createTable(
     date: d.date().notNull(),
     status: timeSlotStatusEnum().notNull().default("available"),
 
-    fullAmount: d.integer().notNull().default(800_00), // in paise
-    advanceAmount: d.integer().notNull().default(100_00), // in paise
+    fullAmount: d.integer().default(800_00), // in paise
+    advanceAmount: d.integer().default(100_00), // in paise
 
     createdAt: d.timestamp({ withTimezone: true }).defaultNow().notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),

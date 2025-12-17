@@ -1,7 +1,7 @@
 import "~/styles/globals.css";
 
 import { type Metadata, type Viewport } from "next";
-import { Geist, BBH_Hegarty } from "next/font/google";
+import { Geist, Poppins } from "next/font/google";
 
 import { TRPCReactProvider } from "~/trpc/react";
 import { env } from "~/env";
@@ -89,11 +89,11 @@ const geist = Geist({
   variable: "--font-geist-sans",
 });
 
-const bbhHegarty = BBH_Hegarty({
-  weight: "400",
+const poppins = Poppins({
+  weight: "800",
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-bbh-hegarty",
+  variable: "--font-poppins",
 });
 
 export default function RootLayout({
@@ -102,7 +102,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geist.variable} ${bbhHegarty.variable}`}
+      className={`${geist.variable} ${poppins.variable}`}
       suppressHydrationWarning
     >
       <body className="bg-background text-foreground min-h-screen font-sans">

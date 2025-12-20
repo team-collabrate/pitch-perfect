@@ -37,6 +37,23 @@ export const allTranslations = {
         },
     },
 
+    nav: {
+        en: {
+            home: "Home",
+            view: "View",
+            book: "Book",
+            gallery: "Gallery",
+            contact: "Contact",
+        },
+        ta: {
+            home: "முகப்பு",
+            view: "பார்க்க",
+            book: "பதிவு",
+            gallery: "கேலரி",
+            contact: "தொடர்பு",
+        },
+    },
+
     book: {
         en: {
             subtitle: "BOOK YOUR SLOT",
@@ -255,7 +272,7 @@ export const allTranslations = {
             emailAddress: "support@pitchperfectapk.com",
             whatsappTitle: "WhatsApp",
             whatsappDesc:
-            "Reach us instantly for slot checks, reschedules and quick clarifications.",
+                "Reach us instantly for slot checks, reschedules and quick clarifications.",
             whatsappCTA: "Chat on WhatsApp",
             frontDesk: "Front Desk",
             instagramTitle: "Instagram",
@@ -271,7 +288,7 @@ export const allTranslations = {
             emailAddress: "support@pitchperfectapk.com",
             whatsappTitle: "வாட்ஸ்அப்",
             whatsappDesc:
-            "ஸ்லாட் சரிபார்ப்புகள், மறுசீரமைப்புகள் மற்றும் விரைவு விளக்கங்களுக்கு உடனடியாக எங்களை அணுகுங்கள்.",
+                "ஸ்லாட் சரிபார்ப்புகள், மறுசீரமைப்புகள் மற்றும் விரைவு விளக்கங்களுக்கு உடனடியாக எங்களை அணுகுங்கள்.",
             whatsappCTA: "வாட்ஸ்அப்பில் அரட்டையடிக்கவும்",
             frontDesk: "வரவேற்பு அறை",
             instagramTitle: "இன்ஸ்டாகிராம்",
@@ -1079,7 +1096,7 @@ export const allTranslations = {
             customerTagFor: "{name} க்கான வாடிக்கையாளர் டேக்",
         },
     },
-} as const ;
+} as const;
 
 export type AllTranslations = typeof allTranslations;
 

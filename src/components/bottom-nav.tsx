@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useMemo } from "react";
 import {
   CalendarCheck,
   GalleryHorizontal,
@@ -11,32 +12,34 @@ import {
 } from "lucide-react";
 
 import { cn } from "~/lib/utils";
+import { useLanguage } from "~/lib/language-context";
+import allTranslations from "~/lib/translations/all";
 
 type NavItem = {
-  label: string;
+  labelKey: keyof typeof allTranslations.nav.en;
   href: string;
   icon: React.ReactNode;
 };
 
 const navItems: NavItem[] = [
-  { label: "Home", href: "/home", icon: <Home className="h-5 w-5" /> },
+  { labelKey: "home", href: "/home", icon: <Home className="h-5 w-5" /> },
   {
-    label: "View",
+    labelKey: "view",
     href: "/view",
     icon: <Ticket className="h-5 w-5" />,
   },
   {
-    label: "Book",
+    labelKey: "book",
     href: "/book",
     icon: <CalendarCheck className="h-5 w-5" />,
   },
   {
-    label: "Gallery",
+    labelKey: "gallery",
     href: "/gallery",
     icon: <GalleryHorizontal className="h-5 w-5" />,
   },
   {
-    label: "Contact",
+    labelKey: "contact",
     href: "/contact",
     icon: <Phone className="h-5 w-5" />,
   },
@@ -44,10 +47,12 @@ const navItems: NavItem[] = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { language } = useLanguage();
+  const strings = useMemo(() => allTranslations.nav[language], [language]);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-background/90 backdrop-blur-lg">
-      <div className="mx-auto flex max-w-md justify-between px-6 py-3 text-xs font-medium uppercase tracking-wide">
+    <nav className="border-border/60 bg-background/90 fixed right-0 bottom-0 left-0 z-50 border-t backdrop-blur-lg">
+      <div className="mx-auto flex max-w-md justify-between px-6 py-3 text-xs font-medium tracking-wide uppercase">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
@@ -69,7 +74,7 @@ export function BottomNav() {
               >
                 {item.icon}
               </span>
-              {item.label}
+              {strings[item.labelKey]}
             </Link>
           );
         })}

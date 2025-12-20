@@ -6,7 +6,7 @@ import {
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { bookings, timeSlots, customers, coupons} from "~/server/db/schema";
-import { eq, and, inArray, desc, count as countFn } from "drizzle-orm";
+import { eq, and, inArray, desc, count as countFn, sql } from "drizzle-orm";
 import { sendBookingConfirmation } from "~/server/email";
 import { TRPCError } from "@trpc/server";
 import {
@@ -190,6 +190,16 @@ export const bookingRouter = createTRPCRouter({
                     .insert(bookings)
                     .values(bookingInserts)
                     .returning();
+
+                // Increment coupon usage count if a coupon was used
+                if (input.couponId) {
+                    await tx
+                        .update(coupons)
+                        .set({
+                            numberOfUses: sql`${coupons.numberOfUses} + 1`,
+                        })
+                        .where(eq(coupons.id, input.couponId));
+                }
 
                 // Return bookings with time slot info
                 const bookingsWithSlots = await tx
@@ -485,21 +495,13 @@ export const bookingRouter = createTRPCRouter({
             }
 
             // Check first N bookings only
-            if (couponData.firstNBookingsOnly > 0) {
-                const bookingCountResult = await db
-                    .select({ count: countFn(bookings.id) })
-                    .from(bookings)
-                    .where(eq(bookings.couponId, couponData.id));
-
-                const bookingCount = bookingCountResult[0]?.count ?? 0;
-                if (bookingCount >= couponData.firstNBookingsOnly) {
-                    return {
-                        isValid: false,
-                        message: `Coupon usage limit reached`,
-                        discount: 0,
-                        finalAmount: input.totalAmount,
-                    };
-                }
+            if (couponData.firstNBookingsOnly > 0 && couponData.numberOfUses >= couponData.firstNBookingsOnly) {
+                return {
+                    isValid: false,
+                    message: `Coupon usage limit reached`,
+                    discount: 0,
+                    finalAmount: input.totalAmount,
+                };
             }
 
             // Check Nth purchase only
@@ -513,21 +515,13 @@ export const bookingRouter = createTRPCRouter({
             }
 
             // Check usage limit
-            if (couponData.usageLimit > 0) {
-                const usedCountResult = await db
-                    .select({ count: countFn(bookings.id) })
-                    .from(bookings)
-                    .where(eq(bookings.couponId, couponData.id));
-
-                const usedCount = usedCountResult[0]?.count ?? 0;
-                if (usedCount >= couponData.usageLimit) {
-                    return {
-                        isValid: false,
-                        message: "Coupon usage limit reached",
-                        discount: 0,
-                        finalAmount: input.totalAmount,
-                    };
-                }
+            if (couponData.usageLimit > 0 && couponData.numberOfUses >= couponData.usageLimit) {
+                return {
+                    isValid: false,
+                    message: "Coupon usage limit reached",
+                    discount: 0,
+                    finalAmount: input.totalAmount,
+                };
             }
 
             // Calculate discount
@@ -592,32 +586,16 @@ export const bookingRouter = createTRPCRouter({
                         || input.totalAmount >= coupon.minimumBookingAmount;
 
                     // Check first N bookings limit
-                    let isFirstNBookingsValid = true;
-                    if (coupon.firstNBookingsOnly > 0) {
-                        const couponUsageCountResult = await db
-                            .select({ count: countFn(bookings.id) })
-                            .from(bookings)
-                            .where(eq(bookings.couponId, coupon.id));
-
-                        const couponUsageCount = couponUsageCountResult[0]?.count ?? 0;
-                        isFirstNBookingsValid = couponUsageCount < coupon.firstNBookingsOnly;
-                    }
+                    const isFirstNBookingsValid = coupon.firstNBookingsOnly === 0
+                        || coupon.numberOfUses < coupon.firstNBookingsOnly;
 
                     // Check Nth purchase only
                     const isNthPurchaseValid = coupon.nthPurchaseOnly === 0
                         || (customerBookingCount + 1) === coupon.nthPurchaseOnly;
 
                     // Check usage limit
-                    let isUsageLimitValid = true;
-                    if (coupon.usageLimit > 0) {
-                        const couponUsageCountResult = await db
-                            .select({ count: countFn(bookings.id) })
-                            .from(bookings)
-                            .where(eq(bookings.couponId, coupon.id));
-
-                        const couponUsageCount = couponUsageCountResult[0]?.count ?? 0;
-                        isUsageLimitValid = couponUsageCount < coupon.usageLimit;
-                    }
+                    const isUsageLimitValid = coupon.usageLimit === 0
+                        || coupon.numberOfUses < coupon.usageLimit;
 
                     // Calculate discount
                     let discount = 0;

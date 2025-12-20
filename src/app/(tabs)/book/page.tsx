@@ -47,45 +47,6 @@ const toPngImage = toPng as (
   options: { cacheBust?: boolean; backgroundColor?: string },
 ) => Promise<string>;
 
-const createMockSlots = () => {
-  const today = new Date();
-  const template: Array<[string, string]> = [
-    ["06:00", "07:00"],
-    ["07:00", "08:00"],
-    ["08:00", "09:00"],
-    ["17:00", "18:00"],
-    ["18:00", "19:00"],
-    ["19:00", "20:00"],
-    ["20:00", "21:00"],
-  ];
-
-  const result: SlotView[] = [];
-  let idCounter = 1;
-  for (let dayIndex = 0; dayIndex < 7; dayIndex += 1) {
-    const date = format(addDays(today, dayIndex), "yyyy-MM-dd");
-    template.forEach(([from, to], slotIndex) => {
-      const isUnavailable = (slotIndex + dayIndex) % 6 === 0;
-      const isBooked = !isUnavailable && (slotIndex + dayIndex) % 5 === 0;
-      result.push({
-        id: idCounter++,
-        date,
-        from,
-        to,
-        status: isUnavailable
-          ? "unavailable"
-          : isBooked
-            ? "booked"
-            : "available",
-        fullAmount: 80000, // ₹800 in paise
-        advanceAmount: 10000, // ₹100 in paise
-      });
-    });
-  }
-  return result;
-};
-
-const fallbacks = createMockSlots();
-
 const MotionButton = motion.create(Button);
 const MotionCard = motion.create(Card);
 
@@ -623,8 +584,8 @@ export default function BookingPage() {
   return (
     <motion.div
       className="space-y-8"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
     >
       <header className="space-y-1">

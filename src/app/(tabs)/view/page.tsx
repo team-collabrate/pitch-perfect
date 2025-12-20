@@ -138,8 +138,8 @@ function BookingList({
     return (
       <motion.section
         className="space-y-3"
-        initial={{ opacity: 0, y: 16 }}
-        whileInView={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
         viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 0.35 }}
       >
@@ -148,7 +148,7 @@ function BookingList({
         </h2>
         <MotionCard
           className="text-muted-foreground items-center justify-center gap-2 p-6 text-center text-sm"
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.98 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.35 }}
@@ -162,8 +162,8 @@ function BookingList({
   return (
     <motion.section
       className="space-y-3"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.35 }}
     >
@@ -176,8 +176,8 @@ function BookingList({
             key={booking.id}
             className={cn("p-4", accent === "muted" && "opacity-70")}
             layout
-            initial={{ opacity: 0, translateY: 16 }}
-            animate={{ opacity: 1, translateY: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
             whileHover={{ scale: 1.01 }}
           >
@@ -475,15 +475,15 @@ export default function ViewPage() {
 
   return (
     <motion.div
-      className="space-y-8 pb-6"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
+      className="space-y-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
     >
       <motion.header
         className="space-y-1"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.35, delay: 0.05 }}
       >
         <p className="text-muted-foreground text-xs tracking-wide uppercase">

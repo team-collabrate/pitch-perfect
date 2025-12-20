@@ -29,7 +29,7 @@ export default function GalleryPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 pb-6">
+      <div className="space-y-6">
         <header className="space-y-1">
           <p className="text-muted-foreground text-xs tracking-wide uppercase">
             {strings.subtitle}
@@ -45,7 +45,7 @@ export default function GalleryPage() {
 
   if (!galleryItems || galleryItems.length === 0) {
     return (
-      <div className="space-y-6 pb-6">
+      <div className="space-y-6">
         <header className="space-y-1">
           <p className="text-muted-foreground text-xs tracking-wide uppercase">
             {strings.subtitle}
@@ -60,7 +60,7 @@ export default function GalleryPage() {
   }
 
   return (
-    <div className="space-y-6 pb-6">
+    <div className="space-y-6">
       <header className="space-y-1">
         <p className="text-muted-foreground text-xs tracking-wide uppercase">
           {strings.subtitle}

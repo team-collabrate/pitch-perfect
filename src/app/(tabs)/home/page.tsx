@@ -7,7 +7,7 @@ import { ArrowUpRight, Calendar, HelpCircle, Ticket } from "lucide-react";
 import { motion } from "motion/react";
 import { Card } from "~/components/ui/card";
 //import Carousel from "~/components/ui/carousel";
-import {Carousel} from "~/components/ui/carousel";
+import { Carousel } from "~/components/ui/carousel";
 import { useLanguage } from "~/lib/language-context";
 import { LocationWidget } from "~/components/location-widget";
 import { api } from "~/trpc/react";
@@ -69,7 +69,7 @@ export default function HomePage() {
 
   return (
     <motion.div
-      className="space-y-8 pb-6"
+      className="space-y-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}

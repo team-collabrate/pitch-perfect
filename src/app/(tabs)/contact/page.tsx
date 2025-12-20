@@ -30,15 +30,15 @@ export default function ContactPage() {
   const strings = useMemo(() => allTranslations.contact[language], [language]);
   return (
     <motion.div
-      className="space-y-6 pb-6"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <motion.header
         className="space-y-1"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.35, delay: 0.05 }}
       >
         <p className="text-muted-foreground text-xs tracking-wide uppercase">
@@ -49,8 +49,8 @@ export default function ContactPage() {
 
       <MotionCard
         className="gap-4 p-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
         <div>
@@ -62,8 +62,8 @@ export default function ContactPage() {
               <li key={contact.phone}>
                 <motion.div
                   className="flex items-center justify-between"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   transition={{ duration: 0.3, delay: 0.15 + index * 0.05 }}
                   whileHover={{ scale: 1.01 }}
                 >

@@ -8,17 +8,14 @@ function useCurrentTimeAndDate() {
     const interval = setInterval(() => setNow(new Date()), 1000 * 30);
     return () => clearInterval(interval);
   }, []);
-  const time = now.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-  const date = now.toLocaleDateString([], {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  return { time, date };
+  const time = now
+    .toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+    .toUpperCase();
+  return { time };
 }
 
 import { Button } from "~/components/ui/button";
@@ -26,9 +23,11 @@ import { LogOut, Loader2 } from "lucide-react";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { authClient } from "~/server/better-auth/client";
 import type { ManagerRole } from "~/lib/admin-nav";
+import { AdminProfileDrawer } from "./admin-profile-drawer";
 
 type AdminTopBarProps = {
   user: {
+    id: number;
     name: string;
     email: string;
     role: ManagerRole;
@@ -45,7 +44,7 @@ export function AdminTopBar({ user }: AdminTopBarProps) {
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
 
-  const { time: currentTime, date: currentDate } = useCurrentTimeAndDate();
+  const { time: currentTime } = useCurrentTimeAndDate();
 
   const handleLogout = async () => {
     try {
@@ -59,33 +58,33 @@ export function AdminTopBar({ user }: AdminTopBarProps) {
   };
 
   return (
-    <header className="border-border/60 bg-background/95 sticky top-0 z-50 flex items-center justify-between border-b px-4 py-4 backdrop-blur">
-      <div>
-        <p className="text-muted-foreground text-xs tracking-[0.4em] uppercase">
+    <header className="border-border/60 bg-background/95 sticky top-0 z-50 flex items-center justify-between border-b px-4 py-3 backdrop-blur">
+      <div className="flex flex-col">
+        <p className="text-muted-foreground bbh-hegarty-regular text-lg leading-tight tracking-[0.1em] uppercase">
           Pitch Perfect
         </p>
-        <p className="text-lg font-semibold">Admin Console</p>
-      </div>
-      <div className="flex items-center gap-3">
-        <div className="text-right">
-          <p className="text-sm leading-none font-semibold">{user.name}</p>
-          <p className="text-muted-foreground text-xs">
+        <div className="flex items-center gap-1.5 leading-none">
+          <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
             {ROLE_LABELS[user.role]}
-          </p>
-        </div>
-        <div className="mr-2 flex min-w-[90px] flex-col items-end">
-          <span className="text-muted-foreground font-mono text-xs">
+          </span>
+          <span className="text-muted-foreground text-[10px] font-medium">
+            {user.name}
+          </span>
+          <span className="text-muted-foreground/40 text-[10px]">•</span>
+          <span className="text-muted-foreground text-[10px] font-medium tabular-nums">
             {currentTime}
           </span>
-          <span className="text-muted-foreground text-[10px]">
-            {currentDate}
-          </span>
         </div>
+      </div>
+
+      <div className="flex items-center gap-1">
         <ThemeToggle />
+        <div className="bg-border/40 mx-1 h-4 w-[1px]" />
+        <AdminProfileDrawer adminId={user.id} adminName={user.name} />
         <Button
           size="sm"
-          variant="secondary"
-          className="rounded-full"
+          variant="ghost"
+          className="text-muted-foreground hover:text-destructive h-9 w-9 rounded-full p-0 transition-colors"
           onClick={handleLogout}
           disabled={signingOut}
           aria-label="Logout"

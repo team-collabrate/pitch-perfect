@@ -15,6 +15,7 @@ export default async function AdminPanelLayout({
     <div className="bg-background mx-auto flex min-h-dvh w-full max-w-md flex-col">
       <AdminTopBar
         user={{
+          id: manager.id,
           name: session.user.name,
           email: session.user.email,
           role: manager.role,

@@ -109,7 +109,7 @@ export function AdminProfileDrawer({
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 rounded-full p-0"
+          className="text-muted-foreground hover:text-primary h-9 w-9 rounded-full p-0 transition-colors"
           title="View profile"
         >
           <Settings className="h-4 w-4" />

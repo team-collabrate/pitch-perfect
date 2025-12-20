@@ -17,14 +17,10 @@ const contacts = [
     name: "Front Desk",
     phone: "+91 73588 48765",
   },
-  {
-    name: "Ground Manager",
-    phone: "+91 73588 48765",
-  },
 ];
 
 const whatsappNumber = "+917358848765";
-const instagramUrl = "https://www.instagram.com/pitchperfect.turf/?hl=en";
+const instagramUrl = "https://www.instagram.com/+917358848765/?hl=en";
 
 const MotionCard = motion(Card);
 const MotionButton = motion(Button);
@@ -106,7 +102,7 @@ export default function ContactPage() {
         <div className="space-y-2 text-sm">
           <p className="text-foreground font-semibold">{strings.emailLabel}</p>
           <Link
-            href="mailto:hello@pitchperfect.turf"
+            href="mailto:support@pitchperfectapk.com"
             className="text-muted-foreground hover:text-primary"
           >
             {strings.emailAddress}
@@ -139,7 +135,7 @@ export default function ContactPage() {
             Instagram
           </h2>
           <p className="text-muted-foreground mt-2 text-sm">
-            Follow us for booking highlights and updates.
+            Follow us for updates.
           </p>
         </div>
         <MotionButton

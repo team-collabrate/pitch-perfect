@@ -1006,6 +1006,7 @@ export const superAdminRouter = createTRPCRouter({
             .select({
                 id: coupons.id,
                 code: coupons.code,
+                status: coupons.status,
                 description: coupons.description,
                 flatDiscountAmount: coupons.flatDiscountAmount,
                 maxFlatDiscountAmount: coupons.maxFlatDiscountAmount,

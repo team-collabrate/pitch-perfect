@@ -1,7 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+
+import { useLanguage } from "~/lib/language-context";
+import allTranslations from "~/lib/translations/all";
+
 function useCurrentTimeAndDate() {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -34,15 +38,17 @@ type AdminTopBarProps = {
   };
 };
 
-const ROLE_LABELS: Record<ManagerRole, string> = {
-  admin: "Admin",
-  superAdmin: "Super Admin",
-  staff: "Staff",
-};
-
 export function AdminTopBar({ user }: AdminTopBarProps) {
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
+  const { language } = useLanguage();
+  const strings = useMemo(() => allTranslations.admin[language], [language]);
+
+  const ROLE_LABELS: Record<ManagerRole, string> = {
+    admin: strings.roleAdmin,
+    superAdmin: strings.roleSuperAdmin,
+    staff: strings.roleStaff,
+  };
 
   const { time: currentTime } = useCurrentTimeAndDate();
 
@@ -87,7 +93,7 @@ export function AdminTopBar({ user }: AdminTopBarProps) {
           className="text-muted-foreground hover:text-destructive h-9 w-9 rounded-full p-0 transition-colors"
           onClick={handleLogout}
           disabled={signingOut}
-          aria-label="Logout"
+          aria-label={strings.logout}
         >
           {signingOut ? (
             <Loader2 className="h-4 w-4 animate-spin" />

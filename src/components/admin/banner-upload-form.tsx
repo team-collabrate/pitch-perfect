@@ -1,11 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { api } from "~/trpc/react";
+import { useLanguage } from "~/lib/language-context";
+import allTranslations from "~/lib/translations/all";
 
 interface CloudinaryUploadResult {
   public_id: string;
@@ -17,6 +19,8 @@ interface BannerUploadProps {
 }
 
 export function BannerUploadForm({ onUploadSuccess }: BannerUploadProps) {
+  const { language } = useLanguage();
+  const strings = useMemo(() => allTranslations.admin[language], [language]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +49,7 @@ export function BannerUploadForm({ onUploadSuccess }: BannerUploadProps) {
     setSuccess(false);
 
     if (!formData.file) {
-      setError("Please select a file to upload");
+      setError(strings.selectFileToUpload);
       return;
     }
 
@@ -102,14 +106,14 @@ export function BannerUploadForm({ onUploadSuccess }: BannerUploadProps) {
           }, 1200);
         } catch (err) {
           console.error("Upload error:", err);
-          setError("Failed to upload banner");
+          setError(strings.uploadError);
           setIsUploading(false);
         }
       };
       reader.readAsDataURL(formData.file);
     } catch (err) {
       console.error("Error:", err);
-      setError("An error occurred");
+      setError(strings.uploadError);
       setIsUploading(false);
     }
   };
@@ -124,12 +128,12 @@ export function BannerUploadForm({ onUploadSuccess }: BannerUploadProps) {
 
       {success && (
         <div className="rounded-md bg-green-50 p-3 text-sm text-green-800">
-          Banner uploaded successfully!
+          {strings.uploadSuccess}
         </div>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="media-type">Media Type</Label>
+        <Label htmlFor="media-type">{strings.mediaType}</Label>
         <select
           id="media-type"
           title="Select media type"
@@ -143,14 +147,14 @@ export function BannerUploadForm({ onUploadSuccess }: BannerUploadProps) {
           className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           disabled={isUploading}
         >
-          <option value="image">Image</option>
-          <option value="video">Video</option>
-          <option value="gif">GIF</option>
+          <option value="image">{strings.image}</option>
+          <option value="video">{strings.video}</option>
+          <option value="gif">{strings.gif}</option>
         </select>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="file">File</Label>
+        <Label htmlFor="file">{strings.file}</Label>
         <Input
           id="file"
           ref={fileInputRef}
@@ -166,47 +170,47 @@ export function BannerUploadForm({ onUploadSuccess }: BannerUploadProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="title">Title (optional)</Label>
+        <Label htmlFor="title">{strings.titleOptional}</Label>
         <Input
           id="title"
           value={formData.title}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, title: e.target.value }))
           }
-          placeholder="Banner title (optional)"
+          placeholder={strings.titleOptional}
           disabled={isUploading}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Description (Optional)</Label>
+        <Label htmlFor="description">{strings.descriptionOptional}</Label>
         <textarea
           id="description"
           value={formData.description}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, description: e.target.value }))
           }
-          placeholder="Describe the banner"
+          placeholder={strings.descriptionOptional}
           disabled={isUploading}
           className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="alt-text">Alt Text (Optional)</Label>
+        <Label htmlFor="alt-text">{strings.altTextOptional}</Label>
         <Input
           id="alt-text"
           value={formData.altText}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, altText: e.target.value }))
           }
-          placeholder="Alternative text for accessibility"
+          placeholder={strings.altTextOptional}
           disabled={isUploading}
         />
       </div>
 
       <Button type="submit" disabled={isUploading} className="w-full">
-        {isUploading ? "Uploading..." : "Upload"}
+        {isUploading ? strings.uploading : strings.upload}
       </Button>
     </form>
   );

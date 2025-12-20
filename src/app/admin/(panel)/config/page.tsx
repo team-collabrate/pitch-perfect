@@ -92,9 +92,9 @@ export default function ConfigPage() {
       await configUpdateMutation.mutateAsync({
         [field]: value,
       });
-      toast.success("Config updated successfully");
+      toast.success(strings.configUpdated);
     } catch (error) {
-      toast.error("Failed to update config");
+      toast.error(strings.configUpdateError);
       console.error(error);
       if (field === "maintenanceMode") {
         setMaintenanceMode(!value);
@@ -117,9 +117,9 @@ export default function ConfigPage() {
       await configUpdateMutation.mutateAsync({
         maintenanceMessage,
       });
-      toast.success("Maintenance message updated");
+      toast.success(strings.maintenanceMessageUpdated);
     } catch (error) {
-      toast.error("Failed to update message");
+      toast.error(strings.maintenanceMessageError);
       console.error(error);
     } finally {
       setSavingState(null);
@@ -132,9 +132,9 @@ export default function ConfigPage() {
       await configUpdateMutation.mutateAsync({
         bookingBufferMinutes: bufferMinutes,
       });
-      toast.success("Buffer time updated");
+      toast.success(strings.bufferTimeUpdated);
     } catch (error) {
-      toast.error("Failed to update buffer time");
+      toast.error(strings.bufferTimeError);
       console.error(error);
     } finally {
       setSavingState(null);
@@ -152,9 +152,9 @@ export default function ConfigPage() {
           daysInAdvanceToCreateSlots: daysInAdvance,
         },
       });
-      toast.success("Days in advance updated");
+      toast.success(strings.daysInAdvanceUpdated);
     } catch (error) {
-      toast.error("Failed to update days in advance");
+      toast.error(strings.daysInAdvanceError);
       console.error(error);
     } finally {
       setSavingState(null);
@@ -172,9 +172,9 @@ export default function ConfigPage() {
           daysInAdvanceToCouldBook: daysToBook,
         },
       });
-      toast.success("Booking window updated");
+      toast.success(strings.bookingWindowUpdated);
     } catch (error) {
-      toast.error("Failed to update booking window");
+      toast.error(strings.bookingWindowError);
       console.error(error);
     } finally {
       setSavingState(null);
@@ -184,7 +184,7 @@ export default function ConfigPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading config...</p>
+        <p className="text-muted-foreground">{strings.loadingConfig}</p>
       </div>
     );
   }
@@ -208,9 +208,9 @@ export default function ConfigPage() {
             <div className="flex items-center gap-3">
               <Clock className="text-primary h-5 w-5" />
               <div>
-                <p className="text-sm font-semibold">Daily Slot Overrides</p>
+                <p className="text-sm font-semibold">{strings.dailySlotOverrides}</p>
                 <p className="text-muted-foreground text-xs">
-                  Override specific slots for a single day
+                  {strings.dailySlotOverridesDesc}
                 </p>
               </div>
             </div>
@@ -221,9 +221,9 @@ export default function ConfigPage() {
         {/* Maintenance Mode Toggle */}
         <Card className="border-border/60 bg-card/60 flex flex-row items-center justify-between rounded-3xl px-4 py-3">
           <div>
-            <p className="text-sm font-semibold">Maintenance mode</p>
+            <p className="text-sm font-semibold">{strings.maintenanceMode}</p>
             <p className="text-muted-foreground text-xs">
-              Temporarily pause bookings
+              {strings.maintenanceModeDesc}
             </p>
           </div>
           <button
@@ -248,8 +248,8 @@ export default function ConfigPage() {
         {/* Full Payment Mode Toggle */}
         <Card className="border-border/60 bg-card/60 flex flex-row items-center justify-between rounded-3xl px-4 py-3">
           <div>
-            <p className="text-sm font-semibold">Full payment only</p>
-            <p className="text-muted-foreground text-xs">Skip advance option</p>
+            <p className="text-sm font-semibold">{strings.fullPaymentOnly}</p>
+            <p className="text-muted-foreground text-xs">{strings.fullPaymentOnlyDesc}</p>
           </div>
           <button
             type="button"
@@ -274,9 +274,9 @@ export default function ConfigPage() {
         {maintenanceMode && (
           <Card className="border-border/60 bg-card/60 space-y-3 rounded-3xl p-4">
             <div>
-              <p className="text-sm font-semibold">Maintenance message</p>
+              <p className="text-sm font-semibold">{strings.maintenanceMessage}</p>
               <p className="text-muted-foreground text-xs">
-                Message shown to users during maintenance
+                {strings.maintenanceMessageDesc}
               </p>
             </div>
             <textarea
@@ -286,7 +286,7 @@ export default function ConfigPage() {
               }
               maxLength={200}
               className="border-border bg-background w-full rounded-2xl border px-4 py-2 text-sm"
-              placeholder="Enter maintenance message..."
+              placeholder={strings.maintenanceMessagePlaceholder}
               rows={3}
             />
             <div className="flex items-center justify-between gap-3">
@@ -299,7 +299,7 @@ export default function ConfigPage() {
                 onClick={handleMaintenanceMessageSave}
                 disabled={savingState === "maintenanceMessage"}
               >
-                {savingState === "maintenanceMessage" ? "Saving..." : "Save"}
+                {savingState === "maintenanceMessage" ? strings.saving : strings.save}
               </Button>
             </div>
           </Card>
@@ -308,9 +308,9 @@ export default function ConfigPage() {
         {/* Buffer Minutes */}
         <Card className="border-border/60 bg-card/60 space-y-3 rounded-3xl p-4">
           <div>
-            <p className="text-sm font-semibold">Booking buffer time</p>
+            <p className="text-sm font-semibold">{strings.bookingBufferTime}</p>
             <p className="text-muted-foreground text-xs">
-              Minutes before payment deadline to open slot again
+              {strings.bookingBufferTimeDesc}
             </p>
           </div>
           <div className="flex items-end gap-3">
@@ -323,7 +323,7 @@ export default function ConfigPage() {
                   setBufferMinutes(Math.max(0, parseInt(e.target.value) || 0))
                 }
                 className="rounded-2xl"
-                placeholder="Minutes"
+                placeholder={strings.minutes}
               />
             </div>
             <Button
@@ -332,7 +332,7 @@ export default function ConfigPage() {
               onClick={handleBufferMinutesSave}
               disabled={savingState === "bufferMinutes"}
             >
-              {savingState === "bufferMinutes" ? "Saving..." : "Save"}
+              {savingState === "bufferMinutes" ? strings.saving : strings.save}
             </Button>
           </div>
         </Card>
@@ -340,9 +340,9 @@ export default function ConfigPage() {
         {/* Days to Book */}
         <Card className="border-border/60 bg-card/60 space-y-3 rounded-3xl p-4">
           <div>
-            <p className="text-sm font-semibold">Booking window (days)</p>
+            <p className="text-sm font-semibold">{strings.bookingWindow}</p>
             <p className="text-muted-foreground text-xs">
-              Number of days users can see and book in advance
+              {strings.bookingWindowDesc}
             </p>
           </div>
           <div className="flex items-end gap-3">
@@ -355,7 +355,7 @@ export default function ConfigPage() {
                   setDaysToBook(Math.max(1, parseInt(e.target.value) || 1))
                 }
                 className="rounded-2xl"
-                placeholder="Days"
+                placeholder={strings.days}
               />
             </div>
             <Button
@@ -364,7 +364,7 @@ export default function ConfigPage() {
               onClick={handleDaysToBookSave}
               disabled={savingState === "daysToBook"}
             >
-              {savingState === "daysToBook" ? "Saving..." : "Save"}
+              {savingState === "daysToBook" ? strings.saving : strings.save}
             </Button>
           </div>
         </Card>
@@ -372,9 +372,9 @@ export default function ConfigPage() {
         {/* Days in Advance */}
         <Card className="border-border/60 bg-card/60 space-y-3 rounded-3xl p-4">
           <div>
-            <p className="text-sm font-semibold">Days in advance for slots</p>
+            <p className="text-sm font-semibold">{strings.daysInAdvanceSlots}</p>
             <p className="text-muted-foreground text-xs">
-              Number of days in advance to create time slots
+              {strings.daysInAdvanceSlotsDesc}
             </p>
           </div>
           <div className="flex items-end gap-3">
@@ -387,7 +387,7 @@ export default function ConfigPage() {
                   setDaysInAdvance(Math.max(1, parseInt(e.target.value) || 1))
                 }
                 className="rounded-2xl"
-                placeholder="Days"
+                placeholder={strings.days}
               />
             </div>
             <Button
@@ -396,7 +396,7 @@ export default function ConfigPage() {
               onClick={handleDaysInAdvanceSave}
               disabled={savingState === "daysInAdvance"}
             >
-              {savingState === "daysInAdvance" ? "Saving..." : "Save"}
+              {savingState === "daysInAdvance" ? strings.saving : strings.save}
             </Button>
           </div>
         </Card>
@@ -408,11 +408,11 @@ export default function ConfigPage() {
               <div className="flex-1">
                 <p className="text-sm font-semibold">{strings.galleryTitle}</p>
                 <p className="text-muted-foreground text-xs">
-                  Edit gallery images and details
+                  {strings.editGalleryDesc}
                 </p>
               </div>
               <Button className="rounded-2xl" variant="secondary" size="sm">
-                Open
+                {strings.open}
               </Button>
             </div>
           </Card>
@@ -425,11 +425,11 @@ export default function ConfigPage() {
               <div className="flex-1">
                 <p className="text-sm font-semibold">{strings.bannerTitle}</p>
                 <p className="text-muted-foreground text-xs">
-                  Edit banner images and details
+                  {strings.editBannerDesc}
                 </p>
               </div>
               <Button className="rounded-2xl" variant="secondary" size="sm">
-                Open
+                {strings.open}
               </Button>
             </div>
           </Card>
@@ -443,16 +443,15 @@ export default function ConfigPage() {
       >
         <DialogContent className="rounded-3xl">
           <DialogHeader>
-            <DialogTitle>Enable Maintenance Mode?</DialogTitle>
+            <DialogTitle>{strings.enableMaintenanceTitle}</DialogTitle>
             <DialogDescription>
-              Enabling maintenance mode will pause all new bookings. Users will
-              see a maintenance message when trying to book.
+              {strings.enableMaintenanceDesc}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-4">
             {maintenanceMessage && (
               <>
-                <p className="text-sm font-semibold">Users will see:</p>
+                <p className="text-sm font-semibold">{strings.usersWillSee}</p>
                 <p className="bg-muted rounded-lg p-3 text-sm">
                   {maintenanceMessage}
                 </p>
@@ -465,10 +464,10 @@ export default function ConfigPage() {
               onClick={() => setMaintenanceWarningOpen(false)}
               className="rounded-2xl"
             >
-              Cancel
+              {strings.cancel}
             </Button>
             <Button onClick={handleConfirmMaintenance} className="rounded-2xl">
-              Enable Maintenance Mode
+              {strings.enableMaintenanceCTA}
             </Button>
           </DialogFooter>
         </DialogContent>

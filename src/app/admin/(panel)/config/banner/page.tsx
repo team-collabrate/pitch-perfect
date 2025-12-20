@@ -50,9 +50,9 @@ export default function AdminBannerPage() {
 
     const p = deleteMutation.mutateAsync({ id: deleteItem.id });
     void toast.promise(p, {
-      loading: "Deleting banner item...",
-      success: "Banner item deleted",
-      error: "Failed to delete banner item",
+      loading: strings.deletingBanner,
+      success: strings.bannerDeleted,
+      error: strings.bannerDeleteError,
     });
     await p;
 
@@ -63,9 +63,9 @@ export default function AdminBannerPage() {
   const handleToggleActive = async (ids: number[], isActive: boolean) => {
     const p = toggleActiveMutation.mutateAsync({ ids, isActive });
     void toast.promise(p, {
-      loading: `Updating ${ids.length} item(s)...`,
-      success: `Banner items ${isActive ? "activated" : "deactivated"}`,
-      error: "Failed to update banner items",
+      loading: strings.updatingItems.replace("{count}", ids.length.toString()),
+      success: isActive ? strings.bannerActivated : strings.bannerDeactivated,
+      error: strings.bannerUpdateError,
     });
     await p;
 
@@ -79,7 +79,7 @@ export default function AdminBannerPage() {
           <h1 className="text-3xl font-bold">{strings.bannerTitle}</h1>
         </div>
         <div className="flex items-center justify-center py-12">
-          <p>Loading...</p>
+          <p>{strings.loading}</p>
         </div>
       </div>
     );
@@ -98,9 +98,7 @@ export default function AdminBannerPage() {
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{strings.bannerTitle}</DialogTitle>
-            <DialogDescription>
-              Add new images, videos, or GIFs to the banner rotation
-            </DialogDescription>
+            <DialogDescription>{strings.bannerUploadDesc}</DialogDescription>
           </DialogHeader>
           <BannerUploadForm
             onUploadSuccess={() => {
@@ -113,9 +111,7 @@ export default function AdminBannerPage() {
 
       {!bannerItems || bannerItems.length === 0 ? (
         <div className="flex items-center justify-center rounded-lg border border-dashed p-12">
-          <p className="text-muted-foreground">
-            No banner items yet. Upload one to get started!
-          </p>
+          <p className="text-muted-foreground">{strings.noBannerItems}</p>
         </div>
       ) : (
         <>
@@ -125,22 +121,22 @@ export default function AdminBannerPage() {
                 <thead>
                   <tr className="bg-muted/50 border-b">
                     <th className="px-2 py-3 text-left text-sm font-semibold">
-                      Preview
+                      {strings.preview}
                     </th>
                     <th className="px-2 py-3 text-left text-sm font-semibold">
-                      Title
+                      {strings.title}
                     </th>
                     <th className="px-2 py-3 text-left text-sm font-semibold">
-                      Type
+                      {strings.type}
                     </th>
                     <th className="px-2 py-3 text-left text-sm font-semibold">
-                      Status
+                      {strings.status}
                     </th>
                     <th className="px-2 py-3 text-left text-sm font-semibold">
-                      Order
+                      {strings.order}
                     </th>
                     <th className="px-2 py-3 text-left text-sm font-semibold">
-                      Actions
+                      {strings.actions}
                     </th>
                   </tr>
                 </thead>
@@ -171,7 +167,7 @@ export default function AdminBannerPage() {
                       <td className="px-2 py-3">
                         <div className="max-w-xs">
                           <p className="truncate font-medium">
-                            {item.title ?? "Untitled"}
+                            {item.title ?? strings.untitled}
                           </p>
                           {item.description && (
                             <p className="text-muted-foreground truncate text-xs">
@@ -197,7 +193,7 @@ export default function AdminBannerPage() {
                             <Check className="h-5 w-5 text-green-600" />
                           ) : item.status === "draft" ? (
                             <span className="text-muted-foreground text-xs">
-                              Draft
+                              {strings.draft}
                             </span>
                           ) : (
                             <X className="h-5 w-5 text-red-600" />
@@ -239,7 +235,7 @@ export default function AdminBannerPage() {
           </div>
 
           <div className="space-y-2 rounded-lg border p-4">
-            <h3 className="font-semibold">Bulk Actions</h3>
+            <h3 className="font-semibold">{strings.bulkActions}</h3>
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -251,7 +247,7 @@ export default function AdminBannerPage() {
                   )
                 }
               >
-                Activate All
+                {strings.activateAll}
               </Button>
               <Button
                 variant="outline"
@@ -263,7 +259,7 @@ export default function AdminBannerPage() {
                   )
                 }
               >
-                Deactivate All
+                {strings.deactivateAll}
               </Button>
             </div>
           </div>
@@ -278,11 +274,14 @@ export default function AdminBannerPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete banner item</DialogTitle>
+            <DialogTitle>{strings.deleteBannerItem}</DialogTitle>
             <DialogDescription>
               {deleteItem
-                ? `Are you sure you want to delete "${deleteItem.title ?? "this item"}"? This action cannot be undone.`
-                : "Are you sure you want to delete this item?"}
+                ? strings.deleteConfirmDesc.replace(
+                    "{title}",
+                    deleteItem.title ?? strings.thisItem,
+                  )
+                : strings.deleteConfirmDesc.replace("{title}", strings.thisItem)}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -292,7 +291,7 @@ export default function AdminBannerPage() {
               onClick={() => setDeleteItem(null)}
               disabled={deleteMutation.isPending}
             >
-              Cancel
+              {strings.cancel}
             </Button>
             <Button
               type="button"
@@ -300,7 +299,7 @@ export default function AdminBannerPage() {
               onClick={confirmDelete}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteMutation.isPending ? strings.deleting : strings.delete}
             </Button>
           </DialogFooter>
         </DialogContent>

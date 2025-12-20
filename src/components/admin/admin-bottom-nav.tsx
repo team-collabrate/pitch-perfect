@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import type { ComponentType } from "react";
+import { useMemo, type ComponentType } from "react";
 import {
   BarChart3,
   BadgeCheck,
@@ -14,9 +14,11 @@ import {
 
 import { cn } from "~/lib/utils";
 import type { ManagerRole } from "~/lib/admin-nav";
+import { useLanguage } from "~/lib/language-context";
+import allTranslations from "~/lib/translations/all";
 
 type NavItem = {
-  label: string;
+  labelKey: keyof typeof allTranslations.admin.en;
   href: string;
   icon: ComponentType<{ className?: string }>;
   roles: ManagerRole[] | "all";
@@ -24,37 +26,37 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   {
-    label: "Dashboard",
+    labelKey: "dashboardTitle",
     href: "/admin/dashboard",
     icon: BarChart3,
     roles: "all",
   },
   {
-    label: "Bookings",
+    labelKey: "bookingsTitle",
     href: "/admin/bookings",
     icon: BadgeCheck,
     roles: "all",
   },
   {
-    label: "Coupons",
+    labelKey: "couponsTitle",
     href: "/admin/coupons",
     icon: TicketPercent,
     roles: ["superAdmin"],
   },
   {
-    label: "Customers",
+    labelKey: "usersTitle",
     href: "/admin/users",
     icon: Users,
     roles: "all",
   },
   {
-    label: "Config",
+    labelKey: "configTitle",
     href: "/admin/config",
     icon: Settings2,
     roles: "all",
   },
   {
-    label: "Admins",
+    labelKey: "adminsTitle",
     href: "/admin/admins",
     icon: ShieldCheck,
     roles: ["superAdmin"],
@@ -64,6 +66,8 @@ const NAV_ITEMS: NavItem[] = [
 export function AdminBottomNav({ role }: { role: ManagerRole }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { language } = useLanguage();
+  const strings = useMemo(() => allTranslations.admin[language], [language]);
 
   const filteredItems = NAV_ITEMS.filter((item) =>
     item.roles === "all" ? role !== "staff" : item.roles.includes(role),
@@ -91,7 +95,7 @@ export function AdminBottomNav({ role }: { role: ManagerRole }) {
               )}
             >
               <Icon className="h-4 w-4" />
-              <span>{item.label}</span>
+              <span>{strings[item.labelKey]}</span>
             </button>
           );
         })}

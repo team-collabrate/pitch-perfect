@@ -12,13 +12,6 @@ import { Card } from "~/components/ui/card";
 import { LocationWidget } from "~/components/location-widget";
 import { WhatsAppIcon } from "~/components/ui/whatsapp-icon";
 
-const contacts = [
-  {
-    name: "Front Desk",
-    phone: "+91 73588 48765",
-  },
-];
-
 const whatsappNumber = "+917358848765";
 const instagramUrl = "https://www.instagram.com/+917358848765/?hl=en";
 
@@ -28,6 +21,17 @@ const MotionButton = motion(Button);
 export default function ContactPage() {
   const { language } = useLanguage();
   const strings = useMemo(() => allTranslations.contact[language], [language]);
+
+  const contacts = useMemo(
+    () => [
+      {
+        name: strings.frontDesk,
+        phone: "+91 73588 48765",
+      },
+    ],
+    [strings],
+  );
+
   return (
     <motion.div
       className="space-y-6"
@@ -132,10 +136,10 @@ export default function ContactPage() {
       >
         <div>
           <h2 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">
-            Instagram
+            {strings.instagramTitle}
           </h2>
           <p className="text-muted-foreground mt-2 text-sm">
-            Follow us for updates.
+            {strings.instagramDesc}
           </p>
         </div>
         <MotionButton
@@ -152,7 +156,7 @@ export default function ContactPage() {
             className="flex items-center justify-center gap-2"
           >
             <Instagram className="h-5 w-5" />
-            Visit our Instagram
+            {strings.instagramCTA}
           </Link>
         </MotionButton>
       </MotionCard>

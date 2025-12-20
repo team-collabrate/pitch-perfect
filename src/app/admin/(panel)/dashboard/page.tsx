@@ -1,8 +1,12 @@
+"use client";
+
 import { LineChart, TrendingUp } from "lucide-react";
+import { useMemo } from "react";
 
 import { Card } from "~/components/ui/card";
 import { cn } from "~/lib/utils";
-import { api } from "~/trpc/server";
+import { api } from "~/trpc/react";
+import { useLanguage } from "~/lib/language-context";
 import allTranslations from "~/lib/translations/all";
 
 const widthScale = [
@@ -41,10 +45,18 @@ function calculatePercentageChange(current: number, previous: number): string {
   return `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`;
 }
 
-const strings = allTranslations.admin.en;
+export default function DashboardPage() {
+  const { language } = useLanguage();
+  const strings = useMemo(() => allTranslations.admin[language], [language]);
+  const { data: dashboardData, isLoading } = api.admin.dashboardSummary.useQuery();
 
-export default async function DashboardPage() {
-  const dashboardData = await api.admin.dashboardSummary();
+  if (isLoading || !dashboardData) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   // Calculate metrics
   const revenueChange = calculatePercentageChange(
@@ -62,33 +74,33 @@ export default async function DashboardPage() {
 
   const metricCards = [
     {
-      label: "Total revenue (month)",
+      label: strings.revenueMonth,
       value: formatCurrency(dashboardData.metrics.currentMonth.revenue),
-      change: `${revenueChange} vs last month`,
+      change: `${revenueChange} ${strings.vsLastMonth}`,
       isPositive:
         dashboardData.metrics.currentMonth.revenue >=
         dashboardData.metrics.lastMonth.revenue,
     },
     {
-      label: "Bookings (month)",
+      label: strings.bookingsMonth,
       value: dashboardData.metrics.currentMonth.bookings.toString(),
-      change: bookingsChange,
+      change: `${bookingsChange} ${strings.vsLastMonth}`,
       isPositive:
         dashboardData.metrics.currentMonth.bookings >=
         dashboardData.metrics.lastMonth.bookings,
     },
     {
-      label: "Pending amount (today)",
+      label: strings.pendingToday,
       value: formatCurrency(dashboardData.metrics.today.pendingAmount),
-      change: `${pendingChange} vs yesterday`,
+      change: `${pendingChange} ${strings.vsYesterday}`,
       isPositive:
         dashboardData.metrics.today.pendingAmount <=
         dashboardData.metrics.yesterday.pendingAmount,
     },
     {
-      label: "Upcoming bookings (today)",
+      label: strings.upcomingToday,
       value: dashboardData.metrics.today.upcomingBookings.toString(),
-      change: "till EOD",
+      change: strings.tillEOD,
       isPositive: true,
     },
   ];
@@ -111,7 +123,7 @@ export default async function DashboardPage() {
   );
   const conversionData = [
     {
-      label: "Advance",
+      label: strings.advance,
       percentage:
         totalConversions > 0
           ? Math.round(
@@ -124,7 +136,7 @@ export default async function DashboardPage() {
           : 0,
     },
     {
-      label: "Full Payment",
+      label: strings.fullPayment,
       percentage:
         totalConversions > 0
           ? Math.round(
@@ -136,7 +148,7 @@ export default async function DashboardPage() {
           : 0,
     },
     {
-      label: "Pending",
+      label: strings.pending,
       percentage:
         totalConversions > 0
           ? Math.round(
@@ -183,7 +195,7 @@ export default async function DashboardPage() {
         <header className="flex items-center justify-between">
           <div>
             <p className="text-muted-foreground text-xs tracking-widest uppercase">
-              Last 7 days
+              {strings.last7Days}
             </p>
             <p className="text-lg font-semibold">{strings.dashboardTitle}</p>
           </div>
@@ -212,7 +224,7 @@ export default async function DashboardPage() {
         </div>
         <div className="text-muted-foreground flex justify-between text-xs font-medium">
           {heatmapDates.map((date, index) => {
-            const dayName = new Date(date!).toLocaleDateString("en", {
+            const dayName = new Date(date!).toLocaleDateString(language === "ta" ? "ta-IN" : "en-US", {
               weekday: "short",
             })[0];
             return <span key={index}>{dayName}</span>;
@@ -224,9 +236,9 @@ export default async function DashboardPage() {
         <header className="flex items-center justify-between">
           <div>
             <p className="text-muted-foreground text-xs tracking-widest uppercase">
-              Payment status
+              {strings.paymentStatus}
             </p>
-            <p className="text-lg font-semibold">Booking conversions</p>
+            <p className="text-lg font-semibold">{strings.bookingConversions}</p>
           </div>
           <LineChart className="text-muted-foreground h-5 w-5" />
         </header>

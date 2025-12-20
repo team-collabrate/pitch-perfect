@@ -97,25 +97,25 @@ export default function DailySlotsPage() {
         });
       }
 
-      toast.success("Slot updated successfully");
+      toast.success(strings.slotUpdated);
       setEditingSlotIndex(null);
       setEditValues(null);
       await refetch();
     } catch (error) {
-      toast.error("Failed to update slot");
+      toast.error(strings.slotUpdateError);
       console.error(error);
     }
   };
 
   const handleDeleteOverride = async (slotId: number) => {
-    if (!confirm("Are you sure you want to remove this override? This will revert the slot to its default configuration.")) return;
+    if (!confirm(strings.removeOverrideConfirm)) return;
 
     try {
       await deleteSlotMutation.mutateAsync({ slotId });
-      toast.success("Override removed");
+      toast.success(strings.overrideRemoved);
       await refetch();
     } catch (error) {
-      toast.error("Failed to remove override");
+      toast.error(strings.overrideRemoveError);
       console.error(error);
     }
   };
@@ -135,7 +135,7 @@ export default function DailySlotsPage() {
           <p className="text-muted-foreground text-xs tracking-wide uppercase">
             {strings.configTitle}
           </p>
-          <h1 className="text-2xl font-semibold">Daily Slot Overrides</h1>
+          <h1 className="text-2xl font-semibold">{strings.dailySlotOverrides}</h1>
         </div>
       </header>
 
@@ -153,7 +153,15 @@ export default function DailySlotsPage() {
           </div>
         </div>
         <div className="grid grid-cols-7 gap-1 text-center">
-          {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
+          {[
+            strings.sunShort,
+            strings.monShort,
+            strings.tueShort,
+            strings.wedShort,
+            strings.thuShort,
+            strings.friShort,
+            strings.satShort,
+          ].map((d) => (
             <div key={d} className="text-muted-foreground py-2 text-[10px] font-bold uppercase">
               {d}
             </div>
@@ -191,14 +199,14 @@ export default function DailySlotsPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Slots for {format(parseISO(selectedDate), "EEE, MMM d")}
+            {strings.slotsForDate.replace("{date}", format(parseISO(selectedDate), "EEE, MMM d"))}
           </h3>
           {isLoading && <Spinner />}
         </div>
 
         {slots.length === 0 && !isLoading && (
           <Card className="border-border/60 bg-card/60 p-8 text-center rounded-3xl">
-            <p className="text-muted-foreground text-sm">No slots configured for this date.</p>
+            <p className="text-muted-foreground text-sm">{strings.noSlotsForDate}</p>
           </Card>
         )}
 
@@ -218,7 +226,7 @@ export default function DailySlotsPage() {
                       <p className="font-semibold">{formatSlotTime(slot.from)} – {formatSlotTime(slot.to)}</p>
                       {isVirtual && (
                         <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full uppercase font-bold">
-                          Virtual
+                          {strings.virtual}
                         </span>
                       )}
                     </div>
@@ -229,13 +237,13 @@ export default function DailySlotsPage() {
                         slot.status === "booked" ? "bg-blue-500/10 text-blue-600" : 
                         "bg-red-500/10 text-red-600"
                       )}>
-                        {slot.status}
+                        {slot.status === "available" ? strings.available : slot.status === "booked" ? strings.booked : strings.unavailable}
                       </span>
                       <span className="text-muted-foreground">
-                        Advance: ₹{slot.advanceAmount / 100}
+                        {strings.advance}: ₹{slot.advanceAmount / 100}
                       </span>
                       <span className="text-muted-foreground">
-                        Full: ₹{slot.fullAmount / 100}
+                        {strings.full}: ₹{slot.fullAmount / 100}
                       </span>
                     </div>
                   </div>
@@ -287,7 +295,7 @@ export default function DailySlotsPage() {
                 {isEditing && editValues && (
                   <div className="mt-4 grid gap-4 sm:grid-cols-3 pt-4 border-t border-border/40">
                     <div className="space-y-1.5">
-                      <label htmlFor={`status-${index}`} className="text-[10px] font-bold uppercase text-muted-foreground">Status</label>
+                      <label htmlFor={`status-${index}`} className="text-[10px] font-bold uppercase text-muted-foreground">{strings.status}</label>
                       <select 
                         id={`status-${index}`}
                         title="Slot Status"
@@ -295,13 +303,13 @@ export default function DailySlotsPage() {
                         value={editValues.status}
                         onChange={(e) => setEditValues({...editValues, status: e.target.value as "available" | "unavailable" | "booked"})}
                       >
-                        <option value="available">Available</option>
-                        <option value="unavailable">Unavailable</option>
-                        <option value="booked">Booked (Manual)</option>
+                        <option value="available">{strings.available}</option>
+                        <option value="unavailable">{strings.unavailable}</option>
+                        <option value="booked">{strings.bookedManual}</option>
                       </select>
                     </div>
                     <div className="space-y-1.5">
-                      <label htmlFor={`advance-${index}`} className="text-[10px] font-bold uppercase text-muted-foreground">Advance (₹)</label>
+                      <label htmlFor={`advance-${index}`} className="text-[10px] font-bold uppercase text-muted-foreground">{strings.advance} (₹)</label>
                       <Input 
                         id={`advance-${index}`}
                         type="number" 
@@ -311,7 +319,7 @@ export default function DailySlotsPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label htmlFor={`full-${index}`} className="text-[10px] font-bold uppercase text-muted-foreground">Full (₹)</label>
+                      <label htmlFor={`full-${index}`} className="text-[10px] font-bold uppercase text-muted-foreground">{strings.full} (₹)</label>
                       <Input 
                         id={`full-${index}`}
                         type="number" 

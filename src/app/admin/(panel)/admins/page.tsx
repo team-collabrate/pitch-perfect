@@ -1,22 +1,26 @@
+"use client";
+
 import { ShieldCheck } from "lucide-react";
+import { useMemo } from "react";
 
 import { Card } from "~/components/ui/card";
 import { InviteAdminDrawer } from "~/components/admin/invite-admin-drawer";
 import { AdminProfileDrawer } from "~/components/admin/admin-profile-drawer";
-import { requireManager } from "~/server/admin/session";
-import { api } from "~/trpc/server";
+import { api } from "~/trpc/react";
+import { useLanguage } from "~/lib/language-context";
 import allTranslations from "~/lib/translations/all";
 
-const roleLabel: Record<string, string> = {
-  superAdmin: "Super Admin",
-  admin: "Admin",
-};
+export default function AdminsPage() {
+  const { language } = useLanguage();
+  const strings = useMemo(() => allTranslations.admin[language], [language]);
 
-export default async function AdminsPage() {
-  await requireManager({ superOnly: true });
+  const { data: admins = [] } = api.superAdmin.adminsList.useQuery();
 
-  const admins = await api.superAdmin.adminsList();
-  const strings = allTranslations.admin.en;
+  const roleLabel: Record<string, string> = {
+    superAdmin: strings.roleSuperAdmin,
+    admin: strings.roleAdmin,
+    staff: strings.roleStaff,
+  };
 
   return (
     <div className="space-y-6 pb-20">
@@ -24,7 +28,7 @@ export default async function AdminsPage() {
         <ShieldCheck className="bg-muted h-10 w-10 rounded-2xl p-2" />
         <div>
           <p className="text-muted-foreground text-xs tracking-wide uppercase">
-            Staff access
+            {strings.staffAccess}
           </p>
           <h1 className="text-2xl font-semibold">{strings.adminsTitle}</h1>
         </div>
@@ -56,7 +60,7 @@ export default async function AdminsPage() {
           ))
         ) : (
           <Card className="border-border/60 bg-card/60 rounded-3xl px-4 py-6 text-center">
-            <p className="text-muted-foreground text-sm">No admins yet</p>
+            <p className="text-muted-foreground text-sm">{strings.noAdmins}</p>
           </Card>
         )}
       </div>

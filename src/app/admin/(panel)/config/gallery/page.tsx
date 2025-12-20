@@ -93,9 +93,9 @@ export default function AdminGalleryPage() {
 
     const p = deleteMutation.mutateAsync({ id: deleteItem.id });
     void toast.promise(p, {
-      loading: "Deleting gallery item...",
-      success: "Gallery item deleted",
-      error: "Failed to delete gallery item",
+      loading: strings.deletingGalleryItem,
+      success: strings.galleryDeleted,
+      error: strings.galleryDeleteError,
     });
     await p;
 
@@ -106,9 +106,9 @@ export default function AdminGalleryPage() {
   const handleToggleActive = async (ids: number[], isActive: boolean) => {
     const p = toggleActiveMutation.mutateAsync({ ids, isActive });
     void toast.promise(p, {
-      loading: `Updating ${ids.length} item(s)...`,
-      success: `Gallery items ${isActive ? "activated" : "deactivated"}`,
-      error: "Failed to update gallery items",
+      loading: strings.updatingItems.replace("{count}", ids.length.toString()),
+      success: isActive ? strings.itemsActivated : strings.itemsDeactivated,
+      error: strings.updateError,
     });
     await p;
 
@@ -130,9 +130,9 @@ export default function AdminGalleryPage() {
         status: editForm.status,
       });
       void toast.promise(p, {
-        loading: "Updating gallery item...",
-        success: "Gallery item updated",
-        error: "Failed to update gallery item",
+        loading: strings.updatingGalleryItem,
+        success: strings.galleryUpdated,
+        error: strings.galleryUpdateError,
       });
       await p;
       setEditId(null);
@@ -149,7 +149,7 @@ export default function AdminGalleryPage() {
           <h1 className="text-3xl font-bold">{strings.galleryTitle}</h1>
         </div>
         <div className="flex items-center justify-center py-12">
-          <p>Loading...</p>
+          <p>{strings.loading}</p>
         </div>
       </div>
     );
@@ -168,9 +168,7 @@ export default function AdminGalleryPage() {
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{strings.galleryTitle}</DialogTitle>
-            <DialogDescription>
-              Add new images or videos to the gallery
-            </DialogDescription>
+            <DialogDescription>{strings.galleryUploadDesc}</DialogDescription>
           </DialogHeader>
           <GalleryUploadForm
             onUploadSuccess={() => {
@@ -183,9 +181,7 @@ export default function AdminGalleryPage() {
 
       {!galleryItems || galleryItems.length === 0 ? (
         <div className="flex items-center justify-center rounded-lg border border-dashed p-12">
-          <p className="text-muted-foreground">
-            No gallery items yet. Upload one to get started!
-          </p>
+          <p className="text-muted-foreground">{strings.noGalleryItems}</p>
         </div>
       ) : (
         <>
@@ -195,22 +191,22 @@ export default function AdminGalleryPage() {
                 <thead>
                   <tr className="bg-muted/50 border-b">
                     <th className="px-2 py-3 text-left text-sm font-semibold">
-                      Preview
+                      {strings.preview}
                     </th>
                     <th className="px-2 py-3 text-left text-sm font-semibold">
-                      Title
+                      {strings.title}
                     </th>
                     <th className="px-2 py-3 text-left text-sm font-semibold">
-                      Type
+                      {strings.type}
                     </th>
                     <th className="px-2 py-3 text-left text-sm font-semibold">
-                      Status
+                      {strings.status}
                     </th>
                     <th className="px-2 py-3 text-left text-sm font-semibold">
-                      Order
+                      {strings.order}
                     </th>
                     <th className="px-2 py-3 text-left text-sm font-semibold">
-                      Actions
+                      {strings.actions}
                     </th>
                   </tr>
                 </thead>
@@ -308,7 +304,7 @@ export default function AdminGalleryPage() {
           </div>
 
           <div className="space-y-2 rounded-lg border p-4">
-            <h3 className="font-semibold">Bulk Actions</h3>
+            <h3 className="font-semibold">{strings.bulkActions}</h3>
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -320,7 +316,7 @@ export default function AdminGalleryPage() {
                   )
                 }
               >
-                Activate All
+                {strings.activateAll}
               </Button>
               <Button
                 variant="outline"
@@ -332,7 +328,7 @@ export default function AdminGalleryPage() {
                   )
                 }
               >
-                Deactivate All
+                {strings.deactivateAll}
               </Button>
             </div>
           </div>
@@ -347,11 +343,11 @@ export default function AdminGalleryPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete gallery item</DialogTitle>
+            <DialogTitle>{strings.deleteGalleryItem}</DialogTitle>
             <DialogDescription>
               {deleteItem
-                ? `Are you sure you want to delete “${deleteItem.title}”? This action cannot be undone.`
-                : "Are you sure you want to delete this item?"}
+                ? strings.deleteConfirmDesc.replace("{title}", deleteItem.title)
+                : strings.deleteConfirmDesc.replace("{title}", strings.thisItem)}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-row gap-2">
@@ -362,7 +358,7 @@ export default function AdminGalleryPage() {
               disabled={deleteMutation.isPending}
               className="flex-1"
             >
-              Cancel
+              {strings.cancel}
             </Button>
             <Button
               type="button"
@@ -371,7 +367,7 @@ export default function AdminGalleryPage() {
               disabled={deleteMutation.isPending}
               className="flex-1"
             >
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteMutation.isPending ? strings.deleting : strings.delete}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -386,17 +382,19 @@ export default function AdminGalleryPage() {
         <DrawerContent>
           <DrawerCloseButton />
           <DrawerHeader>
-            <DrawerTitle>Edit gallery item</DrawerTitle>
-            <DrawerDescription>Update details and status</DrawerDescription>
+            <DrawerTitle>{strings.editGalleryItem}</DrawerTitle>
+            <DrawerDescription>{strings.updateDetailsStatus}</DrawerDescription>
           </DrawerHeader>
 
           <div className="flex-1 space-y-4 overflow-y-auto px-6 pt-4 pb-4">
             {isEditLoading || !editItem ? (
-              <div className="text-muted-foreground text-sm">Loading...</div>
+              <div className="text-muted-foreground text-sm">
+                {strings.loading}
+              </div>
             ) : (
               <>
                 <div>
-                  <p className="text-sm font-semibold">Preview</p>
+                  <p className="text-sm font-semibold">{strings.preview}</p>
                   <div className="bg-muted relative mt-2 h-56 w-full overflow-hidden rounded-lg">
                     <Image
                       src={
@@ -428,7 +426,7 @@ export default function AdminGalleryPage() {
                       htmlFor="edit-title"
                       className="text-muted-foreground text-sm"
                     >
-                      Title (optional)
+                      {strings.title} ({strings.optional})
                     </Label>
                     <Input
                       id="edit-title"
@@ -439,7 +437,7 @@ export default function AdminGalleryPage() {
                           title: e.target.value,
                         }))
                       }
-                      placeholder="Gallery item title (optional)"
+                      placeholder={strings.titlePlaceholder}
                       className="mt-1"
                       disabled={isSaving}
                     />
@@ -450,7 +448,7 @@ export default function AdminGalleryPage() {
                       htmlFor="edit-description"
                       className="text-muted-foreground text-sm"
                     >
-                      Description
+                      {strings.description}
                     </Label>
                     <Input
                       id="edit-description"
@@ -461,7 +459,7 @@ export default function AdminGalleryPage() {
                           description: e.target.value,
                         }))
                       }
-                      placeholder="Gallery item description"
+                      placeholder={strings.descriptionPlaceholder}
                       className="mt-1"
                       disabled={isSaving}
                     />
@@ -472,7 +470,7 @@ export default function AdminGalleryPage() {
                       htmlFor="edit-altText"
                       className="text-muted-foreground text-sm"
                     >
-                      Alt Text
+                      {strings.altText}
                     </Label>
                     <Input
                       id="edit-altText"
@@ -483,7 +481,7 @@ export default function AdminGalleryPage() {
                           altText: e.target.value,
                         }))
                       }
-                      placeholder="Alt text for accessibility"
+                      placeholder={strings.altTextPlaceholder}
                       className="mt-1"
                       disabled={isSaving}
                     />
@@ -494,7 +492,7 @@ export default function AdminGalleryPage() {
                       htmlFor="edit-displayOrder"
                       className="text-muted-foreground text-sm"
                     >
-                      Display Order
+                      {strings.displayOrder}
                     </Label>
                     <Input
                       id="edit-displayOrder"
@@ -517,7 +515,7 @@ export default function AdminGalleryPage() {
                       htmlFor="edit-credits"
                       className="text-muted-foreground text-sm"
                     >
-                      Credits
+                      {strings.credits}
                     </Label>
                     <Input
                       id="edit-credits"
@@ -528,14 +526,16 @@ export default function AdminGalleryPage() {
                           credits: e.target.value,
                         }))
                       }
-                      placeholder="Photo/Video credits"
+                      placeholder={strings.creditsPlaceholder}
                       className="mt-1"
                       disabled={isSaving}
                     />
                   </div>
 
                   <div>
-                    <p className="text-muted-foreground text-sm">Type</p>
+                    <p className="text-muted-foreground text-sm">
+                      {strings.type}
+                    </p>
                     <p className="mt-1 font-medium capitalize">
                       {editItem.mediaType}
                     </p>
@@ -546,7 +546,7 @@ export default function AdminGalleryPage() {
                       htmlFor="edit-status"
                       className="text-muted-foreground text-sm"
                     >
-                      Status
+                      {strings.status}
                     </Label>
                     <select
                       id="edit-status"
@@ -564,9 +564,11 @@ export default function AdminGalleryPage() {
                       className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:ring-ring mt-1 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={isSaving}
                     >
-                      <option value="approved">Active (Approved)</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="discarded">Discarded</option>
+                      <option value="approved">
+                        {strings.active} ({strings.approved})
+                      </option>
+                      <option value="inactive">{strings.inactive}</option>
+                      <option value="discarded">{strings.discarded}</option>
                     </select>
                   </div>
                 </div>
@@ -582,7 +584,7 @@ export default function AdminGalleryPage() {
               disabled={isSaving}
               className="flex-1"
             >
-              Cancel
+              {strings.cancel}
             </Button>
             <Button
               type="button"
@@ -590,7 +592,7 @@ export default function AdminGalleryPage() {
               disabled={isSaving || isEditLoading || !editItem}
               className="flex-1"
             >
-              {isSaving ? "Saving..." : "Save"}
+              {isSaving ? strings.saving : strings.save}
             </Button>
           </DrawerFooter>
         </DrawerContent>

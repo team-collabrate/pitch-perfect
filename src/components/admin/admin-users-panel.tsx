@@ -92,7 +92,12 @@ export function AdminUsersPanel() {
 
   const handleDownloadCsv = () => {
     if (!enrichedMembers.length) return;
-    const header = ["Name", "Phone", "Email", "Tag"];
+    const header = [
+      strings.csvName,
+      strings.csvPhone,
+      strings.csvEmail,
+      strings.csvTag,
+    ];
     const rows = enrichedMembers.map((member) => [
       member.name,
       member.number,
@@ -140,7 +145,7 @@ export function AdminUsersPanel() {
             CSV
           </Button>
           <Button size="sm" className="rounded-full">
-            Add customer
+            {strings.addCustomer}
           </Button>
         </div>
       </header>
@@ -158,7 +163,7 @@ export function AdminUsersPanel() {
 
       {error && (
         <p className="border-destructive/30 bg-destructive/10 text-destructive rounded-2xl border px-3 py-2 text-sm">
-          Unable to load customers. Please refresh.
+          {strings.errorLoadCustomers}
         </p>
       )}
 
@@ -167,16 +172,16 @@ export function AdminUsersPanel() {
           <Table className="border-collapse text-sm">
             <TableHeader>
               <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Tag</TableHead>
+                <TableHead>{strings.customer}</TableHead>
+                <TableHead>{strings.phone}</TableHead>
+                <TableHead>{strings.tag}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {enrichedMembers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={3} className="h-32 text-center">
-                    <p className="text-muted-foreground">No customers found.</p>
+                    <p className="text-muted-foreground">{strings.noCustomers}</p>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -221,7 +226,15 @@ export function AdminUsersPanel() {
                             }`}
                           >
                             <Tag className="h-3 w-3" />
-                            {member.tag ?? "n/a"}
+                            {member.tag === "vip"
+                              ? strings.vip
+                              : member.tag === "star"
+                                ? strings.star
+                                : member.tag === "new"
+                                  ? strings.new
+                                  : member.tag === "regular"
+                                    ? strings.regular
+                                    : "n/a"}
                           </button>
                         )}
                         {editing[member.id] && (
@@ -240,11 +253,11 @@ export function AdminUsersPanel() {
                               }
                               className="border-input rounded-md border px-2 py-1 text-sm"
                             >
-                              <option value="">(none)</option>
-                              <option value="star">Star</option>
-                              <option value="regular">Regular</option>
-                              <option value="vip">VIP</option>
-                              <option value="new">New</option>
+                              <option value="">{strings.none}</option>
+                              <option value="star">{strings.star}</option>
+                              <option value="regular">{strings.regular}</option>
+                              <option value="vip">{strings.vip}</option>
+                              <option value="new">{strings.new}</option>
                             </select>
                           </div>
                         )}
@@ -297,7 +310,7 @@ export function AdminUsersPanel() {
                 </div>
                 {customerDetails.alternateContactName && (
                   <div className="text-sm">
-                    <p className="text-muted-foreground">Alternate Contact</p>
+                    <p className="text-muted-foreground">{strings.alternateContact}</p>
                     <p className="font-medium">
                       {customerDetails.alternateContactName}
                     </p>
@@ -311,7 +324,7 @@ export function AdminUsersPanel() {
               {/* Tag Section */}
               <div className="mb-6 border-b pb-6">
                 <p className="text-muted-foreground mb-2 text-xs tracking-wide uppercase">
-                  Tag
+                  {strings.tag}
                 </p>
                 <div
                   className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
@@ -325,14 +338,22 @@ export function AdminUsersPanel() {
                   }`}
                 >
                   <Tag className="h-3 w-3" />
-                  {customerDetails.tag ?? "n/a"}
+                  {customerDetails.tag === "vip"
+                    ? strings.vip
+                    : customerDetails.tag === "star"
+                      ? strings.star
+                      : customerDetails.tag === "new"
+                        ? strings.new
+                        : customerDetails.tag === "regular"
+                          ? strings.regular
+                          : strings.na}
                 </div>
               </div>
 
               {/* Booking History */}
               <div>
                 <p className="text-muted-foreground mb-3 text-xs tracking-wide uppercase">
-                  Recent Bookings
+                  {strings.recentBookings}
                 </p>
                 {customerDetails.bookings &&
                 customerDetails.bookings.length > 0 ? (
@@ -345,7 +366,11 @@ export function AdminUsersPanel() {
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex min-w-0 flex-1 items-center gap-2">
                             <span className="truncate text-xs font-semibold capitalize">
-                              {booking.bookingType}
+                              {booking.bookingType === "cricket"
+                                ? strings.cricket
+                                : booking.bookingType === "football"
+                                  ? strings.football
+                                  : booking.bookingType}
                             </span>
                             <span
                               className={`rounded px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap ${
@@ -356,7 +381,15 @@ export function AdminUsersPanel() {
                                     : "bg-amber-100 text-amber-800"
                               }`}
                             >
-                              {booking.status}
+                              {booking.status === "fullPaid"
+                                ? strings.fullPaid
+                                : booking.status === "advancePaid"
+                                  ? strings.advancePaid
+                                  : booking.status === "advancePending"
+                                    ? strings.advancePending
+                                    : booking.status === "fullPending"
+                                      ? strings.fullPending
+                                      : booking.status}
                             </span>
                           </div>
                           <div className="text-xs font-medium whitespace-nowrap">
@@ -375,14 +408,14 @@ export function AdminUsersPanel() {
                   </div>
                 ) : (
                   <p className="text-muted-foreground text-xs">
-                    No bookings yet
+                    {strings.noBookings}
                   </p>
                 )}
               </div>
             </div>
           ) : (
             <div className="p-6 text-center">
-              <p className="text-muted-foreground">Unable to load details</p>
+              <p className="text-muted-foreground">{strings.unableToLoadDetails}</p>
             </div>
           )}
         </DrawerContent>

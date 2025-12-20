@@ -22,9 +22,9 @@ import {
 type BookingListItem = RouterOutputs["admin"]["bookingsList"][number];
 type BookingDetail = RouterOutputs["admin"]["bookingDetails"];
 
-function getPaymentLabel(status: string): string {
-  if (status === "fullPaid") return "Full";
-  if (status === "advance") return "Advance";
+function getPaymentLabel(status: string, strings: any): string {
+  if (status === "fullPaid") return strings.full;
+  if (status === "advance") return strings.advanceLabel;
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
@@ -187,7 +187,7 @@ export default function BookingsPage() {
           </p>
           <h1 className="text-2xl font-semibold">{strings.bookingsTitle}</h1>
           <p className="text-muted-foreground text-sm">
-            Share verification codes with players as they arrive.
+            {strings.bookingsDesc}
           </p>
         </div>
         {selectedTab === "current" && (
@@ -219,7 +219,7 @@ export default function BookingsPage() {
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          Current
+          {strings.current}
         </button>
         <button
           onClick={() => {
@@ -233,7 +233,7 @@ export default function BookingsPage() {
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          Past
+          {strings.past}
         </button>
       </div>
 
@@ -246,11 +246,11 @@ export default function BookingsPage() {
             </div>
           ) : error ? (
             <Card className="border-border/60 bg-destructive/10 text-destructive rounded-3xl p-4 text-center text-sm">
-              Failed to load bookings. Please try again.
+              {strings.errorLoadBookings}
             </Card>
           ) : displayBookings.length === 0 ? (
             <Card className="border-border/60 bg-card/60 text-muted-foreground rounded-3xl p-6 text-center text-sm">
-              No bookings yet.
+              {strings.noBookings}
             </Card>
           ) : (
             <div className="space-y-3">
@@ -261,7 +261,7 @@ export default function BookingsPage() {
                   const slotTime =
                     booking.slot?.from && booking.slot?.to
                       ? `${formatSlotTime(booking.slot.from)} – ${formatSlotTime(booking.slot.to)}`
-                      : "N/A";
+                      : strings.na;
                   const isLastItem = index === displayBookings.length - 1;
                   const dateStr: string | undefined = booking.slot?.date;
                   let showDate = false;
@@ -308,7 +308,7 @@ export default function BookingsPage() {
                                 </p>
                               </div>
                               <span className="bg-primary/10 text-primary rounded-full px-3 py-1 text-xs font-semibold">
-                                {getPaymentLabel(booking.status)}
+                                {getPaymentLabel(booking.status, strings)}
                               </span>
                             </div>
                             <p className="text-muted-foreground text-sm">
@@ -316,7 +316,7 @@ export default function BookingsPage() {
                             </p>
                             <div className="bg-muted/50 mt-3 rounded-2xl p-3">
                               <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                                Verification Code
+                                {strings.verificationCode}
                               </p>
                               <p className="mt-1 font-mono text-sm font-semibold">
                                 {booking.verificationCode}
@@ -344,6 +344,7 @@ export default function BookingsPage() {
               onDateSelect={setSelectedCalendarDate}
               calendarMonth={calendarMonth}
               onMonthChange={setCalendarMonth}
+              strings={strings}
             />
           </Card>
 
@@ -356,8 +357,10 @@ export default function BookingsPage() {
                 </div>
               ) : displayBookings.length === 0 ? (
                 <Card className="border-border/60 bg-card/60 text-muted-foreground rounded-3xl p-6 text-center text-sm">
-                  No bookings found for{" "}
-                  {format(parseISO(selectedCalendarDate), "MMM d, yyyy")}.
+                  {strings.noBookingsFoundFor.replace(
+                    "{date}",
+                    format(parseISO(selectedCalendarDate), "MMM d, yyyy"),
+                  )}
                 </Card>
               ) : (
                 <div className="space-y-3">
@@ -367,7 +370,7 @@ export default function BookingsPage() {
                       const slotTime =
                         booking.slot?.from && booking.slot?.to
                           ? `${formatSlotTime(booking.slot.from)} – ${formatSlotTime(booking.slot.to)}`
-                          : "N/A";
+                          : strings.na;
                       return (
                         <div key={booking.id}>
                           <div className="flex gap-4">
@@ -396,7 +399,7 @@ export default function BookingsPage() {
                                     </p>
                                   </div>
                                   <span className="bg-primary/10 text-primary rounded-full px-3 py-1 text-xs font-semibold">
-                                    {getPaymentLabel(booking.status)}
+                                    {getPaymentLabel(booking.status, strings)}
                                   </span>
                                 </div>
                                 <p className="text-muted-foreground text-sm">
@@ -404,7 +407,7 @@ export default function BookingsPage() {
                                 </p>
                                 <div className="bg-muted/50 mt-3 rounded-2xl p-3">
                                   <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                                    Verification Code
+                                    {strings.verificationCode}
                                   </p>
                                   <p className="mt-1 font-mono text-sm font-semibold">
                                     {booking.verificationCode}
@@ -440,14 +443,14 @@ export default function BookingsPage() {
 
             {!bookingDetailsQuery.isLoading && !activeBooking && (
               <Card className="border-border/60 bg-destructive/10 text-destructive rounded-3xl p-4 text-center text-sm">
-                Booking not found.
+                {strings.bookingNotFound}
               </Card>
             )}
 
             {!bookingDetailsQuery.isLoading && activeBooking && (
               <>
                 <DrawerHeader className="px-0 pt-0 text-left">
-                  <DrawerTitle>Booking Details</DrawerTitle>
+                  <DrawerTitle>{strings.bookingDetails}</DrawerTitle>
                   <DrawerDescription>
                     {`PP-${activeBooking.id.slice(-6).toUpperCase()}`}
                   </DrawerDescription>
@@ -456,7 +459,7 @@ export default function BookingsPage() {
                 {/* Verification Code - Prominent */}
                 <div className="bg-primary/10 flex flex-col items-center justify-center rounded-3xl py-6">
                   <p className="text-muted-foreground text-xs font-medium tracking-widest uppercase">
-                    Verification Code
+                    {strings.verificationCode}
                   </p>
                   <p className="text-primary mt-1 font-mono text-3xl font-bold tracking-wider">
                     {activeBooking.verificationCode}
@@ -466,13 +469,13 @@ export default function BookingsPage() {
                 <div className="grid gap-6">
                   {/* Customer & Alternate Contact */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-semibold">Contact Info</h3>
+                    <h3 className="text-sm font-semibold">{strings.contactInfo}</h3>
                     <div className="bg-muted/30 divide-border/40 border-border/40 divide-y rounded-2xl border">
                       {/* Primary Contact */}
                       <div className="flex items-center justify-between p-4">
                         <div>
                           <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                            Customer
+                            {strings.customer}
                           </p>
                           <p className="font-medium">{activeBooking.name}</p>
                           <p className="text-muted-foreground text-sm">
@@ -497,7 +500,7 @@ export default function BookingsPage() {
                         <div className="flex items-center justify-between p-4">
                           <div>
                             <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                              Alternate
+                              {strings.alternate}
                             </p>
                             <p className="font-medium">
                               {bookingAlternateName}
@@ -520,7 +523,7 @@ export default function BookingsPage() {
                       {bookingEmail && (
                         <div className="p-4">
                           <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                            Email
+                            {strings.email}
                           </p>
                           <p className="text-sm font-medium">{bookingEmail}</p>
                         </div>
@@ -533,7 +536,7 @@ export default function BookingsPage() {
                     {/* Time & Date */}
                     <div className="bg-muted/30 border-border/40 space-y-1 rounded-2xl border p-4">
                       <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                        Slot
+                        {strings.slot}
                       </p>
                       {activeBooking.slot?.date && (
                         <p className="font-medium">
@@ -551,7 +554,11 @@ export default function BookingsPage() {
                       )}
                       {bookingType && (
                         <span className="bg-background text-foreground border-border/40 mt-2 inline-block rounded-md border px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase">
-                          {bookingType}
+                          {bookingType === "cricket"
+                            ? strings.cricket
+                            : bookingType === "football"
+                              ? strings.football
+                              : bookingType}
                         </span>
                       )}
                     </div>
@@ -559,7 +566,7 @@ export default function BookingsPage() {
                     {/* Payment */}
                     <div className="bg-muted/30 border-border/40 space-y-1 rounded-2xl border p-4">
                       <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                        Payment
+                        {strings.payment}
                       </p>
                       <div className="flex items-center gap-2">
                         <span
@@ -570,13 +577,13 @@ export default function BookingsPage() {
                           }`}
                         />
                         <p className="font-medium capitalize">
-                          {getPaymentLabel(activeBooking.status)}
+                          {getPaymentLabel(activeBooking.status, strings)}
                         </p>
                       </div>
                       <div className="mt-1 space-y-0.5">
                         {typeof activeBooking.amountPaid === "number" && (
                           <p className="text-sm">
-                            Paid: ₹
+                            {strings.paid}: ₹
                             {(activeBooking.amountPaid / 100).toLocaleString(
                               "en-IN",
                             )}
@@ -584,7 +591,7 @@ export default function BookingsPage() {
                         )}
                         {typeof bookingTotalAmount === "number" && (
                           <p className="text-muted-foreground text-xs">
-                            Total: ₹
+                            {strings.total}: ₹
                             {(bookingTotalAmount / 100).toLocaleString("en-IN")}
                           </p>
                         )}
@@ -604,14 +611,14 @@ export default function BookingsPage() {
                       className="bg-primary text-primary-foreground w-full rounded-2xl px-4 py-3 text-sm font-medium transition hover:opacity-90 disabled:opacity-60"
                     >
                       {verifyBooking.isPending
-                        ? "Updating..."
-                        : "Mark Full Paid"}
+                        ? strings.updating
+                        : strings.markFullPaid}
                     </button>
                     <button
                       onClick={() => setSelectedBookingId(null)}
                       className="bg-muted text-foreground w-full rounded-2xl px-4 py-3 text-sm font-medium transition hover:opacity-90"
                     >
-                      Close
+                      {strings.close}
                     </button>
                   </div>
                 </DrawerFooter>
@@ -630,11 +637,13 @@ function CalendarPicker({
   onDateSelect,
   calendarMonth,
   onMonthChange,
+  strings,
 }: {
   selectedDate: string | null;
   onDateSelect: (date: string) => void;
   calendarMonth: Date;
   onMonthChange: (date: Date) => void;
+  strings: any;
 }) {
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -689,7 +698,7 @@ function CalendarPicker({
       <div className="flex items-center justify-between">
         <button
           onClick={handlePrevMonth}
-          aria-label="Previous month"
+          aria-label={strings.prevMonth}
           className="bg-muted hover:bg-muted/80 flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -699,7 +708,7 @@ function CalendarPicker({
         </h3>
         <button
           onClick={handleNextMonth}
-          aria-label="Next month"
+          aria-label={strings.nextMonth}
           className="bg-muted hover:bg-muted/80 flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
         >
           <ChevronRight className="h-4 w-4" />
@@ -708,7 +717,15 @@ function CalendarPicker({
 
       {/* Day labels */}
       <div className="grid grid-cols-7 gap-2">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+        {[
+          strings.sun,
+          strings.mon,
+          strings.tue,
+          strings.wed,
+          strings.thu,
+          strings.fri,
+          strings.sat,
+        ].map((day) => (
           <div
             key={day}
             className="text-muted-foreground py-2 text-center text-xs font-medium"

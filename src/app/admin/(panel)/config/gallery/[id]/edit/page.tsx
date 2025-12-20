@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { Trash2, ArrowLeft } from "lucide-react";
 
@@ -18,12 +18,16 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { api } from "~/trpc/react";
+import { useLanguage } from "~/lib/language-context";
+import allTranslations from "~/lib/translations/all";
 
 export default function EditGalleryPage() {
   const params = useParams();
   const router = useRouter();
   const id = parseInt(params.id as string);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { language } = useLanguage();
+  const strings = useMemo(() => allTranslations.admin[language], [language]);
 
   const {
     data: item,
@@ -62,14 +66,14 @@ export default function EditGalleryPage() {
   const handleDelete = async () => {
     const p = deleteMutation.mutateAsync({ id });
     void toast.promise(p, {
-      loading: "Deleting gallery item...",
-      success: "Gallery item deleted",
-      error: "Failed to delete gallery item",
+      loading: strings.deletingGallery,
+      success: strings.galleryDeleted,
+      error: strings.galleryDeleteError,
     });
     await p;
 
     setShowDeleteDialog(false);
-    router.push("/admin/gallery");
+    router.push("/admin/config/gallery");
   };
 
   const handleSave = async () => {
@@ -85,9 +89,9 @@ export default function EditGalleryPage() {
         status: formData.status,
       });
       void toast.promise(p, {
-        loading: "Updating gallery item...",
-        success: "Gallery item updated successfully",
-        error: "Failed to update gallery item",
+        loading: strings.updatingGalleryItem,
+        success: strings.galleryUpdated,
+        error: strings.galleryUpdateFailed,
       });
       await p;
       setIsEditing(false);
@@ -123,10 +127,10 @@ export default function EditGalleryPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-3xl font-bold">Edit Gallery Item</h1>
+          <h1 className="text-3xl font-bold">{strings.editGalleryItem}</h1>
         </div>
         <div className="flex items-center justify-center py-12">
-          <p>Loading...</p>
+          <p>{strings.loading}</p>
         </div>
       </div>
     );
@@ -144,10 +148,10 @@ export default function EditGalleryPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-3xl font-bold">Edit Gallery Item</h1>
+          <h1 className="text-3xl font-bold">{strings.editGalleryItem}</h1>
         </div>
         <div className="flex items-center justify-center rounded-lg border border-dashed p-12">
-          <p className="text-muted-foreground">Gallery item not found</p>
+          <p className="text-muted-foreground">{strings.galleryNotFound}</p>
         </div>
       </div>
     );
@@ -165,7 +169,7 @@ export default function EditGalleryPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-3xl font-bold">Edit Gallery Item</h1>
+          <h1 className="text-3xl font-bold">{strings.editGalleryItem}</h1>
         </div>
         <Button
           variant="destructive"
@@ -173,14 +177,14 @@ export default function EditGalleryPage() {
           className="flex gap-2"
         >
           <Trash2 className="h-4 w-4" />
-          Delete
+          {strings.delete}
         </Button>
       </div>
 
       <div className="rounded-lg border p-6">
         <div className="space-y-6">
           <div>
-            <h2 className="mb-2 font-semibold">Preview</h2>
+            <h2 className="mb-2 font-semibold">{strings.preview}</h2>
             <div className="bg-muted relative h-64 w-full overflow-hidden rounded-lg">
               <Image
                 src={
@@ -208,14 +212,14 @@ export default function EditGalleryPage() {
 
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-semibold">Details</h3>
+              <h3 className="font-semibold">{strings.details}</h3>
               {!isEditing ? (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setIsEditing(true)}
                 >
-                  Edit
+                  {strings.edit}
                 </Button>
               ) : (
                 <div className="flex gap-2">
@@ -225,10 +229,10 @@ export default function EditGalleryPage() {
                     onClick={handleCancel}
                     disabled={isSaving}
                   >
-                    Cancel
+                    {strings.cancel}
                   </Button>
                   <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                    {isSaving ? "Saving..." : "Save"}
+                    {isSaving ? strings.saving : strings.save}
                   </Button>
                 </div>
               )}
@@ -240,7 +244,7 @@ export default function EditGalleryPage() {
                   htmlFor="title"
                   className="text-muted-foreground text-sm"
                 >
-                  Title (optional)
+                  {strings.titleOptional}
                 </Label>
                 {isEditing ? (
                   <Input
@@ -249,7 +253,7 @@ export default function EditGalleryPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, title: e.target.value })
                     }
-                    placeholder="Gallery item title (optional)"
+                    placeholder={strings.titlePlaceholder}
                     className="mt-1"
                   />
                 ) : (
@@ -262,7 +266,7 @@ export default function EditGalleryPage() {
                   htmlFor="description"
                   className="text-muted-foreground text-sm"
                 >
-                  Description
+                  {strings.description}
                 </Label>
                 {isEditing ? (
                   <Input
@@ -271,7 +275,7 @@ export default function EditGalleryPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
                     }
-                    placeholder="Gallery item description"
+                    placeholder={strings.descriptionPlaceholder}
                     className="mt-1"
                   />
                 ) : (
@@ -286,7 +290,7 @@ export default function EditGalleryPage() {
                   htmlFor="altText"
                   className="text-muted-foreground text-sm"
                 >
-                  Alt Text
+                  {strings.altTextOptional}
                 </Label>
                 {isEditing ? (
                   <Input
@@ -295,7 +299,7 @@ export default function EditGalleryPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, altText: e.target.value })
                     }
-                    placeholder="Alt text for accessibility"
+                    placeholder={strings.altTextPlaceholder}
                     className="mt-1"
                   />
                 ) : (
@@ -308,7 +312,7 @@ export default function EditGalleryPage() {
                   htmlFor="displayOrder"
                   className="text-muted-foreground text-sm"
                 >
-                  Display Order
+                  {strings.displayOrder}
                 </Label>
                 {isEditing ? (
                   <Input
@@ -334,7 +338,7 @@ export default function EditGalleryPage() {
                   htmlFor="credits"
                   className="text-muted-foreground text-sm"
                 >
-                  Credits
+                  {strings.credits}
                 </Label>
                 {isEditing ? (
                   <Input
@@ -343,7 +347,7 @@ export default function EditGalleryPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, credits: e.target.value })
                     }
-                    placeholder="Photo/Video credits"
+                    placeholder={strings.creditsPlaceholder}
                     className="mt-1"
                   />
                 ) : (
@@ -352,7 +356,7 @@ export default function EditGalleryPage() {
               </div>
 
               <div>
-                <p className="text-muted-foreground text-sm">Type</p>
+                <p className="text-muted-foreground text-sm">{strings.type}</p>
                 <p className="mt-1 font-medium capitalize">{item.mediaType}</p>
               </div>
 
@@ -361,12 +365,12 @@ export default function EditGalleryPage() {
                   htmlFor="status"
                   className="text-muted-foreground text-sm"
                 >
-                  Status
+                  {strings.status}
                 </Label>
                 {isEditing ? (
                   <select
                     id="status"
-                    aria-label="Status"
+                    aria-label={strings.status}
                     value={formData.status}
                     onChange={(e) =>
                       setFormData({
@@ -379,15 +383,17 @@ export default function EditGalleryPage() {
                     }
                     className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:ring-ring mt-1 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <option value="approved">Active (Approved)</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="discarded">Discarded</option>
+                    <option value="approved">{strings.approved}</option>
+                    <option value="inactive">{strings.inactive}</option>
+                    <option value="discarded">{strings.discarded}</option>
                   </select>
                 ) : (
                   <p className="mt-1 font-medium capitalize">
                     {formData.status === "approved"
-                      ? "Active"
-                      : formData.status}
+                      ? strings.approved
+                      : formData.status === "inactive"
+                        ? strings.inactive
+                        : strings.discarded}
                   </p>
                 )}
               </div>
@@ -404,10 +410,9 @@ export default function EditGalleryPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete gallery item</DialogTitle>
+            <DialogTitle>{strings.deleteGalleryItem}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{item.title}"? This action cannot
-              be undone.
+              {strings.deleteConfirmDesc}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -417,7 +422,7 @@ export default function EditGalleryPage() {
               onClick={() => setShowDeleteDialog(false)}
               disabled={deleteMutation.isPending}
             >
-              Cancel
+              {strings.cancel}
             </Button>
             <Button
               type="button"
@@ -425,7 +430,7 @@ export default function EditGalleryPage() {
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteMutation.isPending ? strings.deleting : strings.delete}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -39,14 +39,14 @@ export function SlotManager() {
   const utils = api.useContext();
 
   const days: { label: string; value: DayOfWeek | "default" }[] = [
-    { label: "Default", value: "default" },
-    { label: "Mon", value: "monday" },
-    { label: "Tue", value: "tuesday" },
-    { label: "Wed", value: "wednesday" },
-    { label: "Thu", value: "thursday" },
-    { label: "Fri", value: "friday" },
-    { label: "Sat", value: "saturday" },
-    { label: "Sun", value: "sunday" },
+    { label: strings.default, value: "default" },
+    { label: strings.monShort, value: "monday" },
+    { label: strings.tueShort, value: "tuesday" },
+    { label: strings.wedShort, value: "wednesday" },
+    { label: strings.thuShort, value: "thursday" },
+    { label: strings.friShort, value: "friday" },
+    { label: strings.satShort, value: "saturday" },
+    { label: strings.sunShort, value: "sunday" },
   ];
 
   const handleOpenDrawer = useCallback(() => {
@@ -152,8 +152,10 @@ export function SlotManager() {
       JSON.stringify(newConfig.default),
     );
     setSlotsConfig(newConfig);
-    toast.success(`Copied default config to ${selectedDay}`);
-  }, [slotsConfig, selectedDay]);
+    const dayLabel =
+      days.find((d) => d.value === selectedDay)?.label ?? selectedDay;
+    toast.success(strings.copiedDefaultTo.replace("{day}", dayLabel));
+  }, [slotsConfig, selectedDay, strings, days]);
 
   const handleResetToDefault = useCallback(() => {
     if (!slotsConfig || selectedDay === "default") return;
@@ -163,8 +165,10 @@ export function SlotManager() {
       delete newConfig.weeklyOverrides[selectedDay];
     }
     setSlotsConfig(newConfig);
-    toast.success(`Reset ${selectedDay} to use default config`);
-  }, [slotsConfig, selectedDay]);
+    const dayLabel =
+      days.find((d) => d.value === selectedDay)?.label ?? selectedDay;
+    toast.success(strings.resetToDefaultSuccess.replace("{day}", dayLabel));
+  }, [slotsConfig, selectedDay, strings, days]);
 
   const handleSaveSlots = useCallback(async () => {
     if (!slotsConfig) return;
@@ -175,15 +179,15 @@ export function SlotManager() {
         slots: slotsConfig as any,
       });
       await utils.admin.configGet.invalidate();
-      toast.success("Slots updated successfully");
+      toast.success(strings.slotsUpdated);
       setIsOpen(false);
     } catch (error) {
-      toast.error("Failed to update slots");
+      toast.error(strings.slotsUpdateError);
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }, [slotsConfig, configUpdateMutation]);
+  }, [slotsConfig, configUpdateMutation, strings]);
 
   return (
     <>
@@ -193,7 +197,7 @@ export function SlotManager() {
           <div className="flex-1">
             <p className="text-sm font-semibold">{strings.slotManagerTitle}</p>
             <p className="text-muted-foreground text-xs">
-              Manage weekly slot templates and pricing
+              {strings.slotManagerDesc}
             </p>
           </div>
           <Button
@@ -202,7 +206,7 @@ export function SlotManager() {
             size="sm"
             onClick={handleOpenDrawer}
           >
-            Open
+            {strings.open}
           </Button>
         </div>
       </Card>
@@ -239,10 +243,14 @@ export function SlotManager() {
               <div className="border-border/60 flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed py-12">
                 <div className="space-y-1 text-center">
                   <p className="text-sm font-semibold">
-                    No override for {selectedDay}
+                    {strings.noOverrideFor.replace(
+                      "{day}",
+                      days.find((d) => d.value === selectedDay)?.label ??
+                        selectedDay,
+                    )}
                   </p>
                   <p className="text-muted-foreground text-xs">
-                    This day currently uses the default configuration
+                    {strings.usesDefaultConfig}
                   </p>
                 </div>
                 <Button
@@ -251,7 +259,11 @@ export function SlotManager() {
                   className="rounded-2xl"
                   onClick={handleCopyFromDefault}
                 >
-                  Create {selectedDay} override
+                  {strings.createOverride.replace(
+                    "{day}",
+                    days.find((d) => d.value === selectedDay)?.label ??
+                      selectedDay,
+                  )}
                 </Button>
               </div>
             )}
@@ -266,7 +278,7 @@ export function SlotManager() {
                       className="h-7 rounded-xl text-[10px]"
                       onClick={handleResetToDefault}
                     >
-                      Reset to Default
+                      {strings.resetToDefault}
                     </Button>
                   </div>
                 )}
@@ -274,7 +286,9 @@ export function SlotManager() {
                 {currentDayConfig.AvailableSlots.map((slot, index) => {
                   const isUnavailable = slot.status === "unavailable";
                   const statusLabel =
-                    slot.status === "available" ? "Available" : "Unavailable";
+                    slot.status === "available"
+                      ? strings.available
+                      : strings.unavailable;
 
                   return (
                     <div
@@ -300,14 +314,14 @@ export function SlotManager() {
                           }`}
                         >
                           {isUnavailable
-                            ? "Mark available"
-                            : "Mark unavailable"}
+                            ? strings.markAvailable
+                            : strings.markUnavailable}
                         </button>
                       </div>
                       <div className="grid gap-3 pt-3 sm:grid-cols-2">
                         <div className="space-y-1">
                           <p className="text-muted-foreground text-[11px] font-semibold uppercase">
-                            Advance price
+                            {strings.advancePrice}
                           </p>
                           <div className="flex items-center gap-2">
                             <span className="text-muted-foreground text-sm">
@@ -337,7 +351,7 @@ export function SlotManager() {
                         </div>
                         <div className="space-y-1">
                           <p className="text-muted-foreground text-[11px] font-semibold uppercase">
-                            Full price
+                            {strings.fullPrice}
                           </p>
                           <div className="flex items-center gap-2">
                             <span className="text-muted-foreground text-sm">
@@ -376,7 +390,7 @@ export function SlotManager() {
           <div className="flex gap-2 border-t px-4 py-4">
             <DrawerClose asChild>
               <Button variant="outline" className="flex-1 rounded-2xl">
-                Cancel
+                {strings.cancel}
               </Button>
             </DrawerClose>
             <Button
@@ -384,7 +398,7 @@ export function SlotManager() {
               disabled={loading}
               className="flex-1 rounded-2xl"
             >
-              {loading ? "Saving..." : "Save Changes"}
+              {loading ? strings.saving : strings.save}
             </Button>
           </div>
         </DrawerContent>

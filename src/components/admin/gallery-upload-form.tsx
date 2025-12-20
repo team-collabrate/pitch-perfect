@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { api } from "~/trpc/react";
+import { useLanguage } from "~/lib/language-context";
+import allTranslations from "~/lib/translations/all";
 
 interface CloudinaryUploadResult {
   public_id: string;
@@ -17,6 +19,8 @@ interface GalleryUploadProps {
 }
 
 export function GalleryUploadForm({ onUploadSuccess }: GalleryUploadProps) {
+  const { language } = useLanguage();
+  const strings = useMemo(() => allTranslations.admin[language], [language]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +52,7 @@ export function GalleryUploadForm({ onUploadSuccess }: GalleryUploadProps) {
     setSuccess(false);
 
     if (!formData.file) {
-      setError("Please select a file to upload");
+      setError(strings.selectFile);
       return;
     }
 
@@ -115,14 +119,14 @@ export function GalleryUploadForm({ onUploadSuccess }: GalleryUploadProps) {
           }, 1500);
         } catch (error) {
           console.error("Upload error:", error);
-          setError("Failed to upload gallery item");
+          setError(strings.uploadErrorGallery);
           setIsUploading(false);
         }
       };
       reader.readAsDataURL(formData.file);
     } catch (error) {
       console.error("Error:", error);
-      setError("An error occurred");
+      setError(strings.errorOccurred);
       setIsUploading(false);
     }
   };
@@ -137,12 +141,12 @@ export function GalleryUploadForm({ onUploadSuccess }: GalleryUploadProps) {
 
       {success && (
         <div className="rounded-md bg-green-50 p-3 text-sm text-green-800">
-          Gallery item uploaded successfully!
+          {strings.uploadSuccess}
         </div>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="media-type">Media Type</Label>
+        <Label htmlFor="media-type">{strings.mediaType}</Label>
         <select
           id="media-type"
           title="Select media type"
@@ -155,13 +159,13 @@ export function GalleryUploadForm({ onUploadSuccess }: GalleryUploadProps) {
           }
           className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <option value="image">Image</option>
-          <option value="video">Video</option>
+                    <option value="image">{strings.image}</option>
+          <option value="video">{strings.video}</option>
         </select>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="file">File</Label>
+        <Label htmlFor="gallery-file">{strings.file}</Label>
         <Input
           id="file"
           ref={fileInputRef}
@@ -177,73 +181,73 @@ export function GalleryUploadForm({ onUploadSuccess }: GalleryUploadProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="title">Title (optional)</Label>
+        <Label htmlFor="title">{strings.titleOptional}</Label>
         <Input
           id="title"
           value={formData.title}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, title: e.target.value }))
           }
-          placeholder="Gallery item title (optional)"
+          placeholder={strings.titleOptional}
           disabled={isUploading}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Description (Optional)</Label>
+        <Label htmlFor="description">{strings.descriptionOptional}</Label>
         <textarea
           id="description"
           value={formData.description}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, description: e.target.value }))
           }
-          placeholder="Describe the image or video"
+          placeholder={strings.descriptionOptional}
           disabled={isUploading}
           className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="alt-text">Alt Text (Optional)</Label>
+        <Label htmlFor="alt-text">{strings.altTextOptional}</Label>
         <Input
           id="alt-text"
           value={formData.altText}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, altText: e.target.value }))
           }
-          placeholder="Alternative text for accessibility"
+          placeholder={strings.altTextOptional}
           disabled={isUploading}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="credits">Credits (Optional)</Label>
+        <Label htmlFor="credits">{strings.credits}</Label>
         <Input
           id="credits"
           value={formData.credits}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, credits: e.target.value }))
           }
-          placeholder="Photographer or creator attribution"
+          placeholder={strings.credits}
           disabled={isUploading}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="phone-number">Customer Phone (Optional)</Label>
+        <Label htmlFor="phone-number">{strings.phoneNumber}</Label>
         <Input
           id="phone-number"
           value={formData.phoneNumber}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))
           }
-          placeholder="Customer contact number"
+          placeholder={strings.phoneNumber}
           disabled={isUploading}
         />
       </div>
 
       <Button type="submit" disabled={isUploading} className="w-full">
-        {isUploading ? "Uploading..." : "Upload"}
+        {isUploading ? strings.uploading : strings.upload}
       </Button>
     </form>
   );

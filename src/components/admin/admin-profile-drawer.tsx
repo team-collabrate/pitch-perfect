@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Loader2, LogOut, Settings, Trash2, Edit2, X } from "lucide-react";
 
 import { api } from "~/trpc/react";
+import { useLanguage } from "~/lib/language-context";
+import allTranslations from "~/lib/translations/all";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -25,6 +27,8 @@ export function AdminProfileDrawer({
   adminName,
 }: AdminProfileDrawerProps) {
   const [open, setOpen] = useState(false);
+  const { language } = useLanguage();
+  const strings = useMemo(() => allTranslations.admin[language], [language]);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState(adminName);
   const [error, setError] = useState<string | null>(null);
@@ -42,42 +46,42 @@ export function AdminProfileDrawer({
   const removeAllSessionsMutation =
     api.superAdmin.removeAllSessions.useMutation({
       onSuccess: () => {
-        setSuccessMessage("All sessions removed successfully");
+        setSuccessMessage(strings.profileSessionsRemoved);
         setTimeout(() => setSuccessMessage(null), 2000);
       },
       onError: (error) => {
-        setError(error.message || "Failed to remove sessions");
+        setError(error.message || strings.profileErrorRemoveSessions);
       },
     });
 
   const removeAdminMutation = api.superAdmin.removeAdmin.useMutation({
     onSuccess: () => {
-      setSuccessMessage("Admin removed successfully");
+      setSuccessMessage(strings.profileAdminRemoved);
       setTimeout(() => {
         setOpen(false);
         void utils.superAdmin.adminsList.invalidate();
       }, 2000);
     },
     onError: (error) => {
-      setError(error.message || "Failed to remove admin");
+      setError(error.message || strings.profileErrorRemoveAdmin);
     },
   });
 
   const updateNameMutation = api.superAdmin.updateAdminName.useMutation({
     onSuccess: (_data) => {
-      setSuccessMessage("Name updated successfully");
+      setSuccessMessage(strings.profileNameUpdated);
       setEditingName(false);
       void utils.superAdmin.getAdminProfile.invalidate();
       setTimeout(() => setSuccessMessage(null), 2000);
     },
     onError: (error) => {
-      setError(error.message || "Failed to update name");
+      setError(error.message || strings.profileErrorUpdateName);
     },
   });
 
   const handleUpdateName = async () => {
     if (!newName.trim()) {
-      setError("Name cannot be empty");
+      setError(strings.profileNameEmpty);
       return;
     }
 
@@ -89,17 +93,12 @@ export function AdminProfileDrawer({
   };
 
   const handleRemoveAllSessions = async () => {
-    if (!confirm("Remove all active sessions for this admin?")) return;
+    if (!confirm(strings.profileConfirmRemoveSessions)) return;
     await removeAllSessionsMutation.mutateAsync({ managerId: adminId });
   };
 
   const handleRemoveAdmin = async () => {
-    if (
-      !confirm(
-        `Are you sure you want to delete ${adminName}? This action cannot be undone.`,
-      )
-    )
-      return;
+    if (!confirm(strings.profileConfirmDelete)) return;
     await removeAdminMutation.mutateAsync({ managerId: adminId });
   };
 
@@ -110,24 +109,24 @@ export function AdminProfileDrawer({
           variant="ghost"
           size="sm"
           className="text-muted-foreground hover:text-primary h-9 w-9 rounded-full p-0 transition-colors"
-          title="View profile"
+          title={strings.viewProfile}
         >
           <Settings className="h-4 w-4" />
         </Button>
       </DrawerTrigger>
       <DrawerContent className="px-4 py-6">
-        <DrawerTitle className="sr-only">Admin Profile</DrawerTitle>
+        <DrawerTitle className="sr-only">{strings.profileTitle}</DrawerTitle>
         <div className="mx-auto w-full max-w-sm space-y-6">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Admin Profile</h2>
+              <h2 className="text-xl font-semibold">{strings.profileTitle}</h2>
               <p className="text-muted-foreground text-sm">
-                Manage admin account
+                {strings.profileDesc}
               </p>
             </div>
             <DrawerClose asChild>
-              <button className="hover:bg-muted rounded-lg p-1" title="Close">
+              <button className="hover:bg-muted rounded-lg p-1" title={strings.close}>
                 <X className="h-5 w-5" />
               </button>
             </DrawerClose>
@@ -156,14 +155,14 @@ export function AdminProfileDrawer({
               <div className="border-border/60 bg-card/30 space-y-4 rounded-lg border p-4">
                 <div className="space-y-2">
                   <Label className="text-muted-foreground text-xs uppercase">
-                    Name
+                    {strings.profileName}
                   </Label>
                   {editingName ? (
                     <div className="flex gap-2">
                       <Input
                         value={newName}
                         onChange={(e) => setNewName(e.target.value)}
-                        placeholder="Enter new name"
+                        placeholder={strings.profileNamePlaceholder}
                         disabled={updateNameMutation.isPending}
                       />
                       <Button
@@ -174,7 +173,7 @@ export function AdminProfileDrawer({
                         {updateNameMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          "Save"
+                          strings.save
                         )}
                       </Button>
                       <Button
@@ -186,7 +185,7 @@ export function AdminProfileDrawer({
                         }}
                         disabled={updateNameMutation.isPending}
                       >
-                        Cancel
+                        {strings.cancel}
                       </Button>
                     </div>
                   ) : (
@@ -205,21 +204,21 @@ export function AdminProfileDrawer({
 
                 <div className="space-y-2">
                   <Label className="text-muted-foreground text-xs uppercase">
-                    Email
+                    {strings.profileEmail}
                   </Label>
                   <p className="font-medium">{profile.email}</p>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-muted-foreground text-xs uppercase">
-                    Role
+                    {strings.profileRole}
                   </Label>
                   <p className="font-medium capitalize">{profile.role}</p>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-muted-foreground text-xs uppercase">
-                    Member Since
+                    {strings.profileMemberSince}
                   </Label>
                   <p className="font-medium">
                     {new Date(profile.createdAt).toLocaleDateString()}
@@ -231,10 +230,13 @@ export function AdminProfileDrawer({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Active Sessions</p>
+                    <p className="font-medium">{strings.profileActiveSessions}</p>
                     <p className="text-muted-foreground text-sm">
-                      {profile.activeSessionsCount} session
-                      {profile.activeSessionsCount !== 1 ? "s" : ""} active
+                      {profile.activeSessionsCount}{" "}
+                      {profile.activeSessionsCount !== 1
+                        ? strings.profileSessions
+                        : strings.profileSession}{" "}
+                      {strings.profileActive}
                     </p>
                   </div>
                   <Button
@@ -253,7 +255,7 @@ export function AdminProfileDrawer({
                       <>
                         <LogOut className="h-4 w-4" />
                         <span className="ml-2 hidden sm:inline">
-                          Remove All
+                          {strings.profileRemoveAll}
                         </span>
                       </>
                     )}
@@ -300,7 +302,7 @@ export function AdminProfileDrawer({
                   ) : (
                     <Trash2 className="h-4 w-4" />
                   )}
-                  Delete Admin
+                  {strings.profileDeleteAdmin}
                 </Button>
               </div>
             </div>

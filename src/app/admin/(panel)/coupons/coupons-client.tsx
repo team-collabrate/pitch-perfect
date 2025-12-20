@@ -23,6 +23,8 @@ import { Label } from "~/components/ui/label";
 import { Spinner } from "~/components/spinner";
 import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
+import { useLanguage } from "~/lib/language-context";
+import allTranslations from "~/lib/translations/all";
 
 type Strings = {
   couponsTitle: string;
@@ -57,16 +59,17 @@ function formatRupeesFromPaise(paise: number) {
 
 function getCouponStatus(
   coupon: Pick<Coupon, "validFrom" | "validTo" | "showCoupon" | "status">,
+  strings: any,
 ) {
-  if (coupon.status === "achieved") return "Achieved";
+  if (coupon.status === "achieved") return strings.achieved;
 
   const now = new Date();
   const from = new Date(coupon.validFrom);
   const to = coupon.validTo ? new Date(coupon.validTo) : null;
 
-  if (to && to < now) return "Expired";
-  if (from > now) return "Scheduled";
-  return coupon.status === "active" ? "Active" : "Inactive";
+  if (to && to < now) return strings.expired;
+  if (from > now) return strings.scheduled;
+  return coupon.status === "active" ? strings.active : strings.inactive;
 }
 
 type CouponDraft = {
@@ -111,7 +114,9 @@ function getEmptyDraft(): CouponDraft {
   };
 }
 
-export function CouponsClient({ strings }: { strings: Strings }) {
+export function CouponsClient({ strings: _strings }: { strings: Strings }) {
+  const { language } = useLanguage();
+  const strings = React.useMemo(() => allTranslations.admin[language], [language]);
   const utils = api.useUtils();
   const router = useRouter();
 
@@ -122,7 +127,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
 
   const createMutation = api.superAdmin.couponCreate.useMutation({
     onSuccess: async () => {
-      toast.success("Coupon created");
+      toast.success(strings.couponCreated);
       setDrawerOpen(false);
       setDraft(getEmptyDraft());
       await utils.superAdmin.couponsList.invalidate();
@@ -132,7 +137,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
 
   const updateMutation = api.superAdmin.couponUpdate.useMutation({
     onSuccess: async () => {
-      toast.success("Coupon updated");
+      toast.success(strings.couponUpdated);
       setDrawerOpen(false);
       setDraft(getEmptyDraft());
       await utils.superAdmin.couponsList.invalidate();
@@ -230,15 +235,15 @@ export function CouponsClient({ strings }: { strings: Strings }) {
 
   async function submitDraft() {
     if (!draft.code.trim()) {
-      toast.error("Code is required");
+      toast.error(strings.codeRequired);
       return;
     }
     if (draft.useValidFrom && !draft.validFrom) {
-      toast.error("Valid from date is required");
+      toast.error(strings.validFromRequired);
       return;
     }
     if (draft.useValidTo && !draft.validTo) {
-      toast.error("Valid to date is required");
+      toast.error(strings.validToRequired);
       return;
     }
 
@@ -274,7 +279,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
   }
 
   async function onArchive(coupon: Coupon) {
-    const ok = window.confirm(`Archive coupon ${coupon.code}?`);
+    const ok = window.confirm(strings.archiveCouponConfirm.replace("{code}", coupon.code));
     if (!ok) return;
     await archiveMutation.mutateAsync({ couponId: coupon.id });
   }
@@ -314,13 +319,13 @@ export function CouponsClient({ strings }: { strings: Strings }) {
           <p className="text-muted-foreground text-xs tracking-wide uppercase">
             {strings.couponsTitle}
           </p>
-          <h1 className="text-2xl font-semibold">Manage Coupons</h1>
+          <h1 className="text-2xl font-semibold">{strings.manageCoupons}</h1>
         </div>
 
         <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
           <DrawerTrigger asChild>
             <Button className="rounded-2xl" onClick={openCreate}>
-              <PlusCircle className="mr-2 h-4 w-4" /> New Coupon
+              <PlusCircle className="mr-2 h-4 w-4" /> {strings.newCoupon}
             </Button>
           </DrawerTrigger>
 
@@ -328,7 +333,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
             <DrawerCloseButton />
             <DrawerHeader>
               <DrawerTitle>
-                {draft.couponId ? "Edit Coupon" : "Create New Coupon"}
+                {draft.couponId ? strings.editCoupon : strings.newCoupon}
               </DrawerTitle>
             </DrawerHeader>
 
@@ -339,7 +344,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                     htmlFor="code"
                     className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
                   >
-                    Coupon Code
+                    {strings.couponCode}
                   </Label>
                   <Input
                     id="code"
@@ -347,7 +352,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, code: e.target.value }))
                     }
-                    placeholder="WELCOME10"
+                    placeholder={strings.couponPlaceholder}
                     disabled={!!draft.couponId}
                     className="rounded-xl"
                   />
@@ -358,7 +363,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                     htmlFor="description"
                     className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
                   >
-                    Description
+                    {strings.description}
                   </Label>
                   <Input
                     id="description"
@@ -366,7 +371,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, description: e.target.value }))
                     }
-                    placeholder="e.g. 10% off for new users"
+                    placeholder={strings.couponDescPlaceholder}
                     className="rounded-xl"
                   />
                 </div>
@@ -377,7 +382,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                       htmlFor="flatDiscountAmount"
                       className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
                     >
-                      Discount (₹)
+                      {strings.discountLabel}
                     </Label>
                     <Input
                       id="flatDiscountAmount"
@@ -404,7 +409,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                       htmlFor="maxFlatDiscountAmount"
                       className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
                     >
-                      Max Cap (₹)
+                      {strings.maxCap}
                     </Label>
                     <Input
                       id="maxFlatDiscountAmount"
@@ -433,7 +438,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                       htmlFor="usageLimit"
                       className="text-sm font-semibold"
                     >
-                      Usage Limit
+                      {strings.usageLimit}
                     </Label>
                     <div className="flex items-center gap-3">
                       <button
@@ -481,7 +486,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                       htmlFor="minimumBookingAmount"
                       className="text-sm font-semibold"
                     >
-                      Min Booking (₹)
+                      {strings.minBooking}
                     </Label>
                     <div className="flex items-center gap-3">
                       <button
@@ -537,7 +542,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                       htmlFor="validFrom"
                       className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
                     >
-                      Valid From
+                      {strings.validFrom}
                     </Label>
                     <Input
                       id="validFrom"
@@ -554,7 +559,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                       htmlFor="validTo"
                       className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
                     >
-                      Valid To
+                      {strings.validTo}
                     </Label>
                     <Input
                       id="validTo"
@@ -577,7 +582,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                 className="flex-1 rounded-2xl py-6"
               >
                 {isBusy ? <Spinner className="mr-2 h-4 w-4" /> : null}
-                {draft.couponId ? "Update Coupon" : "Create Coupon"}
+                {draft.couponId ? strings.updateCoupon : strings.createCoupon}
               </Button>
               <DrawerClose asChild>
                 <Button
@@ -585,7 +590,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                   disabled={isBusy}
                   className="flex-1 rounded-2xl py-6"
                 >
-                  Cancel
+                  {strings.cancel}
                 </Button>
               </DrawerClose>
             </DrawerFooter>
@@ -600,7 +605,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
       ) : couponsQuery.error ? (
         <Card className="border-border/60 bg-card/60 rounded-3xl p-8 text-center">
           <p className="text-destructive text-sm font-medium">
-            Failed to load coupons: {couponsQuery.error.message}
+            {strings.errorLoadBookings}: {couponsQuery.error.message}
           </p>
         </Card>
       ) : (
@@ -609,16 +614,16 @@ export function CouponsClient({ strings }: { strings: Strings }) {
             <Card className="border-border/60 bg-card/60 rounded-3xl p-12 text-center">
               <Ticket className="text-muted-foreground/20 mx-auto mb-4 h-12 w-12" />
               <p className="text-muted-foreground font-medium">
-                No coupons found.
+                {strings.noCouponsFound}
               </p>
               <p className="text-muted-foreground/60 text-sm">
-                Create your first coupon to start offering discounts.
+                {strings.createFirstCoupon}
               </p>
             </Card>
           ) : (
             (couponsQuery.data as Coupon[]).map((coupon) => {
-              const status = getCouponStatus(coupon);
-              const isExpired = status === "Expired";
+              const status = getCouponStatus(coupon, strings);
+              const isExpired = status === strings.expired;
               const isInactive = coupon.status === "inactive";
 
               return (
@@ -640,9 +645,9 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                             variant="secondary"
                             className={cn(
                               "rounded-full px-2 py-0 text-[10px] font-bold tracking-wider uppercase",
-                              status === "Active"
+                              status === strings.active
                                 ? "bg-green-500/10 text-green-600"
-                                : status === "Scheduled"
+                                : status === strings.scheduled
                                   ? "bg-blue-500/10 text-blue-600"
                                   : "bg-red-500/10 text-red-600",
                             )}
@@ -651,7 +656,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                           </Badge>
                         </div>
                         <p className="text-muted-foreground mt-1 text-sm font-medium">
-                          {coupon.description || "No description provided"}
+                          {coupon.description || strings.noDescription}
                         </p>
                       </div>
 
@@ -678,19 +683,19 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                     <div className="border-border/40 mt-4 grid grid-cols-2 gap-4 border-t pt-4">
                       <div>
                         <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
-                          Discount
+                          {strings.discount}
                         </p>
                         <p className="text-primary text-lg font-bold">
                           {formatRupeesFromPaise(coupon.flatDiscountAmount)}
                         </p>
                         <p className="text-muted-foreground text-[10px]">
-                          Max cap:{" "}
+                          {strings.maxCap}:{" "}
                           {formatRupeesFromPaise(coupon.maxFlatDiscountAmount)}
                         </p>
                       </div>
                       <div>
                         <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
-                          Usage
+                          {strings.usage}
                         </p>
                         <p className="text-lg font-bold">
                           {coupon.numberOfUses}{" "}
@@ -699,7 +704,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                           </span>
                         </p>
                         <p className="text-muted-foreground text-[10px]">
-                          Min booking:{" "}
+                          {strings.minBooking}:{" "}
                           {formatRupeesFromPaise(coupon.minimumBookingAmount)}
                         </p>
                       </div>
@@ -729,7 +734,7 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                           />
                         </button>
                         <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-                          Show
+                          {strings.show}
                         </span>
                       </div>
 
@@ -757,15 +762,15 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                           />
                         </button>
                         <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-                          Active
+                          {strings.active}
                         </span>
                       </div>
                     </div>
 
                     <div className="text-muted-foreground text-[10px] font-medium">
                       {coupon.validTo
-                        ? `Until ${new Date(coupon.validTo).toLocaleDateString()}`
-                        : "No expiry"}
+                        ? strings.until.replace("{date}", new Date(coupon.validTo).toLocaleDateString())
+                        : strings.noExpiry}
                     </div>
                   </div>
                 </Card>

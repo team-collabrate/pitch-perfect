@@ -184,7 +184,9 @@ function BookingList({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                  {booking.bookingType}
+                  {booking.bookingType === "cricket"
+                    ? strings.cricket
+                    : strings.football}
                 </p>
                 <h3 className="text-lg font-semibold">
                   {formatDate(booking.date)} ·{" "}
@@ -212,7 +214,7 @@ function BookingList({
                     variant="secondary"
                     className="border-green-200 bg-green-50 text-green-700"
                   >
-                    ✓ Coupon Applied
+                    ✓ {strings.couponApplied}
                   </Badge>
                 )}
               </div>
@@ -447,7 +449,7 @@ export default function ViewPage() {
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold">{strings.title}</h1>
           <p className="text-muted-foreground text-sm">
-            Enter your phone number to see your bookings
+            {strings.enterPhone}
           </p>
         </div>
         <Card className="w-full max-w-sm space-y-4 p-6">
@@ -466,7 +468,7 @@ export default function ViewPage() {
             disabled={!tempPhone.trim()}
             onClick={() => setStoredPhone(tempPhone.trim())}
           >
-            View Bookings
+            {strings.titleAlt}
           </Button>
         </Card>
       </motion.div>
@@ -487,7 +489,7 @@ export default function ViewPage() {
         transition={{ duration: 0.35, delay: 0.05 }}
       >
         <p className="text-muted-foreground text-xs tracking-wide uppercase">
-          Manage visits
+          {strings.manageVisits}
         </p>
         <h1 className="text-2xl font-semibold">{strings.titleAlt}</h1>
         <div className="flex items-center gap-2 pt-2">
@@ -520,13 +522,13 @@ export default function ViewPage() {
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <span className="text-muted-foreground text-sm">
-            Loading your bookings...
+            {strings.loadingBookings}
           </span>
         </div>
       ) : (
         <>
           <BookingList
-            title="Upcoming"
+            title={strings.upcoming}
             bookings={sorted.upcoming}
             accent="primary"
             onOpenTicket={setActiveTicket}
@@ -538,7 +540,7 @@ export default function ViewPage() {
           />
 
           <BookingList
-            title="Past"
+            title={strings.past}
             bookings={sorted.past}
             accent="muted"
             onOpenTicket={setActiveTicket}
@@ -552,20 +554,20 @@ export default function ViewPage() {
         <DrawerContent>
           <DrawerCloseButton />
           <DrawerHeader>
-            <DrawerTitle>Change Phone Number</DrawerTitle>
+            <DrawerTitle>{strings.changePhoneTitle}</DrawerTitle>
             <DrawerDescription>
-              Enter a different phone number to view its bookings
+              {strings.changePhoneDesc}
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-6 pb-4">
             <div className="space-y-1">
-              <Label htmlFor="tempPhone">Phone Number</Label>
+              <Label htmlFor="tempPhone">{strings.phoneNumber}</Label>
               <Input
                 id="tempPhone"
                 inputMode="tel"
                 value={tempPhone}
                 onChange={(event) => setTempPhone(event.target.value)}
-                placeholder="Enter phone number"
+                placeholder={strings.phonePlaceholder}
               />
             </div>
           </div>
@@ -574,10 +576,10 @@ export default function ViewPage() {
               onClick={handleConfirmPhoneChange}
               disabled={!tempPhone.trim()}
             >
-              Use This Number
+              {strings.useThisNumber}
             </Button>
             <Button variant="ghost" onClick={() => setPhoneDrawerOpen(false)}>
-              Cancel
+              {strings.cancel}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -601,7 +603,7 @@ export default function ViewPage() {
             >
               <div className="px-6">
                 <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                  Pitch Perfect ticket
+                  {strings.ticketTitle}
                 </p>
                 <h3 className="text-lg font-semibold">
                   {customer?.name ?? activeTicket.phoneNumber}
@@ -612,42 +614,44 @@ export default function ViewPage() {
               </div>
               <div className="space-y-3 px-6 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Date</span>
+                  <span className="text-muted-foreground">{strings.date}</span>
                   <span>{formatDate(activeTicket.date)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Time</span>
+                  <span className="text-muted-foreground">{strings.time}</span>
                   <span>
                     {formatSlotRange(activeTicket.from, activeTicket.to)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Amount</span>
+                  <span className="text-muted-foreground">{strings.amount}</span>
                   <span>₹{activeTicket.amountPaid}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Mode</span>
+                  <span className="text-muted-foreground">{strings.mode}</span>
                   <span className="capitalize">
-                    {activeTicket.paymentOption}
+                    {activeTicket.paymentOption === "full"
+                      ? strings.fullPaid
+                      : strings.advancePaid}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">
-                    Verification code
+                    {strings.verificationCode}
                   </span>
                   <span className="font-mono text-lg font-semibold">
                     {activeTicket.verificationCode}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Booking ID</span>
+                  <span className="text-muted-foreground">{strings.bookingId}</span>
                   <span className="font-mono text-xs">
                     {activeTicket.bookingCode}
                   </span>
                 </div>
                 <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed px-4 py-3">
                   <span className="text-muted-foreground text-xs tracking-wide uppercase">
-                    Scan for booking details
+                    {strings.scanForDetails}
                   </span>
                   <QRCodeSVG
                     value={ticketQrValue}
@@ -665,7 +669,7 @@ export default function ViewPage() {
                   whileTap={{ scale: 0.97 }}
                   transition={springy}
                 >
-                  {strings.download} ticket
+                  {strings.download}
                 </MotionButton>
                 <MotionButton
                   variant="ghost"
@@ -691,9 +695,9 @@ export default function ViewPage() {
             <DrawerContent className="max-h-[85vh]">
               <DrawerCloseButton />
               <DrawerHeader>
-                <DrawerTitle>Reschedule slot</DrawerTitle>
+                <DrawerTitle>{strings.rescheduleSlot}</DrawerTitle>
                 <DrawerDescription>
-                  Move booking for {formatDate(rescheduleTarget.date)}
+                  {strings.moveBookingFor.replace("{date}", formatDate(rescheduleTarget.date))}
                 </DrawerDescription>
               </DrawerHeader>
               <div className="px-6 pb-4">
@@ -751,7 +755,7 @@ export default function ViewPage() {
                           {formatSlotRange(slot.from, slot.to)}
                         </span>
                         <span className="text-muted-foreground mt-1 text-xs">
-                          {isChosen ? "Selected" : "Tap to choose"}
+                          {isChosen ? strings.selected : strings.tapToChoose}
                         </span>
                       </motion.button>
                     );
@@ -765,11 +769,11 @@ export default function ViewPage() {
                   onClick={handleRescheduleConfirm}
                 >
                   {rescheduleMutation.isPending
-                    ? "Rescheduling..."
-                    : "Confirm move"}
+                    ? strings.rescheduling
+                    : strings.confirmMove}
                 </Button>
                 <Button variant="ghost" onClick={resetRescheduleState}>
-                  Cancel
+                  {strings.cancel}
                 </Button>
               </DrawerFooter>
             </DrawerContent>

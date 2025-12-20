@@ -54,43 +54,48 @@ const springy = { type: "spring", stiffness: 260, damping: 20 } as const;
 
 const sanitizePhone = (value: string) => value.replace(/\D/g, "");
 
-const customerContactsSchema = z
-  .object({
-    name: z.string().trim().min(1, { message: "Enter the main client name" }),
-    number: z.string().refine((value) => sanitizePhone(value).length === 10, {
-      message: "Primary number must be 10 digits",
-    }),
-    alternateContactName: z
-      .string()
-      .trim()
-      .min(1, { message: "Enter the alternate contact name" }),
-    alternateContactNumber: z
-      .string()
-      .refine((value) => sanitizePhone(value).length === 10, {
-        message: "Alternate number must be 10 digits",
+const getCustomerContactsSchema = (strings: any) =>
+  z
+    .object({
+      name: z.string().trim().min(1, { message: strings.errorName }),
+      number: z.string().refine((value) => sanitizePhone(value).length === 10, {
+        message: strings.errorPhone,
       }),
-  })
-  .superRefine((values, ctx) => {
-    const primaryName = values.name.trim().toLowerCase();
-    const alternateName = values.alternateContactName.trim().toLowerCase();
-    if (primaryName && primaryName === alternateName) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["alternateContactName"],
-        message: "Alternate name must differ from the main client",
-      });
-    }
+      alternateContactName: z
+        .string()
+        .trim()
+        .min(1, { message: strings.errorAltName }),
+      alternateContactNumber: z
+        .string()
+        .refine((value) => sanitizePhone(value).length === 10, {
+          message: strings.errorAltPhone,
+        }),
+    })
+    .superRefine((values, ctx) => {
+      const primaryName = values.name.trim().toLowerCase();
+      const alternateName = values.alternateContactName.trim().toLowerCase();
+      if (primaryName && primaryName === alternateName) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["alternateContactName"],
+          message: strings.errorAltNameSame,
+        });
+      }
 
-    const primaryNumber = sanitizePhone(values.number);
-    const alternateNumber = sanitizePhone(values.alternateContactNumber);
-    if (primaryNumber && alternateNumber && primaryNumber === alternateNumber) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["alternateContactNumber"],
-        message: "Alternate number must differ from the main client",
-      });
-    }
-  });
+      const primaryNumber = sanitizePhone(values.number);
+      const alternateNumber = sanitizePhone(values.alternateContactNumber);
+      if (
+        primaryNumber &&
+        alternateNumber &&
+        primaryNumber === alternateNumber
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["alternateContactNumber"],
+          message: strings.errorAltPhoneSame,
+        });
+      }
+    });
 
 const fireSideCannons = () => {
   const colors = ["#a786ff", "#fd8bbc", "#eca184", "#f8deb1"];
@@ -188,6 +193,10 @@ export default function BookingPage() {
     usePhone();
   const utils = api.useUtils();
   const strings = useMemo(() => allTranslations.book[language], [language]);
+  const customerContactsSchema = useMemo(
+    () => getCustomerContactsSchema(strings),
+    [strings],
+  );
   const [selectedDate, setSelectedDate] = useState<string>(() =>
     format(new Date(), "yyyy-MM-dd"),
   );
@@ -633,12 +642,17 @@ export default function BookingPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-              Slots
+              {strings.slots}
             </h2>
             <p className="text-muted-foreground text-xs">
               {selectedDate
-                ? `Pick up to ${MAX_SLOTS_PER_DAY} for ${format(parseISO(selectedDate), "EEE, MMM d")}`
-                : "Choose a date to enable slots"}
+                ? strings.pickUpTo
+                    .replace("{max}", MAX_SLOTS_PER_DAY.toString())
+                    .replace(
+                      "{date}",
+                      format(parseISO(selectedDate), "EEE, MMM d"),
+                    )
+                : strings.chooseDateToEnable}
             </p>
           </div>
           <span className="text-muted-foreground text-xs">
@@ -652,7 +666,7 @@ export default function BookingPage() {
               className="w-full rounded-2xl py-6 text-base"
               disabled={!selectedDate}
             >
-              {selectionCount > 0 ? "Edit slots" : "Choose slots"}
+              {selectionCount > 0 ? strings.editSlots : strings.chooseSlots}
             </Button>
           </DrawerTrigger>
           <DrawerContent>
@@ -661,33 +675,38 @@ export default function BookingPage() {
               <DrawerTitle>
                 {selectedDate
                   ? format(parseISO(selectedDate), "EEEE, MMM d")
-                  : "Pick a date above"}
+                  : strings.pickDateAbove}
               </DrawerTitle>
               <DrawerDescription>
-                Select up to {MAX_SLOTS_PER_DAY} slots for this day.
+                {strings.selectUpTo.replace(
+                  "{max}",
+                  MAX_SLOTS_PER_DAY.toString(),
+                )}
               </DrawerDescription>
             </DrawerHeader>
             <div className="text-muted-foreground flex items-center justify-between px-6 pb-2 text-xs">
-              <span>{selectionCount} selected</span>
+              <span>
+                {selectionCount} {strings.selected}
+              </span>
               <Button
                 variant="ghost"
                 size="sm"
                 disabled={!selectionCount}
                 onClick={clearSelectedSlots}
               >
-                Clear all
+                {strings.clearAll}
               </Button>
             </div>
             {selectionCount > 0 && (
               <div className="border-border/60 text-muted-foreground space-y-1 border-b px-6 pb-3 text-xs">
                 <div className="flex items-center justify-between text-[11px] tracking-wide uppercase">
-                  <span>Advance total</span>
+                  <span>{strings.advanceTotal}</span>
                   <span className="text-primary font-semibold">
                     {toRupees(totalAdvancePaise)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] tracking-wide uppercase">
-                  <span>Full total</span>
+                  <span>{strings.fullTotal}</span>
                   <span className="text-primary font-semibold">
                     {toRupees(totalFullPaise)}
                   </span>
@@ -705,10 +724,10 @@ export default function BookingPage() {
                     <CalendarX className="text-muted-foreground h-6 w-6" />
                   </div>
                   <p className="text-muted-foreground text-sm font-medium">
-                    No slots available
+                    {strings.noSlotsAvailable}
                   </p>
                   <p className="text-muted-foreground/60 text-xs">
-                    Try picking another date
+                    {strings.tryAnotherDate}
                   </p>
                 </div>
               ) : (
@@ -740,15 +759,15 @@ export default function BookingPage() {
                         {formatSlotTime(slot.from)} – {formatSlotTime(slot.to)}
                       </span>
                       <span className="text-muted-foreground mt-1 text-[11px]">
-                        Advance {toRupees(slot.advanceAmount)} • Full{" "}
-                        {toRupees(slot.fullAmount)}
+                        {strings.advance} {toRupees(slot.advanceAmount)} •{" "}
+                        {strings.full} {toRupees(slot.fullAmount)}
                       </span>
                       <span className="text-muted-foreground mt-2 inline-flex items-center gap-2 text-xs">
                         {isSelected
-                          ? "Selected"
+                          ? strings.selected
                           : isAtLimit
-                            ? "Slot limit reached"
-                            : "Tap to select"}
+                            ? strings.slotLimitReached
+                            : strings.tapToSelect}
                         {isSelected && (
                           <span className="bg-primary h-2 w-2 rounded-full" />
                         )}
@@ -763,7 +782,7 @@ export default function BookingPage() {
                 onClick={() => setSlotDrawerOpen(false)}
                 disabled={!selectedDate}
               >
-                Done
+                {strings.done}
               </Button>
             </DrawerFooter>
           </DrawerContent>
@@ -778,7 +797,7 @@ export default function BookingPage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                No slots selected yet.
+                {strings.noSlotsSelected}
               </motion.span>
             ) : (
               selectedSlots
@@ -804,7 +823,7 @@ export default function BookingPage() {
 
       <section className="space-y-3">
         <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-          Sport {bookingType.size === 2 && "(Cricket & Football)"}
+          {strings.sport} {bookingType.size === 2 && strings.cricketAndFootball}
         </h2>
         <div className="grid grid-cols-2 gap-2">
           {["cricket", "football"].map((option) => {
@@ -831,7 +850,7 @@ export default function BookingPage() {
                 whileHover={{ scale: canChooseGame ? 1.02 : 1 }}
                 transition={springy}
               >
-                {option}
+                {option === "cricket" ? strings.cricket : strings.football}
               </MotionButton>
             );
           })}
@@ -840,7 +859,7 @@ export default function BookingPage() {
 
       <section className="space-y-3">
         <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-          Payment
+          {strings.paymentOption}
         </h2>
         <div className="grid grid-cols-2 gap-2">
           {paymentOptions.map((option) => {
@@ -861,7 +880,7 @@ export default function BookingPage() {
                 whileHover={{ scale: canChoosePayment ? 1.02 : 1 }}
                 transition={springy}
               >
-                {option.label}
+                {option.key === "advance" ? strings.advance : strings.full}
               </MotionButton>
             );
           })}
@@ -870,7 +889,7 @@ export default function BookingPage() {
 
       <section className="space-y-4">
         <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-          Player details
+          {strings.playerDetails}
         </h2>
         {!isHydrated ? (
           <div className="flex items-center justify-center py-8">
@@ -880,14 +899,14 @@ export default function BookingPage() {
           <div className="flex flex-col items-center justify-center gap-2 py-8">
             <Spinner />
             <span className="text-muted-foreground text-xs">
-              Loading your details...
+              {strings.loadingDetails}
             </span>
           </div>
         ) : (
           <div className="space-y-3">
             <div className="space-y-1">
               <Label htmlFor="number">
-                {strings.numberLabel} <span className="text-red-500">*</span>
+                {strings.phoneNumber} <span className="text-red-500">*</span>
               </Label>
               <div className="flex gap-2">
                 <Input
@@ -897,7 +916,7 @@ export default function BookingPage() {
                   onChange={(event) =>
                     handleCustomerChange("number", event.target.value)
                   }
-                  placeholder={strings.primaryContactPlaceholder}
+                  placeholder={strings.phoneNumber}
                   disabled={!!storedPhone && !!existingCustomer}
                   className={storedPhone && existingCustomer ? "bg-muted" : ""}
                 />
@@ -915,18 +934,18 @@ export default function BookingPage() {
               </div>
               {isHydrated && storedPhone && existingCustomer && (
                 <p className="text-muted-foreground text-xs">
-                  Using saved number. Tap edit to change.
+                  {strings.usingSavedNumber}
                 </p>
               )}
               {isHydrated && (!storedPhone || !existingCustomer) && (
                 <p className="text-muted-foreground text-xs">
-                  Enter your primary contact number
+                  {strings.enterPrimaryNumber}
                 </p>
               )}
             </div>
             <div className="space-y-1">
               <Label htmlFor="name">
-                {strings.nameLabel} <span className="text-red-500">*</span>
+                {strings.name} <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="name"
@@ -934,7 +953,7 @@ export default function BookingPage() {
                 onChange={(event) =>
                   handleCustomerChange("name", event.target.value)
                 }
-                placeholder={strings.namePlaceholder}
+                placeholder={strings.name}
               />
             </div>
             <div className="space-y-1">
@@ -951,7 +970,7 @@ export default function BookingPage() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="alternateName">
-                {strings.alternateNameLabel}{" "}
+                {strings.alternateContactName}{" "}
                 <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -963,12 +982,12 @@ export default function BookingPage() {
                     event.target.value,
                   )
                 }
-                placeholder={strings.alternateNamePlaceholder}
+                placeholder={strings.alternateContactName}
               />
             </div>
             <div className="space-y-1">
               <Label htmlFor="alternateNumber">
-                {strings.alternateNumberLabel}{" "}
+                {strings.alternateContactNumber}{" "}
                 <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -981,7 +1000,7 @@ export default function BookingPage() {
                     event.target.value,
                   )
                 }
-                placeholder={strings.alternateNumberPlaceholder}
+                placeholder={strings.alternateContactNumber}
               />
             </div>
           </div>
@@ -990,7 +1009,7 @@ export default function BookingPage() {
 
       <section className="space-y-3">
         <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-          Coupon
+          {strings.coupon}
         </h2>
         <div className="space-y-2">
           {/* Horizontal Scrollable Coupons */}
@@ -1031,7 +1050,7 @@ export default function BookingPage() {
           {/* Coupon Code Input */}
           <div className="flex gap-2">
             <Input
-              placeholder="Enter coupon code"
+              placeholder={strings.enterCouponCode}
               value={couponCode}
               onChange={(e) => {
                 setCouponCode(e.target.value);
@@ -1047,7 +1066,11 @@ export default function BookingPage() {
                 disabled={isValidatingCoupon || selectedSlots.length === 0}
                 className="shrink-0 rounded-2xl"
               >
-                {isValidatingCoupon ? <Spinner className="h-4 w-4" /> : "Apply"}
+                {isValidatingCoupon ? (
+                  <Spinner className="h-4 w-4" />
+                ) : (
+                  strings.apply
+                )}
               </Button>
             )}
             {appliedCoupon && (
@@ -1060,7 +1083,7 @@ export default function BookingPage() {
                 }}
                 className="shrink-0 rounded-2xl"
               >
-                Remove
+                {strings.remove}
               </Button>
             )}
           </div>
@@ -1069,11 +1092,16 @@ export default function BookingPage() {
           {appliedCoupon && (
             <div className="dark:border-primary/60 dark:bg-primary/10 dark:text-primary rounded-2xl border border-green-200 bg-green-50 p-3 text-sm">
               <p className="dark:text-primary font-medium text-green-700">
-                ✓ Coupon Applied: Save ₹
-                {(appliedCoupon.discount / 100).toFixed(2)}
+                {strings.couponAppliedSave.replace(
+                  "{amount}",
+                  (appliedCoupon.discount / 100).toFixed(2),
+                )}
               </p>
               <p className="dark:text-primary/80 text-xs text-green-600">
-                Pay: ₹{(appliedCoupon.finalAmount / 100).toFixed(2)}
+                {strings.payAmount.replace(
+                  "{amount}",
+                  (appliedCoupon.finalAmount / 100).toFixed(2),
+                )}
               </p>
             </div>
           )}
@@ -1105,10 +1133,10 @@ export default function BookingPage() {
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <Spinner className="h-4 w-4 border-white" />
-                <span>{strings.processing}</span>
+                <span>{strings.loading}</span>
               </div>
             ) : (
-              `Pay ${toRupees(amountToPay)}`
+              strings.pay.replace("{amount}", toRupees(amountToPay))
             )}
           </MotionButton>
         );
@@ -1122,18 +1150,18 @@ export default function BookingPage() {
         <DrawerContent>
           <DrawerCloseButton />
           <DrawerHeader>
-            <DrawerTitle>{strings.drawerTitle}</DrawerTitle>
-            <DrawerDescription>{strings.drawerDesc}</DrawerDescription>
+            <DrawerTitle>{strings.phoneDrawerTitle}</DrawerTitle>
+            <DrawerDescription>{strings.phoneDrawerDesc}</DrawerDescription>
           </DrawerHeader>
           <div className="px-6 pb-4">
             <div className="space-y-1">
-              <Label htmlFor="tempPhone">{strings.numberLabel}</Label>
+              <Label htmlFor="tempPhone">{strings.phoneNumber}</Label>
               <Input
                 id="tempPhone"
                 inputMode="tel"
                 value={tempPhone}
                 onChange={(event) => setTempPhone(event.target.value)}
-                placeholder={strings.tempPhonePlaceholder}
+                placeholder={strings.phoneNumber}
               />
             </div>
           </div>
@@ -1142,10 +1170,10 @@ export default function BookingPage() {
               onClick={handleConfirmPhoneChange}
               disabled={!tempPhone.trim()}
             >
-              {strings.drawerConfirm}
+              {strings.confirm}
             </Button>
             <Button variant="ghost" onClick={() => setPhoneDrawerOpen(false)}>
-              {strings.drawerCancel}
+              {strings.cancel}
             </Button>
           </DrawerFooter>
         </DrawerContent>
@@ -1170,19 +1198,21 @@ export default function BookingPage() {
             >
               <div className="px-6">
                 <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                  Booking successful
+                  {strings.bookingSuccessful}
                 </p>
-                <h3 className="text-lg font-semibold">Pitch Perfect pass</h3>
+                <h3 className="text-lg font-semibold">
+                  {strings.pitchPerfectPass}
+                </h3>
               </div>
               <div className="space-y-3 px-6 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Date</span>
+                  <span className="text-muted-foreground">{strings.date}</span>
                   <span>
                     {format(parseISO(primaryConfirmation.date), "EEE, MMM d")}
                   </span>
                 </div>
                 <div className="space-y-2">
-                  <span className="text-muted-foreground">Slots</span>
+                  <span className="text-muted-foreground">{strings.slots}</span>
                   <div className="border-border/60 bg-muted/50 space-y-1 rounded-2xl border border-dashed p-3">
                     {confirmation.map((booking) => (
                       <div
@@ -1201,37 +1231,47 @@ export default function BookingPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Player</span>
+                  <span className="text-muted-foreground">{strings.player}</span>
                   <span>{primaryConfirmation.customer.name}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Sport</span>
+                  <span className="text-muted-foreground">{strings.sport}</span>
                   <span className="capitalize">
                     {primaryConfirmation.bookingType === "cricket&football"
-                      ? "Cricket & Football"
-                      : primaryConfirmation.bookingType}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Amount paid</span>
-                  <span>₹{confirmationTotalPaid}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Payment mode</span>
-                  <span className="capitalize">
-                    {primaryConfirmation.paymentOption}
+                      ? strings.cricket + " & " + strings.football
+                      : primaryConfirmation.bookingType === "cricket"
+                        ? strings.cricket
+                        : strings.football}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">
-                    Verification code
+                    {strings.amountPaid}
+                  </span>
+                  <span>₹{confirmationTotalPaid}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    {strings.paymentMode}
+                  </span>
+                  <span className="capitalize">
+                    {primaryConfirmation.paymentOption === "advance"
+                      ? strings.advance
+                      : strings.full}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    {strings.verificationCode}
                   </span>
                   <span className="font-mono text-lg font-semibold">
                     {primaryConfirmation.verificationCode}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Booking ID</span>
+                  <span className="text-muted-foreground">
+                    {strings.bookingCode}
+                  </span>
                   <span className="font-mono text-xs">
                     {primaryConfirmation.bookingCode}
                   </span>
@@ -1239,14 +1279,14 @@ export default function BookingPage() {
               </div>
               <div className="flex flex-col gap-2 px-6">
                 <Button onClick={handleDownload} className="rounded-xl">
-                  Download as image
+                  {strings.downloadAsImage}
                 </Button>
                 <Button
                   variant="ghost"
                   className="rounded-xl"
                   onClick={() => setConfirmation(null)}
                 >
-                  Close
+                  {strings.close}
                 </Button>
               </div>
             </MotionCard>

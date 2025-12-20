@@ -18,12 +18,16 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { api } from "~/trpc/react";
+import { useLanguage } from "~/lib/language-context";
+import allTranslations from "~/lib/translations/all";
 
 export default function EditBannerPage() {
   const params = useParams();
   const router = useRouter();
   const id = parseInt(params.id as string);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { language } = useLanguage();
+  const strings = allTranslations.admin[language];
 
   const {
     data: item,
@@ -58,9 +62,9 @@ export default function EditBannerPage() {
 
   const handleDelete = async () => {
     await toast.promise(deleteMutation.mutateAsync({ id }), {
-      loading: "Deleting banner...",
-      success: "Banner deleted",
-      error: "Failed to delete banner",
+      loading: strings.deletingBanner,
+      success: strings.bannerDeleted,
+      error: strings.bannerDeleteError,
     });
 
     setShowDeleteDialog(false);
@@ -80,9 +84,9 @@ export default function EditBannerPage() {
           status: formData.status,
         }),
         {
-          loading: "Updating banner...",
-          success: "Banner updated",
-          error: "Failed to update banner",
+          loading: strings.updating,
+          success: strings.bannerUpdated,
+          error: strings.bannerUpdateError,
         },
       );
       setIsEditing(false);
@@ -117,10 +121,10 @@ export default function EditBannerPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-3xl font-bold">Edit Banner</h1>
+          <h1 className="text-3xl font-bold">{strings.editBanner}</h1>
         </div>
         <div className="flex items-center justify-center py-12">
-          <p>Loading...</p>
+          <p>{strings.loading}</p>
         </div>
       </div>
     );
@@ -138,10 +142,10 @@ export default function EditBannerPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-3xl font-bold">Edit Banner</h1>
+          <h1 className="text-3xl font-bold">{strings.editBanner}</h1>
         </div>
         <div className="flex items-center justify-center rounded-lg border border-dashed p-12">
-          <p className="text-muted-foreground">Banner not found</p>
+          <p className="text-muted-foreground">{strings.bannerNotFound}</p>
         </div>
       </div>
     );
@@ -159,7 +163,7 @@ export default function EditBannerPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-3xl font-bold">Edit Banner</h1>
+          <h1 className="text-3xl font-bold">{strings.editBanner}</h1>
         </div>
         <Button
           variant="destructive"
@@ -167,14 +171,14 @@ export default function EditBannerPage() {
           className="flex gap-2"
         >
           <Trash2 className="h-4 w-4" />
-          Delete
+          {strings.delete}
         </Button>
       </div>
 
       <div className="rounded-lg border p-6">
         <div className="space-y-6">
           <div>
-            <h2 className="mb-2 font-semibold">Preview</h2>
+            <h2 className="mb-2 font-semibold">{strings.preview}</h2>
             <div className="bg-muted relative h-64 w-full overflow-hidden rounded-lg">
               <Image
                 src={item.cloudinaryUrl}
@@ -198,14 +202,14 @@ export default function EditBannerPage() {
 
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-semibold">Details</h3>
+              <h3 className="font-semibold">{strings.details}</h3>
               {!isEditing ? (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setIsEditing(true)}
                 >
-                  Edit
+                  {strings.edit}
                 </Button>
               ) : (
                 <div className="flex gap-2">
@@ -215,10 +219,10 @@ export default function EditBannerPage() {
                     onClick={handleCancel}
                     disabled={isSaving}
                   >
-                    Cancel
+                    {strings.cancel}
                   </Button>
                   <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                    {isSaving ? "Saving..." : "Save"}
+                    {isSaving ? strings.saving : strings.save}
                   </Button>
                 </div>
               )}
@@ -230,7 +234,7 @@ export default function EditBannerPage() {
                   htmlFor="title"
                   className="text-muted-foreground text-sm"
                 >
-                  Title
+                  {strings.title}
                 </Label>
                 {isEditing ? (
                   <Input
@@ -239,7 +243,7 @@ export default function EditBannerPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, title: e.target.value })
                     }
-                    placeholder="Banner title"
+                    placeholder={strings.titlePlaceholder}
                     className="mt-1"
                   />
                 ) : (
@@ -252,7 +256,7 @@ export default function EditBannerPage() {
                   htmlFor="description"
                   className="text-muted-foreground text-sm"
                 >
-                  Description
+                  {strings.description}
                 </Label>
                 {isEditing ? (
                   <Input
@@ -261,7 +265,7 @@ export default function EditBannerPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
                     }
-                    placeholder="Banner description"
+                    placeholder={strings.descriptionPlaceholder}
                     className="mt-1"
                   />
                 ) : (
@@ -276,7 +280,7 @@ export default function EditBannerPage() {
                   htmlFor="altText"
                   className="text-muted-foreground text-sm"
                 >
-                  Alt Text
+                  {strings.altText}
                 </Label>
                 {isEditing ? (
                   <Input
@@ -285,7 +289,7 @@ export default function EditBannerPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, altText: e.target.value })
                     }
-                    placeholder="Alt text for accessibility"
+                    placeholder={strings.altTextPlaceholder}
                     className="mt-1"
                   />
                 ) : (
@@ -298,7 +302,7 @@ export default function EditBannerPage() {
                   htmlFor="displayOrder"
                   className="text-muted-foreground text-sm"
                 >
-                  Display Order
+                  {strings.displayOrder}
                 </Label>
                 {isEditing ? (
                   <Input
@@ -320,7 +324,7 @@ export default function EditBannerPage() {
               </div>
 
               <div>
-                <p className="text-muted-foreground text-sm">Type</p>
+                <p className="text-muted-foreground text-sm">{strings.type}</p>
                 <p className="mt-1 font-medium capitalize">{item.mediaType}</p>
               </div>
 
@@ -329,7 +333,7 @@ export default function EditBannerPage() {
                   htmlFor="status"
                   className="text-muted-foreground text-sm"
                 >
-                  Status
+                  {strings.status}
                 </Label>
                 {isEditing ? (
                   <select
@@ -346,13 +350,13 @@ export default function EditBannerPage() {
                     }
                     className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:ring-ring mt-1 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="draft">Draft</option>
+                    <option value="active">{strings.active}</option>
+                    <option value="inactive">{strings.inactive}</option>
+                    <option value="draft">{strings.draft}</option>
                   </select>
                 ) : (
                   <p className="mt-1 font-medium capitalize">
-                    {formData.status}
+                    {formData.status === "active" ? strings.active : formData.status === "inactive" ? strings.inactive : strings.draft}
                   </p>
                 )}
               </div>
@@ -369,11 +373,11 @@ export default function EditBannerPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete banner</DialogTitle>
+            <DialogTitle>{strings.deleteBannerItem}</DialogTitle>
             <DialogDescription>
               {item.title
-                ? `Are you sure you want to delete “${item.title}”? This action cannot be undone.`
-                : "Are you sure you want to delete this banner?"}
+                ? strings.deleteConfirmDesc.replace("{title}", item.title)
+                : strings.deleteConfirmDesc.replace("{title}", strings.thisItem)}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -383,7 +387,7 @@ export default function EditBannerPage() {
               onClick={() => setShowDeleteDialog(false)}
               disabled={deleteMutation.isPending}
             >
-              Cancel
+              {strings.cancel}
             </Button>
             <Button
               type="button"
@@ -391,7 +395,7 @@ export default function EditBannerPage() {
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteMutation.isPending ? strings.deleting : strings.delete}
             </Button>
           </DialogFooter>
         </DialogContent>

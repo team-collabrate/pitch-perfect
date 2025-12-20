@@ -13,30 +13,34 @@ import { LocationWidget } from "~/components/location-widget";
 import { api } from "~/trpc/react";
 import allTranslations from "~/lib/translations/all";
 
-const highlights = [
-  {
-    src: "https://picsum.photos/seed/turf-1/400/300",
-    label: "Evening glow lighting",
-  },
-  {
-    src: "https://picsum.photos/seed/turf-2/400/300",
-    label: "Pro turf maintenance",
-  },
-  {
-    src: "https://picsum.photos/seed/turf-3/400/300",
-    label: "Dedicated players lounge",
-  },
-  {
-    src: "https://picsum.photos/seed/turf-4/400/300",
-    label: "On-site refreshment bar",
-  },
-];
-
 export default function HomePage() {
   const { language } = useLanguage();
   const { data: bannerItems } = api.banner.getAll.useQuery();
 
   const strings = useMemo(() => allTranslations.home[language], [language]);
+
+  const highlights = useMemo(
+    () => [
+      {
+        src: "https://picsum.photos/seed/turf-1/400/300",
+        label: strings.highlight1,
+      },
+      {
+        src: "https://picsum.photos/seed/turf-2/400/300",
+        label: strings.highlight2,
+      },
+      {
+        src: "https://picsum.photos/seed/turf-3/400/300",
+        label: strings.highlight3,
+      },
+      {
+        src: "https://picsum.photos/seed/turf-4/400/300",
+        label: strings.highlight4,
+      },
+    ],
+    [strings],
+  );
+
   const slides = useMemo(() => {
     return (
       bannerItems

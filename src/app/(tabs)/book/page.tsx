@@ -7,7 +7,7 @@ import { addDays, format, parseISO } from "date-fns";
 import { toPng } from "html-to-image";
 import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "motion/react";
-import { Pencil } from "lucide-react";
+import { Pencil, CalendarX } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -28,6 +28,7 @@ import {
 import { cn, formatSlotTime } from "~/lib/utils";
 import { createBookingRecord, useBookings } from "~/lib/bookings-context";
 import { usePhone } from "~/lib/phone-context";
+import { Spinner } from "~/components/spinner";
 import { api } from "~/trpc/react";
 
 type SlotView = {
@@ -159,29 +160,33 @@ const fireSideCannons = () => {
 };
 
 function useSlotBoard(selectedDate: string) {
-  const { data } = api.timeSlot.getAllByDate.useQuery(
+  const { data, isLoading } = api.timeSlot.getAllByDate.useQuery(
     { date: selectedDate },
     { enabled: !!selectedDate, staleTime: 60_000 },
   );
 
-  return useMemo(() => {
+  const slots = useMemo(() => {
     if (!data || data.length === 0) {
       return [];
     }
 
-    return data.map(
-      (slot) =>
-        ({
-          id: (slot as { id?: number }).id,
-          date: slot.date,
-          from: slot.from.slice(0, 5),
-          to: slot.to.slice(0, 5),
-          status: slot.status === "available" ? "available" : "unavailable",
-          fullAmount: slot.fullAmount,
-          advanceAmount: slot.advanceAmount,
-        }) satisfies SlotView,
-    );
+    return data
+      .filter((slot) => slot.status === "available")
+      .map(
+        (slot) =>
+          ({
+            id: (slot as { id?: number }).id,
+            date: slot.date,
+            from: slot.from.slice(0, 5),
+            to: slot.to.slice(0, 5),
+            status: "available",
+            fullAmount: slot.fullAmount,
+            advanceAmount: slot.advanceAmount,
+          }) satisfies SlotView,
+      );
   }, [data]);
+
+  return { slots, isLoading };
 }
 
 type CustomerFormState = {
@@ -225,7 +230,7 @@ export default function BookingPage() {
   const [selectedDate, setSelectedDate] = useState<string>(() =>
     format(new Date(), "yyyy-MM-dd"),
   );
-  const slots = useSlotBoard(selectedDate);
+  const { slots, isLoading: isLoadingSlots } = useSlotBoard(selectedDate);
   const { addBooking } = useBookings();
   const [selectedSlots, setSelectedSlots] = useState<SlotView[]>([]);
   const [slotDrawerOpen, setSlotDrawerOpen] = useState(false);
@@ -316,13 +321,17 @@ export default function BookingPage() {
     { enabled: !!storedPhone && totalAmountPaise > 0 && isHydrated },
   );
 
-  const { data: couponValidation } = api.booking.validateCoupon.useQuery(
+  const {
+    data: couponValidation,
+    refetch: validateCoupon,
+    isFetching: isValidatingCoupon,
+  } = api.booking.validateCoupon.useQuery(
     {
       couponCode: couponCode.toUpperCase(),
       bookingCount: bookingCountForCoupons,
       totalAmount: totalAmountPaise,
     },
-    { enabled: couponCode.length > 0 && totalAmountPaise > 0 },
+    { enabled: false },
   );
 
   // Pre-fill customer form when existing customer data is loaded
@@ -390,7 +399,7 @@ export default function BookingPage() {
   };
 
   const toggleSlotSelection = (slot: SlotView) => {
-    if (slot.status !== "available" || slot.date !== selectedDate) return;
+    if (slot.date !== selectedDate) return;
     setSelectedSlots((prev) => {
       const exists = prev.some((item) => item.id === slot.id);
       if (exists) {
@@ -435,6 +444,26 @@ export default function BookingPage() {
     // Set the phone number in customer state so it remains visible
     setCustomer(() => ({ ...blankCustomer, number: normalized }));
     setPhoneDrawerOpen(false);
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode || totalAmountPaise <= 0) {
+      toast.error("Select slots and enter a coupon code");
+      return;
+    }
+
+    const { data: result } = await validateCoupon();
+
+    if (result?.isValid) {
+      setAppliedCoupon({
+        couponId: result.couponId!,
+        discount: result.discount,
+        finalAmount: result.finalAmount,
+      });
+      toast.success(result.message);
+    } else if (result) {
+      toast.error(result.message);
+    }
   };
 
   const handleSubmit = async () => {
@@ -705,19 +734,30 @@ export default function BookingPage() {
               </div>
             )}
             <div className="grid max-h-72 grid-cols-2 gap-3 overflow-y-auto px-6 pb-4">
-              {slotsForSelectedDate.length === 0 ? (
-                <p className="text-muted-foreground col-span-2 text-sm">
-                  No slots available for this day.
-                </p>
+              {isLoadingSlots ? (
+                <div className="col-span-2 flex items-center justify-center py-12">
+                  <Spinner />
+                </div>
+              ) : slotsForSelectedDate.length === 0 ? (
+                <div className="col-span-2 flex flex-col items-center justify-center py-12 text-center">
+                  <div className="bg-muted mb-4 flex h-12 w-12 items-center justify-center rounded-2xl">
+                    <CalendarX className="text-muted-foreground h-6 w-6" />
+                  </div>
+                  <p className="text-muted-foreground text-sm font-medium">
+                    No slots available
+                  </p>
+                  <p className="text-muted-foreground/60 text-xs">
+                    Try picking another date
+                  </p>
+                </div>
               ) : (
                 slotsForSelectedDate.map((slot) => {
                   const isSelected = selectedSlots.some(
                     (item) => item.id === slot.id,
                   );
-                  const isUnavailable = slot.status !== "available";
                   const isAtLimit =
                     !isSelected && selectionCount >= MAX_SLOTS_PER_DAY;
-                  const isDisabled = isUnavailable || isAtLimit;
+                  const isDisabled = isAtLimit;
                   return (
                     <motion.button
                       key={slot.id}
@@ -726,9 +766,7 @@ export default function BookingPage() {
                       onClick={() => toggleSlotSelection(slot)}
                       className={cn(
                         "flex flex-col rounded-2xl border px-3 py-3 text-left text-sm transition-all",
-                        isUnavailable &&
-                          "bg-muted text-muted-foreground cursor-not-allowed",
-                        !isUnavailable && "hover:border-primary",
+                        "hover:border-primary",
                         isSelected &&
                           "border-primary bg-primary/10 text-primary shadow-sm",
                         isAtLimit && !isSelected && "opacity-60",
@@ -745,13 +783,11 @@ export default function BookingPage() {
                         {toRupees(slot.fullAmount)}
                       </span>
                       <span className="text-muted-foreground mt-2 inline-flex items-center gap-2 text-xs">
-                        {isUnavailable
-                          ? "Unavailable"
-                          : isSelected
-                            ? "Selected"
-                            : isAtLimit
-                              ? "Slot limit reached"
-                              : "Tap to select"}
+                        {isSelected
+                          ? "Selected"
+                          : isAtLimit
+                            ? "Slot limit reached"
+                            : "Tap to select"}
                         {isSelected && (
                           <span className="bg-primary h-2 w-2 rounded-full" />
                         )}
@@ -876,12 +912,13 @@ export default function BookingPage() {
           Player details
         </h2>
         {!isHydrated ? (
-          <div className="flex items-center justify-center py-4">
-            <span className="text-muted-foreground text-sm">Loading...</span>
+          <div className="flex items-center justify-center py-8">
+            <Spinner />
           </div>
         ) : isLoadingCustomer && storedPhone ? (
-          <div className="flex items-center justify-center py-4">
-            <span className="text-muted-foreground text-sm">
+          <div className="flex flex-col items-center justify-center gap-2 py-8">
+            <Spinner />
+            <span className="text-muted-foreground text-xs">
               Loading your details...
             </span>
           </div>
@@ -1042,22 +1079,14 @@ export default function BookingPage() {
               className="rounded-2xl"
               disabled={selectedSlots.length === 0}
             />
-            {couponValidation?.isValid && !appliedCoupon && (
+            {!appliedCoupon && (
               <Button
                 type="button"
-                onClick={() => {
-                  if (couponValidation.isValid) {
-                    setAppliedCoupon({
-                      couponId: couponValidation.couponId!,
-                      discount: couponValidation.discount,
-                      finalAmount: couponValidation.finalAmount,
-                    });
-                    toast.success(couponValidation.message);
-                  }
-                }}
+                onClick={handleApplyCoupon}
+                disabled={isValidatingCoupon || selectedSlots.length === 0}
                 className="shrink-0 rounded-2xl"
               >
-                Apply
+                {isValidatingCoupon ? <Spinner className="h-4 w-4" /> : "Apply"}
               </Button>
             )}
             {appliedCoupon && (
@@ -1112,7 +1141,14 @@ export default function BookingPage() {
             whileHover={{ scale: formReady && !isSubmitting ? 1.02 : 1 }}
             transition={springy}
           >
-            {isSubmitting ? strings.processing : `Pay ${toRupees(amountToPay)}`}
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <Spinner className="h-4 w-4 border-white" />
+                <span>{strings.processing}</span>
+              </div>
+            ) : (
+              `Pay ${toRupees(amountToPay)}`
+            )}
           </MotionButton>
         );
       })()}

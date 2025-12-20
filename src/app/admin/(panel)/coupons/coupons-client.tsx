@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { Pencil, PlusCircle, Trash2, Ticket, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -20,8 +21,8 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Spinner } from "~/components/spinner";
-import { Toggle } from "~/components/ui/toggle";
 import { api } from "~/trpc/react";
+import { cn } from "~/lib/utils";
 
 type Strings = {
   couponsTitle: string;
@@ -47,19 +48,25 @@ type Coupon = {
 
 function formatRupeesFromPaise(paise: number) {
   const rupees = paise / 100;
-  return rupees.toLocaleString("en-IN", { style: "currency", currency: "INR" });
+  return rupees.toLocaleString("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  });
 }
 
 function getCouponStatus(
-  coupon: Pick<Coupon, "validFrom" | "validTo" | "showCoupon">,
+  coupon: Pick<Coupon, "validFrom" | "validTo" | "showCoupon" | "status">,
 ) {
+  if (coupon.status === "achieved") return "Achieved";
+
   const now = new Date();
   const from = new Date(coupon.validFrom);
-  const to = new Date(coupon.validTo);
+  const to = coupon.validTo ? new Date(coupon.validTo) : null;
 
-  if (to < now) return "Expired";
+  if (to && to < now) return "Expired";
   if (from > now) return "Scheduled";
-  return coupon.showCoupon ? "Active" : "Paused";
+  return coupon.status === "active" ? "Active" : "Inactive";
 }
 
 type CouponDraft = {
@@ -106,6 +113,7 @@ function getEmptyDraft(): CouponDraft {
 
 export function CouponsClient({ strings }: { strings: Strings }) {
   const utils = api.useUtils();
+  const router = useRouter();
 
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [draft, setDraft] = React.useState<CouponDraft>(getEmptyDraft());
@@ -133,27 +141,81 @@ export function CouponsClient({ strings }: { strings: Strings }) {
   });
 
   const archiveMutation = api.superAdmin.couponArchive.useMutation({
-    onSuccess: async () => {
-      toast.success("Coupon archived");
+    onMutate: async (variables) => {
+      await utils.superAdmin.couponsList.cancel();
+      const previousCoupons = utils.superAdmin.couponsList.getData();
+      utils.superAdmin.couponsList.setData(undefined, (old) => {
+        if (!old) return old;
+        return old.filter((c) => c.id !== variables.couponId);
+      });
+      return { previousCoupons };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousCoupons) {
+        utils.superAdmin.couponsList.setData(
+          undefined,
+          context.previousCoupons,
+        );
+      }
+      toast.error(err.message);
+    },
+    onSettled: async () => {
       await utils.superAdmin.couponsList.invalidate();
     },
-    onError: (err) => toast.error(err.message),
   });
 
   const toggleShowMutation = api.superAdmin.couponToggleShow.useMutation({
-    onSuccess: async () => {
-      toast.success("Visibility updated");
+    onMutate: async (variables) => {
+      await utils.superAdmin.couponsList.cancel();
+      const previousCoupons = utils.superAdmin.couponsList.getData();
+      utils.superAdmin.couponsList.setData(undefined, (old) => {
+        if (!old) return old;
+        return old.map((c) =>
+          c.id === variables.couponId
+            ? { ...c, showCoupon: variables.showCoupon }
+            : c,
+        );
+      });
+      return { previousCoupons };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousCoupons) {
+        utils.superAdmin.couponsList.setData(
+          undefined,
+          context.previousCoupons,
+        );
+      }
+      toast.error(err.message);
+    },
+    onSettled: async () => {
       await utils.superAdmin.couponsList.invalidate();
     },
-    onError: (err) => toast.error(err.message),
   });
 
   const toggleStatusMutation = api.superAdmin.couponToggleStatus.useMutation({
-    onSuccess: async () => {
-      toast.success("Status updated");
+    onMutate: async (variables) => {
+      await utils.superAdmin.couponsList.cancel();
+      const previousCoupons = utils.superAdmin.couponsList.getData();
+      utils.superAdmin.couponsList.setData(undefined, (old) => {
+        if (!old) return old;
+        return old.map((c) =>
+          c.id === variables.couponId ? { ...c, status: variables.status } : c,
+        );
+      });
+      return { previousCoupons };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousCoupons) {
+        utils.superAdmin.couponsList.setData(
+          undefined,
+          context.previousCoupons,
+        );
+      }
+      toast.error(err.message);
+    },
+    onSettled: async () => {
       await utils.superAdmin.couponsList.invalidate();
     },
-    onError: (err) => toast.error(err.message),
   });
 
   function openCreate() {
@@ -259,18 +321,26 @@ export function CouponsClient({ strings }: { strings: Strings }) {
 
   return (
     <div className="space-y-6 pb-20">
-      <header className="flex items-center justify-between">
-        <div>
+      <header className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          className="bg-muted rounded-2xl"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex-1">
           <p className="text-muted-foreground text-xs tracking-wide uppercase">
             {strings.couponsTitle}
           </p>
-          <h1 className="text-2xl font-semibold">{strings.couponsTitle}</h1>
+          <h1 className="text-2xl font-semibold">Manage Coupons</h1>
         </div>
 
         <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
           <DrawerTrigger asChild>
-            <Button className="rounded-full" size="sm" onClick={openCreate}>
-              <PlusCircle className="mr-1 h-4 w-4" /> New
+            <Button className="rounded-2xl" onClick={openCreate}>
+              <PlusCircle className="mr-2 h-4 w-4" /> New Coupon
             </Button>
           </DrawerTrigger>
 
@@ -278,14 +348,19 @@ export function CouponsClient({ strings }: { strings: Strings }) {
             <DrawerCloseButton />
             <DrawerHeader>
               <DrawerTitle>
-                {draft.couponId ? "Edit coupon" : "New coupon"}
+                {draft.couponId ? "Edit Coupon" : "Create New Coupon"}
               </DrawerTitle>
             </DrawerHeader>
 
             <div className="flex-1 overflow-auto px-6 pt-2 pb-4">
-              <div className="grid gap-4">
+              <div className="grid gap-6">
                 <div className="grid gap-2">
-                  <Label htmlFor="code">Code</Label>
+                  <Label
+                    htmlFor="code"
+                    className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
+                  >
+                    Coupon Code
+                  </Label>
                   <Input
                     id="code"
                     value={draft.code}
@@ -294,25 +369,35 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                     }
                     placeholder="WELCOME10"
                     disabled={!!draft.couponId}
+                    className="rounded-xl"
                   />
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label
+                    htmlFor="description"
+                    className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
+                  >
+                    Description
+                  </Label>
                   <Input
                     id="description"
                     value={draft.description}
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, description: e.target.value }))
                     }
-                    placeholder="Short description"
+                    placeholder="e.g. 10% off for new users"
+                    className="rounded-xl"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="flatDiscountAmount">
-                      Flat discount (₹)
+                    <Label
+                      htmlFor="flatDiscountAmount"
+                      className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
+                    >
+                      Discount (₹)
                     </Label>
                     <Input
                       id="flatDiscountAmount"
@@ -330,13 +415,16 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                           ),
                         }))
                       }
-                      placeholder="0.00"
+                      className="rounded-xl"
                     />
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="maxFlatDiscountAmount">
-                      Max discount (₹)
+                    <Label
+                      htmlFor="maxFlatDiscountAmount"
+                      className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
+                    >
+                      Max Cap (₹)
                     </Label>
                     <Input
                       id="maxFlatDiscountAmount"
@@ -354,170 +442,122 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                           ),
                         }))
                       }
-                      placeholder="0.00"
+                      className="rounded-xl"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <Toggle
-                    pressed={draft.useUsageLimit}
-                    onPressedChange={(pressed) =>
-                      setDraft((d) => ({
-                        ...d,
-                        useUsageLimit: pressed,
-                        usageLimit: pressed ? d.usageLimit : "0",
-                      }))
-                    }
-                    className="h-8 w-8 p-0"
-                  >
-                    ✓
-                  </Toggle>
-                  <Label htmlFor="usageLimit" className="flex-1">
-                    Usage limit
-                  </Label>
-                  <Input
-                    id="usageLimit"
-                    type="number"
-                    inputMode="numeric"
-                    value={draft.usageLimit}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, usageLimit: e.target.value }))
-                    }
-                    disabled={!draft.useUsageLimit}
-                    className="w-24"
-                    placeholder="0"
-                  />
-                </div>
-
-                <div className="space-y-3 border-t pt-4">
-                  <div className="flex items-center gap-3">
-                    <Toggle
-                      pressed={draft.useMinBookingAmount}
-                      onPressedChange={(pressed) =>
-                        setDraft((d) => ({
-                          ...d,
-                          useMinBookingAmount: pressed,
-                          minimumBookingAmount: pressed
-                            ? d.minimumBookingAmount
-                            : "0",
-                        }))
-                      }
-                      className="h-8 w-8 p-0"
+                <div className="bg-muted/30 space-y-4 rounded-2xl p-4">
+                  <div className="flex items-center justify-between">
+                    <Label
+                      htmlFor="usageLimit"
+                      className="text-sm font-semibold"
                     >
-                      ✓
-                    </Toggle>
-                    <Label htmlFor="minimumBookingAmount" className="flex-1">
-                      Min booking (₹)
+                      Usage Limit
                     </Label>
-                    <Input
-                      id="minimumBookingAmount"
-                      type="number"
-                      inputMode="decimal"
-                      step="0.01"
-                      value={(Number(draft.minimumBookingAmount) / 100).toFixed(
-                        2,
-                      )}
-                      onChange={(e) =>
-                        setDraft((d) => ({
-                          ...d,
-                          minimumBookingAmount: String(
-                            Math.round(parseFloat(e.target.value || "0") * 100),
-                          ),
-                        }))
-                      }
-                      disabled={!draft.useMinBookingAmount}
-                      className="w-24"
-                      placeholder="0.00"
-                    />
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDraft((d) => ({
+                            ...d,
+                            useUsageLimit: !d.useUsageLimit,
+                          }))
+                        }
+                        className={cn(
+                          "flex h-6 w-11 items-center rounded-full px-1 transition",
+                          draft.useUsageLimit
+                            ? "bg-primary"
+                            : "bg-muted-foreground/30",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "h-4 w-4 rounded-full bg-white transition",
+                            draft.useUsageLimit
+                              ? "translate-x-5"
+                              : "translate-x-0",
+                          )}
+                        />
+                      </button>
+                      <Input
+                        id="usageLimit"
+                        type="number"
+                        value={draft.usageLimit}
+                        onChange={(e) =>
+                          setDraft((d) => ({
+                            ...d,
+                            usageLimit: e.target.value,
+                          }))
+                        }
+                        disabled={!draft.useUsageLimit}
+                        className="h-8 w-20 rounded-lg text-center"
+                      />
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <Toggle
-                      pressed={draft.useFirstNBookings}
-                      onPressedChange={(pressed) =>
-                        setDraft((d) => ({
-                          ...d,
-                          useFirstNBookings: pressed,
-                          firstNBookingsOnly: pressed
-                            ? d.firstNBookingsOnly
-                            : "0",
-                        }))
-                      }
-                      className="h-8 w-8 p-0"
+                  <div className="flex items-center justify-between">
+                    <Label
+                      htmlFor="minimumBookingAmount"
+                      className="text-sm font-semibold"
                     >
-                      ✓
-                    </Toggle>
-                    <Label htmlFor="firstNBookingsOnly" className="flex-1">
-                      First N bookings only
+                      Min Booking (₹)
                     </Label>
-                    <Input
-                      id="firstNBookingsOnly"
-                      type="number"
-                      inputMode="numeric"
-                      value={draft.firstNBookingsOnly}
-                      onChange={(e) =>
-                        setDraft((d) => ({
-                          ...d,
-                          firstNBookingsOnly: e.target.value,
-                        }))
-                      }
-                      disabled={!draft.useFirstNBookings}
-                      className="w-24"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <Toggle
-                      pressed={draft.useNthPurchase}
-                      onPressedChange={(pressed) =>
-                        setDraft((d) => ({
-                          ...d,
-                          useNthPurchase: pressed,
-                          nthPurchaseOnly: pressed ? d.nthPurchaseOnly : "0",
-                        }))
-                      }
-                      className="h-8 w-8 p-0"
-                    >
-                      ✓
-                    </Toggle>
-                    <Label htmlFor="nthPurchaseOnly" className="flex-1">
-                      Nth purchase only
-                    </Label>
-                    <Input
-                      id="nthPurchaseOnly"
-                      type="number"
-                      inputMode="numeric"
-                      value={draft.nthPurchaseOnly}
-                      onChange={(e) =>
-                        setDraft((d) => ({
-                          ...d,
-                          nthPurchaseOnly: e.target.value,
-                        }))
-                      }
-                      disabled={!draft.useNthPurchase}
-                      className="w-24"
-                    />
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDraft((d) => ({
+                            ...d,
+                            useMinBookingAmount: !d.useMinBookingAmount,
+                          }))
+                        }
+                        className={cn(
+                          "flex h-6 w-11 items-center rounded-full px-1 transition",
+                          draft.useMinBookingAmount
+                            ? "bg-primary"
+                            : "bg-muted-foreground/30",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "h-4 w-4 rounded-full bg-white transition",
+                            draft.useMinBookingAmount
+                              ? "translate-x-5"
+                              : "translate-x-0",
+                          )}
+                        />
+                      </button>
+                      <Input
+                        id="minimumBookingAmount"
+                        type="number"
+                        value={(
+                          Number(draft.minimumBookingAmount) / 100
+                        ).toFixed(2)}
+                        onChange={(e) =>
+                          setDraft((d) => ({
+                            ...d,
+                            minimumBookingAmount: String(
+                              Math.round(
+                                parseFloat(e.target.value || "0") * 100,
+                              ),
+                            ),
+                          }))
+                        }
+                        disabled={!draft.useMinBookingAmount}
+                        className="h-8 w-20 rounded-lg text-center"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-3 border-t pt-4">
-                  <div className="flex items-center gap-3">
-                    <Toggle
-                      pressed={draft.useValidFrom}
-                      onPressedChange={(pressed) =>
-                        setDraft((d) => ({
-                          ...d,
-                          useValidFrom: pressed,
-                          validFrom: pressed ? d.validFrom : "",
-                        }))
-                      }
-                      className="h-8 w-8 p-0"
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label
+                      htmlFor="validFrom"
+                      className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
                     >
-                      ✓
-                    </Toggle>
-                    <Label htmlFor="validFrom" className="flex-1">
-                      Valid from
+                      Valid From
                     </Label>
                     <Input
                       id="validFrom"
@@ -526,27 +566,15 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                       onChange={(e) =>
                         setDraft((d) => ({ ...d, validFrom: e.target.value }))
                       }
-                      disabled={!draft.useValidFrom}
-                      className="w-40"
+                      className="rounded-xl"
                     />
                   </div>
-
-                  <div className="flex items-center gap-3">
-                    <Toggle
-                      pressed={draft.useValidTo}
-                      onPressedChange={(pressed) =>
-                        setDraft((d) => ({
-                          ...d,
-                          useValidTo: pressed,
-                          validTo: pressed ? d.validTo : "",
-                        }))
-                      }
-                      className="h-8 w-8 p-0"
+                  <div className="grid gap-2">
+                    <Label
+                      htmlFor="validTo"
+                      className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
                     >
-                      ✓
-                    </Toggle>
-                    <Label htmlFor="validTo" className="flex-1">
-                      Valid to (max time)
+                      Valid To
                     </Label>
                     <Input
                       id="validTo"
@@ -555,24 +583,28 @@ export function CouponsClient({ strings }: { strings: Strings }) {
                       onChange={(e) =>
                         setDraft((d) => ({ ...d, validTo: e.target.value }))
                       }
-                      disabled={!draft.useValidTo}
-                      className="w-40"
+                      className="rounded-xl"
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            <DrawerFooter className="flex flex-row gap-2">
+            <DrawerFooter className="flex flex-row gap-3">
               <Button
                 onClick={submitDraft}
                 disabled={isBusy}
-                className="flex-1"
+                className="flex-1 rounded-2xl py-6"
               >
-                {isBusy ? "Saving…" : "Save"}
+                {isBusy ? <Spinner className="mr-2 h-4 w-4" /> : null}
+                {draft.couponId ? "Update Coupon" : "Create Coupon"}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline" disabled={isBusy} className="flex-1">
+                <Button
+                  variant="outline"
+                  disabled={isBusy}
+                  className="flex-1 rounded-2xl py-6"
+                >
                   Cancel
                 </Button>
               </DrawerClose>
@@ -582,123 +614,184 @@ export function CouponsClient({ strings }: { strings: Strings }) {
       </header>
 
       {couponsQuery.isLoading ? (
-        <div className="flex justify-center py-10">
+        <div className="flex justify-center py-20">
           <Spinner />
         </div>
       ) : couponsQuery.error ? (
-        <Card className="border-border/60 bg-card/60 rounded-3xl px-4 py-4">
-          <p className="text-sm">
+        <Card className="border-border/60 bg-card/60 rounded-3xl p-8 text-center">
+          <p className="text-destructive text-sm font-medium">
             Failed to load coupons: {couponsQuery.error.message}
           </p>
         </Card>
       ) : (
-        <div className="space-y-2">
-          {(couponsQuery.data as Coupon[]).map((coupon) => {
-            const status = getCouponStatus(coupon);
-            const usageText =
-              coupon.usageLimit && coupon.usageLimit > 0
-                ? `${coupon.numberOfUses} / ${coupon.usageLimit}`
-                : `${coupon.numberOfUses} / ∞`;
+        <div className="grid gap-4">
+          {couponsQuery.data?.length === 0 ? (
+            <Card className="border-border/60 bg-card/60 rounded-3xl p-12 text-center">
+              <Ticket className="text-muted-foreground/20 mx-auto mb-4 h-12 w-12" />
+              <p className="text-muted-foreground font-medium">
+                No coupons found.
+              </p>
+              <p className="text-muted-foreground/60 text-sm">
+                Create your first coupon to start offering discounts.
+              </p>
+            </Card>
+          ) : (
+            (couponsQuery.data as Coupon[]).map((coupon) => {
+              const status = getCouponStatus(coupon);
+              const isExpired = status === "Expired";
+              const isInactive = coupon.status === "inactive";
 
-            return (
-              <Card
-                key={coupon.id}
-                className="border-border/60 bg-card/60 rounded-2xl px-3 py-2"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-muted-foreground text-xs leading-none tracking-widest uppercase">
-                      {coupon.code}
-                    </p>
-                    <p className="truncate text-sm leading-tight font-semibold">
-                      {coupon.description ?? "—"}
-                    </p>
-                    <p className="text-muted-foreground mt-0.5 text-xs leading-tight">
-                      {formatRupeesFromPaise(coupon.flatDiscountAmount)} (max{" "}
-                      {formatRupeesFromPaise(coupon.maxFlatDiscountAmount)}) •{" "}
-                      {usageText}
-                    </p>
+              return (
+                <Card
+                  key={coupon.id}
+                  className={cn(
+                    "border-border/60 bg-card/60 overflow-hidden rounded-3xl transition-all",
+                    (isExpired || isInactive) && "opacity-75 grayscale-[0.5]",
+                  )}
+                >
+                  <div className="p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-mono text-lg font-bold tracking-tighter uppercase">
+                            {coupon.code}
+                          </h3>
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              "rounded-full px-2 py-0 text-[10px] font-bold tracking-wider uppercase",
+                              status === "Active"
+                                ? "bg-green-500/10 text-green-600"
+                                : status === "Scheduled"
+                                  ? "bg-blue-500/10 text-blue-600"
+                                  : "bg-red-500/10 text-red-600",
+                            )}
+                          >
+                            {status}
+                          </Badge>
+                        </div>
+                        <p className="text-muted-foreground mt-1 text-sm font-medium">
+                          {coupon.description || "No description provided"}
+                        </p>
+                      </div>
+
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 rounded-xl"
+                          onClick={() => openEdit(coupon)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:bg-destructive/10 h-9 w-9 rounded-xl"
+                          onClick={() => onArchive(coupon)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="border-border/40 mt-4 grid grid-cols-2 gap-4 border-t pt-4">
+                      <div>
+                        <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
+                          Discount
+                        </p>
+                        <p className="text-primary text-lg font-bold">
+                          {formatRupeesFromPaise(coupon.flatDiscountAmount)}
+                        </p>
+                        <p className="text-muted-foreground text-[10px]">
+                          Max cap:{" "}
+                          {formatRupeesFromPaise(coupon.maxFlatDiscountAmount)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
+                          Usage
+                        </p>
+                        <p className="text-lg font-bold">
+                          {coupon.numberOfUses}{" "}
+                          <span className="text-muted-foreground text-sm font-normal">
+                            / {coupon.usageLimit || "∞"}
+                          </span>
+                        </p>
+                        <p className="text-muted-foreground text-[10px]">
+                          Min booking:{" "}
+                          {formatRupeesFromPaise(coupon.minimumBookingAmount)}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <Badge
-                    variant="secondary"
-                    className="h-6 shrink-0 rounded-full text-xs"
-                  >
-                    {status}
-                  </Badge>
-                </div>
 
-                <div className="mt-2 flex gap-4 border-t pt-2">
-                  <div className="flex items-center gap-2 text-xs">
-                    <Toggle
-                      pressed={coupon.showCoupon}
-                      onPressedChange={() => onToggleShow(coupon)}
-                      disabled={isBusy}
-                      className="h-6 w-6 p-0"
-                    >
-                      ✓
-                    </Toggle>
-                    <span>Show</span>
-                    <span className="text-muted-foreground">
-                      {coupon.showCoupon ? "✓" : "✗"}
-                    </span>
+                  <div className="bg-muted/30 flex items-center justify-between px-5 py-3">
+                    <div className="flex gap-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onToggleShow(coupon)}
+                          className={cn(
+                            "flex h-5 w-9 items-center rounded-full px-0.5 transition",
+                            coupon.showCoupon
+                              ? "bg-primary"
+                              : "bg-muted-foreground/30",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "h-4 w-4 rounded-full bg-white transition",
+                              coupon.showCoupon
+                                ? "translate-x-4"
+                                : "translate-x-0",
+                            )}
+                          />
+                        </button>
+                        <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                          Show
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onToggleStatus(coupon)}
+                          disabled={coupon.status === "achieved"}
+                          className={cn(
+                            "flex h-5 w-9 items-center rounded-full px-0.5 transition",
+                            coupon.status === "active"
+                              ? "bg-primary"
+                              : "bg-muted-foreground/30",
+                            coupon.status === "achieved" &&
+                              "cursor-not-allowed opacity-50",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "h-4 w-4 rounded-full bg-white transition",
+                              coupon.status === "active"
+                                ? "translate-x-4"
+                                : "translate-x-0",
+                            )}
+                          />
+                        </button>
+                        <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                          Active
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-muted-foreground text-[10px] font-medium">
+                      {coupon.validTo
+                        ? `Until ${new Date(coupon.validTo).toLocaleDateString()}`
+                        : "No expiry"}
+                    </div>
                   </div>
-
-                  <div className="flex items-center gap-2 text-xs">
-                    <Toggle
-                      pressed={coupon.status === "active"}
-                      onPressedChange={() => onToggleStatus(coupon)}
-                      disabled={isBusy || coupon.status === "achieved"}
-                      className="h-6 w-6 p-0"
-                    >
-                      ✓
-                    </Toggle>
-                    <span>Active</span>
-                    <span className="text-muted-foreground">
-                      {coupon.status === "active"
-                        ? "✓"
-                        : coupon.status === "achieved"
-                          ? "—"
-                          : "✗"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-2 flex gap-1">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => openEdit(coupon)}
-                    disabled={isBusy}
-                    className="h-7 text-xs"
-                  >
-                    <Pencil className="h-3 w-3" /> Edit
-                  </Button>
-
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => onArchive(coupon)}
-                    disabled={isBusy}
-                    className="h-7 text-xs"
-                  >
-                    <Trash2 className="h-3 w-3" /> Archive
-                  </Button>
-                </div>
-              </Card>
-            );
-          })}
-
-          {/* <Card className="border-border/60 bg-card/60 rounded-3xl p-4">
-            <div className="flex items-center gap-3">
-              <TicketPercent className="bg-muted h-10 w-10 rounded-2xl p-2" />
-              <div>
-                <p className="text-sm font-semibold">Smart rules</p>
-                <p className="text-muted-foreground text-xs">
-                  Configure weekday/weekend pricing without touching code.
-                </p>
-              </div>
-            </div>
-          </Card> */}
+                </Card>
+              );
+            })
+          )}
         </div>
       )}
     </div>

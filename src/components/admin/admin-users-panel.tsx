@@ -173,78 +173,86 @@ export function AdminUsersPanel() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {enrichedMembers.map((member) => {
-                return (
-                  <TableRow
-                    key={member.id}
-                    className="hover:bg-accent/50 cursor-pointer transition-colors"
-                    onClick={() => setSelectedCustomerId(member.id)}
-                  >
-                    <TableCell>
-                      <p className="text-base leading-tight font-semibold">
-                        {member.name}
-                      </p>
-                      <p className="text-muted-foreground text-sm">
-                        {member.email}
-                      </p>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {member.number}
-                    </TableCell>
-                    <TableCell>
-                      {!editing[member.id] && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStartEditing(member.id);
-                          }}
-                          onTouchStart={(e) => {
-                            e.stopPropagation();
-                            handleStartEditing(member.id);
-                          }}
-                          className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
-                            member.tag === "vip"
-                              ? "bg-violet-600/10 text-violet-600"
-                              : member.tag === "star"
-                                ? "bg-amber-400/10 text-amber-500"
-                                : member.tag === "new"
-                                  ? "bg-green-600/10 text-green-600"
-                                  : "bg-muted/10 text-muted-foreground"
-                          }`}
-                        >
-                          <Tag className="h-3 w-3" />
-                          {member.tag ?? "n/a"}
-                        </button>
-                      )}
-                      {editing[member.id] && (
-                        <div className="flex items-center gap-2">
-                          <select
-                            aria-label={`Customer tag for ${member.name}`}
-                            value={drafts[member.id] ?? ""}
-                            onChange={(e) =>
-                              handleSaveTag(member.id, e.target.value)
-                            }
-                            onBlur={() =>
-                              setEditing((cur) => ({
-                                ...cur,
-                                [member.id]: false,
-                              }))
-                            }
-                            className="border-input rounded-md border px-2 py-1 text-sm"
+              {enrichedMembers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="h-32 text-center">
+                    <p className="text-muted-foreground">No customers found.</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                enrichedMembers.map((member) => {
+                  return (
+                    <TableRow
+                      key={member.id}
+                      className="hover:bg-accent/50 cursor-pointer transition-colors"
+                      onClick={() => setSelectedCustomerId(member.id)}
+                    >
+                      <TableCell>
+                        <p className="text-base leading-tight font-semibold">
+                          {member.name}
+                        </p>
+                        <p className="text-muted-foreground text-sm">
+                          {member.email}
+                        </p>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {member.number}
+                      </TableCell>
+                      <TableCell>
+                        {!editing[member.id] && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEditing(member.id);
+                            }}
+                            onTouchStart={(e) => {
+                              e.stopPropagation();
+                              handleStartEditing(member.id);
+                            }}
+                            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
+                              member.tag === "vip"
+                                ? "bg-violet-600/10 text-violet-600"
+                                : member.tag === "star"
+                                  ? "bg-amber-400/10 text-amber-500"
+                                  : member.tag === "new"
+                                    ? "bg-green-600/10 text-green-600"
+                                    : "bg-muted/10 text-muted-foreground"
+                            }`}
                           >
-                            <option value="">(none)</option>
-                            <option value="star">Star</option>
-                            <option value="regular">Regular</option>
-                            <option value="vip">VIP</option>
-                            <option value="new">New</option>
-                          </select>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                            <Tag className="h-3 w-3" />
+                            {member.tag ?? "n/a"}
+                          </button>
+                        )}
+                        {editing[member.id] && (
+                          <div className="flex items-center gap-2">
+                            <select
+                              aria-label={`Customer tag for ${member.name}`}
+                              value={drafts[member.id] ?? ""}
+                              onChange={(e) =>
+                                handleSaveTag(member.id, e.target.value)
+                              }
+                              onBlur={() =>
+                                setEditing((cur) => ({
+                                  ...cur,
+                                  [member.id]: false,
+                                }))
+                              }
+                              className="border-input rounded-md border px-2 py-1 text-sm"
+                            >
+                              <option value="">(none)</option>
+                              <option value="star">Star</option>
+                              <option value="regular">Regular</option>
+                              <option value="vip">VIP</option>
+                              <option value="new">New</option>
+                            </select>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </Card>

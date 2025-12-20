@@ -64,7 +64,7 @@ export function AdminTopBar({ user }: AdminTopBarProps) {
           Pitch Perfect
         </p>
         <div className="flex items-center gap-1.5 leading-none">
-          <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+          <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase">
             {ROLE_LABELS[user.role]}
           </span>
           <span className="text-muted-foreground text-[10px] font-medium">

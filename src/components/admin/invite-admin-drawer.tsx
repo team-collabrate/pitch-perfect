@@ -59,11 +59,7 @@ export function InviteAdminDrawer() {
         setSuccess(false);
       }, 2000);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : strings.errorInvite,
-      );
+      setError(err instanceof Error ? err.message : strings.errorInvite);
     }
   };
 
@@ -78,7 +74,9 @@ export function InviteAdminDrawer() {
       <DrawerContent className="px-4 py-6">
         <div className="mx-auto w-full max-w-sm space-y-6">
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold">{strings.inviteAdminTitle}</h2>
+            <h2 className="text-xl font-semibold">
+              {strings.inviteAdminTitle}
+            </h2>
             <p className="text-muted-foreground text-sm">
               {strings.inviteAdminDesc}
             </p>
@@ -90,7 +88,7 @@ export function InviteAdminDrawer() {
               <Input
                 id="admin-name"
                 type="text"
-                placeholder="John Doe"
+                placeholder={strings.namePlaceholder}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -103,7 +101,7 @@ export function InviteAdminDrawer() {
               <Input
                 id="admin-email"
                 type="email"
-                placeholder="john@example.com"
+                placeholder={strings.emailPlaceholder}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -120,9 +118,7 @@ export function InviteAdminDrawer() {
             {success && (
               <div className="rounded-lg border border-green-500/40 bg-green-500/10 px-3 py-2 text-sm text-green-700">
                 <p className="font-semibold">{strings.invitationSent}</p>
-                <p>
-                  {strings.invitationSentDesc.replace("{name}", name)}
-                </p>
+                <p>{strings.invitationSentDesc.replace("{name}", name)}</p>
               </div>
             )}
 

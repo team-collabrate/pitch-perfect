@@ -448,9 +448,7 @@ export default function ViewPage() {
       >
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold">{strings.title}</h1>
-          <p className="text-muted-foreground text-sm">
-            {strings.enterPhone}
-          </p>
+          <p className="text-muted-foreground text-sm">{strings.enterPhone}</p>
         </div>
         <Card className="w-full max-w-sm space-y-4 p-6">
           <div className="space-y-1">
@@ -555,9 +553,7 @@ export default function ViewPage() {
           <DrawerCloseButton />
           <DrawerHeader>
             <DrawerTitle>{strings.changePhoneTitle}</DrawerTitle>
-            <DrawerDescription>
-              {strings.changePhoneDesc}
-            </DrawerDescription>
+            <DrawerDescription>{strings.changePhoneDesc}</DrawerDescription>
           </DrawerHeader>
           <div className="px-6 pb-4">
             <div className="space-y-1">
@@ -624,7 +620,9 @@ export default function ViewPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{strings.amount}</span>
+                  <span className="text-muted-foreground">
+                    {strings.amount}
+                  </span>
                   <span>₹{activeTicket.amountPaid}</span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -644,7 +642,9 @@ export default function ViewPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{strings.bookingId}</span>
+                  <span className="text-muted-foreground">
+                    {strings.bookingId}
+                  </span>
                   <span className="font-mono text-xs">
                     {activeTicket.bookingCode}
                   </span>
@@ -697,7 +697,10 @@ export default function ViewPage() {
               <DrawerHeader>
                 <DrawerTitle>{strings.rescheduleSlot}</DrawerTitle>
                 <DrawerDescription>
-                  {strings.moveBookingFor.replace("{date}", formatDate(rescheduleTarget.date))}
+                  {strings.moveBookingFor.replace(
+                    "{date}",
+                    formatDate(rescheduleTarget.date),
+                  )}
                 </DrawerDescription>
               </DrawerHeader>
               <div className="px-6 pb-4">

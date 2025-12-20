@@ -2,8 +2,27 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Clock, Edit2, Save, X, Trash2, ArrowLeft } from "lucide-react";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Edit2,
+  Save,
+  X,
+  Trash2,
+  ArrowLeft,
+} from "lucide-react";
+import {
+  format,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameDay,
+  parseISO,
+} from "date-fns";
+import { enIN, ta } from "date-fns/locale";
 import { toast } from "sonner";
 
 import { Button } from "~/components/ui/button";
@@ -29,8 +48,11 @@ export default function DailySlotsPage() {
   const router = useRouter();
   const { language } = useLanguage();
   const strings = useMemo(() => allTranslations.admin[language], [language]);
-  
-  const [selectedDate, setSelectedDate] = useState<string>(() => format(new Date(), "yyyy-MM-dd"));
+  const locale = useMemo(() => (language === "ta" ? ta : enIN), [language]);
+
+  const [selectedDate, setSelectedDate] = useState<string>(() =>
+    format(new Date(), "yyyy-MM-dd"),
+  );
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [editingSlotIndex, setEditingSlotIndex] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<{
@@ -39,9 +61,13 @@ export default function DailySlotsPage() {
     status: "available" | "unavailable" | "booked";
   } | null>(null);
 
-  const { data: slots = [], isLoading, refetch } = api.timeSlot.getAllByDate.useQuery(
+  const {
+    data: slots = [],
+    isLoading,
+    refetch,
+  } = api.timeSlot.getAllByDate.useQuery(
     { date: selectedDate },
-    { enabled: !!selectedDate }
+    { enabled: !!selectedDate },
   );
 
   const createSlotMutation = api.admin.createSlot.useMutation();
@@ -62,7 +88,12 @@ export default function DailySlotsPage() {
     setEditValues({
       fullAmount: slot.fullAmount / 100,
       advanceAmount: slot.advanceAmount / 100,
-      status: slot.status === "available" ? "available" : slot.status === "booked" ? "booked" : "unavailable",
+      status:
+        slot.status === "available"
+          ? "available"
+          : slot.status === "booked"
+            ? "booked"
+            : "unavailable",
     });
   };
 
@@ -123,11 +154,11 @@ export default function DailySlotsPage() {
   return (
     <div className="space-y-6 pb-20">
       <header className="flex items-center gap-3">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => router.back()} 
-          className="rounded-2xl bg-muted"
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          className="bg-muted rounded-2xl"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -135,19 +166,33 @@ export default function DailySlotsPage() {
           <p className="text-muted-foreground text-xs tracking-wide uppercase">
             {strings.configTitle}
           </p>
-          <h1 className="text-2xl font-semibold">{strings.dailySlotOverrides}</h1>
+          <h1 className="text-2xl font-semibold">
+            {strings.dailySlotOverrides}
+          </h1>
         </div>
       </header>
 
       {/* Calendar Picker */}
       <Card className="border-border/60 bg-card/60 rounded-3xl p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold">{format(calendarMonth, "MMMM yyyy")}</h2>
+          <h2 className="font-semibold capitalize">
+            {format(calendarMonth, "MMMM yyyy", { locale })}
+          </h2>
           <div className="flex gap-1">
-            <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="rounded-xl">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handlePrevMonth}
+              className="rounded-xl"
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleNextMonth} className="rounded-xl">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleNextMonth}
+              className="rounded-xl"
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -162,14 +207,19 @@ export default function DailySlotsPage() {
             strings.friShort,
             strings.satShort,
           ].map((d) => (
-            <div key={d} className="text-muted-foreground py-2 text-[10px] font-bold uppercase">
+            <div
+              key={d}
+              className="text-muted-foreground py-2 text-[10px] font-bold uppercase"
+            >
               {d}
             </div>
           ))}
           {/* Padding for start of month */}
-          {Array.from({ length: startOfMonth(calendarMonth).getDay() }).map((_, i) => (
-            <div key={`pad-${i}`} />
-          ))}
+          {Array.from({ length: startOfMonth(calendarMonth).getDay() }).map(
+            (_, i) => (
+              <div key={`pad-${i}`} />
+            ),
+          )}
           {days.map((day) => {
             const dateStr = format(day, "yyyy-MM-dd");
             const isSelected = selectedDate === dateStr;
@@ -184,8 +234,8 @@ export default function DailySlotsPage() {
                   isSelected
                     ? "bg-primary text-primary-foreground font-bold"
                     : isToday
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "hover:bg-muted text-foreground"
+                      ? "bg-primary/10 text-primary font-semibold"
+                      : "hover:bg-muted text-foreground",
                 )}
               >
                 {format(day, "d")}
@@ -198,15 +248,20 @@ export default function DailySlotsPage() {
       {/* Slots List */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            {strings.slotsForDate.replace("{date}", format(parseISO(selectedDate), "EEE, MMM d"))}
+          <h3 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+            {strings.slotsForDate.replace(
+              "{date}",
+              format(parseISO(selectedDate), "EEE, MMM d", { locale }),
+            )}
           </h3>
           {isLoading && <Spinner />}
         </div>
 
         {slots.length === 0 && !isLoading && (
-          <Card className="border-border/60 bg-card/60 p-8 text-center rounded-3xl">
-            <p className="text-muted-foreground text-sm">{strings.noSlotsForDate}</p>
+          <Card className="border-border/60 bg-card/60 rounded-3xl p-8 text-center">
+            <p className="text-muted-foreground text-sm">
+              {strings.noSlotsForDate}
+            </p>
           </Card>
         )}
 
@@ -216,28 +271,41 @@ export default function DailySlotsPage() {
             const isVirtual = !slot.id;
 
             return (
-              <Card key={`${slot.from}-${index}`} className={cn(
-                "border-border/60 bg-card/60 rounded-3xl p-4 transition-all",
-                isEditing && "ring-2 ring-primary border-transparent"
-              )}>
+              <Card
+                key={`${slot.from}-${index}`}
+                className={cn(
+                  "border-border/60 bg-card/60 rounded-3xl p-4 transition-all",
+                  isEditing && "ring-primary border-transparent ring-2",
+                )}
+              >
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold">{formatSlotTime(slot.from)} – {formatSlotTime(slot.to)}</p>
+                      <p className="font-semibold">
+                        {formatSlotTime(slot.from)} – {formatSlotTime(slot.to)}
+                      </p>
                       {isVirtual && (
-                        <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full uppercase font-bold">
+                        <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px] font-bold uppercase">
                           {strings.virtual}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-xs">
-                      <span className={cn(
-                        "px-2 py-0.5 rounded-full font-medium uppercase",
-                        slot.status === "available" ? "bg-green-500/10 text-green-600" : 
-                        slot.status === "booked" ? "bg-blue-500/10 text-blue-600" : 
-                        "bg-red-500/10 text-red-600"
-                      )}>
-                        {slot.status === "available" ? strings.available : slot.status === "booked" ? strings.booked : strings.unavailable}
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 font-medium uppercase",
+                          slot.status === "available"
+                            ? "bg-green-500/10 text-green-600"
+                            : slot.status === "booked"
+                              ? "bg-blue-500/10 text-blue-600"
+                              : "bg-red-500/10 text-red-600",
+                        )}
+                      >
+                        {slot.status === "available"
+                          ? strings.available
+                          : slot.status === "booked"
+                            ? strings.booked
+                            : strings.unavailable}
                       </span>
                       <span className="text-muted-foreground">
                         {strings.advance}: ₹{slot.advanceAmount / 100}
@@ -251,18 +319,18 @@ export default function DailySlotsPage() {
                   {!isEditing ? (
                     <div className="flex gap-1">
                       {!isVirtual && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="rounded-xl text-red-500"
                           onClick={() => handleDeleteOverride(slot.id!)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="rounded-xl"
                         onClick={() => handleStartEdit(index, slot)}
                       >
@@ -271,20 +339,23 @@ export default function DailySlotsPage() {
                     </div>
                   ) : (
                     <div className="flex gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="rounded-xl text-red-500"
                         onClick={handleCancelEdit}
                       >
                         <X className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="rounded-xl text-green-500"
                         onClick={() => handleSaveEdit(slot)}
-                        disabled={createSlotMutation.isPending || updateSlotMutation.isPending}
+                        disabled={
+                          createSlotMutation.isPending ||
+                          updateSlotMutation.isPending
+                        }
                       >
                         <Save className="h-4 w-4" />
                       </Button>
@@ -293,38 +364,73 @@ export default function DailySlotsPage() {
                 </div>
 
                 {isEditing && editValues && (
-                  <div className="mt-4 grid gap-4 sm:grid-cols-3 pt-4 border-t border-border/40">
+                  <div className="border-border/40 mt-4 grid gap-4 border-t pt-4 sm:grid-cols-3">
                     <div className="space-y-1.5">
-                      <label htmlFor={`status-${index}`} className="text-[10px] font-bold uppercase text-muted-foreground">{strings.status}</label>
-                      <select 
+                      <label
+                        htmlFor={`status-${index}`}
+                        className="text-muted-foreground text-[10px] font-bold uppercase"
+                      >
+                        {strings.status}
+                      </label>
+                      <select
                         id={`status-${index}`}
-                        title="Slot Status"
-                        className="w-full bg-muted rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 ring-primary/20"
+                        title={strings.slotStatus}
+                        className="bg-muted ring-primary/20 w-full rounded-xl px-3 py-2 text-sm outline-none focus:ring-2"
                         value={editValues.status}
-                        onChange={(e) => setEditValues({...editValues, status: e.target.value as "available" | "unavailable" | "booked"})}
+                        onChange={(e) =>
+                          setEditValues({
+                            ...editValues,
+                            status: e.target.value as
+                              | "available"
+                              | "unavailable"
+                              | "booked",
+                          })
+                        }
                       >
                         <option value="available">{strings.available}</option>
-                        <option value="unavailable">{strings.unavailable}</option>
+                        <option value="unavailable">
+                          {strings.unavailable}
+                        </option>
                         <option value="booked">{strings.bookedManual}</option>
                       </select>
                     </div>
                     <div className="space-y-1.5">
-                      <label htmlFor={`advance-${index}`} className="text-[10px] font-bold uppercase text-muted-foreground">{strings.advance} (₹)</label>
-                      <Input 
+                      <label
+                        htmlFor={`advance-${index}`}
+                        className="text-muted-foreground text-[10px] font-bold uppercase"
+                      >
+                        {strings.advance} (₹)
+                      </label>
+                      <Input
                         id={`advance-${index}`}
-                        type="number" 
+                        type="number"
                         value={editValues.advanceAmount}
-                        onChange={(e) => setEditValues({...editValues, advanceAmount: parseFloat(e.target.value) || 0})}
+                        onChange={(e) =>
+                          setEditValues({
+                            ...editValues,
+                            advanceAmount: parseFloat(e.target.value) || 0,
+                          })
+                        }
                         className="rounded-xl"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label htmlFor={`full-${index}`} className="text-[10px] font-bold uppercase text-muted-foreground">{strings.full} (₹)</label>
-                      <Input 
+                      <label
+                        htmlFor={`full-${index}`}
+                        className="text-muted-foreground text-[10px] font-bold uppercase"
+                      >
+                        {strings.full} (₹)
+                      </label>
+                      <Input
                         id={`full-${index}`}
-                        type="number" 
+                        type="number"
                         value={editValues.fullAmount}
-                        onChange={(e) => setEditValues({...editValues, fullAmount: parseFloat(e.target.value) || 0})}
+                        onChange={(e) =>
+                          setEditValues({
+                            ...editValues,
+                            fullAmount: parseFloat(e.target.value) || 0,
+                          })
+                        }
                         className="rounded-xl"
                       />
                     </div>

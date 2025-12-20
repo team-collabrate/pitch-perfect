@@ -136,7 +136,7 @@ export function BannerUploadForm({ onUploadSuccess }: BannerUploadProps) {
         <Label htmlFor="media-type">{strings.mediaType}</Label>
         <select
           id="media-type"
-          title="Select media type"
+          title={strings.selectMediaType}
           value={formData.mediaType}
           onChange={(e) =>
             setFormData((prev) => ({

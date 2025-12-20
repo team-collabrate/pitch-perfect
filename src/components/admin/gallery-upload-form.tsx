@@ -149,7 +149,7 @@ export function GalleryUploadForm({ onUploadSuccess }: GalleryUploadProps) {
         <Label htmlFor="media-type">{strings.mediaType}</Label>
         <select
           id="media-type"
-          title="Select media type"
+          title={strings.selectMediaType}
           value={formData.mediaType}
           onChange={(e) =>
             setFormData((prev) => ({
@@ -159,7 +159,7 @@ export function GalleryUploadForm({ onUploadSuccess }: GalleryUploadProps) {
           }
           className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         >
-                    <option value="image">{strings.image}</option>
+          <option value="image">{strings.image}</option>
           <option value="video">{strings.video}</option>
         </select>
       </div>

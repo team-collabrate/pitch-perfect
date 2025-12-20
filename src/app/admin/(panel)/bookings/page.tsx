@@ -7,6 +7,7 @@ import { Card } from "~/components/ui/card";
 import { Spinner } from "~/components/spinner";
 import { api, type RouterOutputs } from "~/trpc/react";
 import { format, parseISO, parse, isAfter, isBefore } from "date-fns";
+import { enIN, ta } from "date-fns/locale";
 import { formatSlotTime } from "~/lib/utils";
 import { Phone, RotateCw, ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -64,6 +65,7 @@ const REFETCH_INTERVAL = 2 * 60 * 1000; // 2 minutes
 export default function BookingsPage() {
   const { language } = useLanguage();
   const strings = useMemo(() => allTranslations.admin[language], [language]);
+  const locale = language === "ta" ? ta : enIN;
   const [selectedTab, setSelectedTab] = useState<"current" | "past">("current");
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
     null,
@@ -194,7 +196,7 @@ export default function BookingsPage() {
           <button
             onClick={handleManualRefresh}
             disabled={isRefetching}
-            aria-label="Refresh bookings"
+            aria-label={strings.refreshBookings}
             className="bg-muted hover:bg-muted/80 mt-1 flex h-10 w-10 items-center justify-center rounded-full transition-all disabled:opacity-50"
           >
             <RotateCw
@@ -274,7 +276,9 @@ export default function BookingsPage() {
                       {showDate && dateStr && (
                         <div className="mt-6 mb-2 flex items-center gap-2">
                           <span className="text-primary/80 text-xs font-semibold">
-                            {format(parseISO(dateStr), "EEE, MMM d, yyyy")}
+                            {format(parseISO(dateStr), "EEE, MMM d, yyyy", {
+                              locale,
+                            })}
                           </span>
                           <div className="border-border/40 flex-1 border-t" />
                         </div>
@@ -345,6 +349,7 @@ export default function BookingsPage() {
               calendarMonth={calendarMonth}
               onMonthChange={setCalendarMonth}
               strings={strings}
+              locale={locale}
             />
           </Card>
 
@@ -359,7 +364,9 @@ export default function BookingsPage() {
                 <Card className="border-border/60 bg-card/60 text-muted-foreground rounded-3xl p-6 text-center text-sm">
                   {strings.noBookingsFoundFor.replace(
                     "{date}",
-                    format(parseISO(selectedCalendarDate), "MMM d, yyyy"),
+                    format(parseISO(selectedCalendarDate), "MMM d, yyyy", {
+                      locale,
+                    }),
                   )}
                 </Card>
               ) : (
@@ -469,7 +476,9 @@ export default function BookingsPage() {
                 <div className="grid gap-6">
                   {/* Customer & Alternate Contact */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-semibold">{strings.contactInfo}</h3>
+                    <h3 className="text-sm font-semibold">
+                      {strings.contactInfo}
+                    </h3>
                     <div className="bg-muted/30 divide-border/40 border-border/40 divide-y rounded-2xl border">
                       {/* Primary Contact */}
                       <div className="flex items-center justify-between p-4">
@@ -488,13 +497,12 @@ export default function BookingsPage() {
                               ? `tel:${activeBooking.phoneNumber}`
                               : undefined
                           }
-                          aria-label="Call customer"
+                          aria-label={strings.callCustomer}
                           className="bg-background border-border/60 hover:bg-muted flex h-10 w-10 items-center justify-center rounded-full border transition-colors"
                         >
                           <Phone className="h-4 w-4" />
                         </a>
                       </div>
-
                       {/* Alternate Contact */}
                       {bookingAlternateName && bookingAlternateNumber && (
                         <div className="flex items-center justify-between p-4">
@@ -511,14 +519,13 @@ export default function BookingsPage() {
                           </div>
                           <a
                             href={`tel:${bookingAlternateNumber}`}
-                            aria-label="Call alternate contact"
+                            aria-label={strings.callAlternateContact}
                             className="bg-background border-border/60 hover:bg-muted flex h-10 w-10 items-center justify-center rounded-full border transition-colors"
                           >
                             <Phone className="h-4 w-4" />
                           </a>
                         </div>
-                      )}
-
+                      )}{" "}
                       {/* Email if exists */}
                       {bookingEmail && (
                         <div className="p-4">
@@ -543,6 +550,7 @@ export default function BookingsPage() {
                           {format(
                             parseISO(activeBooking.slot.date),
                             "MMM d, yyyy",
+                            { locale },
                           )}
                         </p>
                       )}
@@ -638,12 +646,14 @@ function CalendarPicker({
   calendarMonth,
   onMonthChange,
   strings,
+  locale,
 }: {
   selectedDate: string | null;
   onDateSelect: (date: string) => void;
   calendarMonth: Date;
   onMonthChange: (date: Date) => void;
   strings: any;
+  locale: any;
 }) {
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -704,7 +714,7 @@ function CalendarPicker({
           <ChevronLeft className="h-4 w-4" />
         </button>
         <h3 className="text-sm font-semibold">
-          {format(calendarMonth, "MMMM yyyy")}
+          {format(calendarMonth, "MMMM yyyy", { locale })}
         </h3>
         <button
           onClick={handleNextMonth}

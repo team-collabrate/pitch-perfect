@@ -281,7 +281,10 @@ export default function AdminBannerPage() {
                     "{title}",
                     deleteItem.title ?? strings.thisItem,
                   )
-                : strings.deleteConfirmDesc.replace("{title}", strings.thisItem)}
+                : strings.deleteConfirmDesc.replace(
+                    "{title}",
+                    strings.thisItem,
+                  )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">

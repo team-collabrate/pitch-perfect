@@ -208,7 +208,9 @@ export default function ConfigPage() {
             <div className="flex items-center gap-3">
               <Clock className="text-primary h-5 w-5" />
               <div>
-                <p className="text-sm font-semibold">{strings.dailySlotOverrides}</p>
+                <p className="text-sm font-semibold">
+                  {strings.dailySlotOverrides}
+                </p>
                 <p className="text-muted-foreground text-xs">
                   {strings.dailySlotOverridesDesc}
                 </p>
@@ -228,7 +230,7 @@ export default function ConfigPage() {
           </div>
           <button
             type="button"
-            aria-label="Toggle maintenance mode"
+            aria-label={strings.toggleMaintenance}
             onClick={() => handleToggle("maintenanceMode", !maintenanceMode)}
             disabled={savingState === "maintenanceMode"}
             className={cn(
@@ -249,11 +251,13 @@ export default function ConfigPage() {
         <Card className="border-border/60 bg-card/60 flex flex-row items-center justify-between rounded-3xl px-4 py-3">
           <div>
             <p className="text-sm font-semibold">{strings.fullPaymentOnly}</p>
-            <p className="text-muted-foreground text-xs">{strings.fullPaymentOnlyDesc}</p>
+            <p className="text-muted-foreground text-xs">
+              {strings.fullPaymentOnlyDesc}
+            </p>
           </div>
           <button
             type="button"
-            aria-label="Toggle full payment mode"
+            aria-label={strings.toggleFullPayment}
             onClick={() => handleToggle("fullPaymentMode", !fullPaymentMode)}
             disabled={savingState === "fullPaymentMode"}
             className={cn(
@@ -274,7 +278,9 @@ export default function ConfigPage() {
         {maintenanceMode && (
           <Card className="border-border/60 bg-card/60 space-y-3 rounded-3xl p-4">
             <div>
-              <p className="text-sm font-semibold">{strings.maintenanceMessage}</p>
+              <p className="text-sm font-semibold">
+                {strings.maintenanceMessage}
+              </p>
               <p className="text-muted-foreground text-xs">
                 {strings.maintenanceMessageDesc}
               </p>
@@ -299,7 +305,9 @@ export default function ConfigPage() {
                 onClick={handleMaintenanceMessageSave}
                 disabled={savingState === "maintenanceMessage"}
               >
-                {savingState === "maintenanceMessage" ? strings.saving : strings.save}
+                {savingState === "maintenanceMessage"
+                  ? strings.saving
+                  : strings.save}
               </Button>
             </div>
           </Card>
@@ -372,7 +380,9 @@ export default function ConfigPage() {
         {/* Days in Advance */}
         <Card className="border-border/60 bg-card/60 space-y-3 rounded-3xl p-4">
           <div>
-            <p className="text-sm font-semibold">{strings.daysInAdvanceSlots}</p>
+            <p className="text-sm font-semibold">
+              {strings.daysInAdvanceSlots}
+            </p>
             <p className="text-muted-foreground text-xs">
               {strings.daysInAdvanceSlotsDesc}
             </p>

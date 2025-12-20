@@ -347,7 +347,10 @@ export default function AdminGalleryPage() {
             <DialogDescription>
               {deleteItem
                 ? strings.deleteConfirmDesc.replace("{title}", deleteItem.title)
-                : strings.deleteConfirmDesc.replace("{title}", strings.thisItem)}
+                : strings.deleteConfirmDesc.replace(
+                    "{title}",
+                    strings.thisItem,
+                  )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-row gap-2">
@@ -536,8 +539,12 @@ export default function AdminGalleryPage() {
                     <p className="text-muted-foreground text-sm">
                       {strings.type}
                     </p>
-                    <p className="mt-1 font-medium capitalize">
-                      {editItem.mediaType}
+                    <p className="mt-1 font-medium">
+                      {editItem.mediaType === "image"
+                        ? strings.image
+                        : editItem.mediaType === "video"
+                          ? strings.video
+                          : strings.gif}
                     </p>
                   </div>
 
@@ -550,7 +557,7 @@ export default function AdminGalleryPage() {
                     </Label>
                     <select
                       id="edit-status"
-                      aria-label="Status"
+                      aria-label={strings.status}
                       value={editForm.status}
                       onChange={(e) =>
                         setEditForm((prev) => ({

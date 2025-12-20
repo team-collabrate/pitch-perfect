@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { Loader2, LogOut, Settings, Trash2, Edit2, X } from "lucide-react";
+import { format } from "date-fns";
+import { enIN, ta } from "date-fns/locale";
 
 import { api } from "~/trpc/react";
 import { useLanguage } from "~/lib/language-context";
@@ -29,6 +31,7 @@ export function AdminProfileDrawer({
   const [open, setOpen] = useState(false);
   const { language } = useLanguage();
   const strings = useMemo(() => allTranslations.admin[language], [language]);
+  const locale = language === "ta" ? ta : enIN;
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState(adminName);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +129,10 @@ export function AdminProfileDrawer({
               </p>
             </div>
             <DrawerClose asChild>
-              <button className="hover:bg-muted rounded-lg p-1" title={strings.close}>
+              <button
+                className="hover:bg-muted rounded-lg p-1"
+                title={strings.close}
+              >
                 <X className="h-5 w-5" />
               </button>
             </DrawerClose>
@@ -213,7 +219,13 @@ export function AdminProfileDrawer({
                   <Label className="text-muted-foreground text-xs uppercase">
                     {strings.profileRole}
                   </Label>
-                  <p className="font-medium capitalize">{profile.role}</p>
+                  <p className="font-medium">
+                    {profile.role === "superAdmin"
+                      ? strings.roleSuperAdmin
+                      : profile.role === "admin"
+                        ? strings.roleAdmin
+                        : strings.roleStaff}
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -221,7 +233,9 @@ export function AdminProfileDrawer({
                     {strings.profileMemberSince}
                   </Label>
                   <p className="font-medium">
-                    {new Date(profile.createdAt).toLocaleDateString()}
+                    {format(new Date(profile.createdAt), "MMM d, yyyy", {
+                      locale,
+                    })}
                   </p>
                 </div>
               </div>
@@ -230,7 +244,9 @@ export function AdminProfileDrawer({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">{strings.profileActiveSessions}</p>
+                    <p className="font-medium">
+                      {strings.profileActiveSessions}
+                    </p>
                     <p className="text-muted-foreground text-sm">
                       {profile.activeSessionsCount}{" "}
                       {profile.activeSessionsCount !== 1
@@ -275,7 +291,9 @@ export function AdminProfileDrawer({
                             {sess.userAgent?.substring(0, 40)}...
                           </span>
                           <span className="text-muted-foreground">
-                            {new Date(sess.expiresAt).toLocaleDateString()}
+                            {format(new Date(sess.expiresAt), "MMM d, yyyy", {
+                              locale,
+                            })}
                           </span>
                         </div>
                         {sess.ipAddress && (

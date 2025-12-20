@@ -325,7 +325,13 @@ export default function EditBannerPage() {
 
               <div>
                 <p className="text-muted-foreground text-sm">{strings.type}</p>
-                <p className="mt-1 font-medium capitalize">{item.mediaType}</p>
+                <p className="mt-1 font-medium">
+                  {item.mediaType === "image"
+                    ? strings.image
+                    : item.mediaType === "video"
+                      ? strings.video
+                      : strings.gif}
+                </p>
               </div>
 
               <div>
@@ -356,7 +362,11 @@ export default function EditBannerPage() {
                   </select>
                 ) : (
                   <p className="mt-1 font-medium capitalize">
-                    {formData.status === "active" ? strings.active : formData.status === "inactive" ? strings.inactive : strings.draft}
+                    {formData.status === "active"
+                      ? strings.active
+                      : formData.status === "inactive"
+                        ? strings.inactive
+                        : strings.draft}
                   </p>
                 )}
               </div>
@@ -377,7 +387,10 @@ export default function EditBannerPage() {
             <DialogDescription>
               {item.title
                 ? strings.deleteConfirmDesc.replace("{title}", item.title)
-                : strings.deleteConfirmDesc.replace("{title}", strings.thisItem)}
+                : strings.deleteConfirmDesc.replace(
+                    "{title}",
+                    strings.thisItem,
+                  )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">

@@ -23,6 +23,8 @@ import { Label } from "~/components/ui/label";
 import { Spinner } from "~/components/spinner";
 import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
+import { format, parseISO } from "date-fns";
+import { enIN, ta } from "date-fns/locale";
 import { useLanguage } from "~/lib/language-context";
 import allTranslations from "~/lib/translations/all";
 
@@ -116,7 +118,11 @@ function getEmptyDraft(): CouponDraft {
 
 export function CouponsClient({ strings: _strings }: { strings: Strings }) {
   const { language } = useLanguage();
-  const strings = React.useMemo(() => allTranslations.admin[language], [language]);
+  const strings = React.useMemo(
+    () => allTranslations.admin[language],
+    [language],
+  );
+  const locale = language === "ta" ? ta : enIN;
   const utils = api.useUtils();
   const router = useRouter();
 
@@ -279,7 +285,9 @@ export function CouponsClient({ strings: _strings }: { strings: Strings }) {
   }
 
   async function onArchive(coupon: Coupon) {
-    const ok = window.confirm(strings.archiveCouponConfirm.replace("{code}", coupon.code));
+    const ok = window.confirm(
+      strings.archiveCouponConfirm.replace("{code}", coupon.code),
+    );
     if (!ok) return;
     await archiveMutation.mutateAsync({ couponId: coupon.id });
   }
@@ -769,7 +777,12 @@ export function CouponsClient({ strings: _strings }: { strings: Strings }) {
 
                     <div className="text-muted-foreground text-[10px] font-medium">
                       {coupon.validTo
-                        ? strings.until.replace("{date}", new Date(coupon.validTo).toLocaleDateString())
+                        ? strings.until.replace(
+                            "{date}",
+                            format(parseISO(coupon.validTo), "MMM d, yyyy", {
+                              locale,
+                            }),
+                          )
                         : strings.noExpiry}
                     </div>
                   </div>

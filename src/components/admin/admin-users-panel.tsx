@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Download, Tag, Phone, Mail } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { enIN, ta } from "date-fns/locale";
 
 import { api } from "~/trpc/react";
 import { useLanguage } from "~/lib/language-context";
 import allTranslations from "~/lib/translations/all";
 import { Button } from "~/components/ui/button";
+import { formatSlotTime } from "~/lib/utils";
 import { Card } from "~/components/ui/card";
 import {
   Drawer,
@@ -31,6 +34,7 @@ type EditingState = Record<number, boolean>;
 export function AdminUsersPanel() {
   const { language } = useLanguage();
   const strings = useMemo(() => allTranslations.admin[language], [language]);
+  const locale = language === "ta" ? ta : enIN;
   const { data, isLoading, error } = api.admin.customersList.useQuery();
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(
     null,
@@ -181,7 +185,9 @@ export function AdminUsersPanel() {
               {enrichedMembers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={3} className="h-32 text-center">
-                    <p className="text-muted-foreground">{strings.noCustomers}</p>
+                    <p className="text-muted-foreground">
+                      {strings.noCustomers}
+                    </p>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -234,13 +240,16 @@ export function AdminUsersPanel() {
                                   ? strings.new
                                   : member.tag === "regular"
                                     ? strings.regular
-                                    : "n/a"}
+                                    : strings.na}
                           </button>
                         )}
                         {editing[member.id] && (
                           <div className="flex items-center gap-2">
                             <select
-                              aria-label={`Customer tag for ${member.name}`}
+                              aria-label={strings.customerTagFor.replace(
+                                "{name}",
+                                member.name,
+                              )}
                               value={drafts[member.id] ?? ""}
                               onChange={(e) =>
                                 handleSaveTag(member.id, e.target.value)
@@ -306,11 +315,13 @@ export function AdminUsersPanel() {
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <Mail className="text-muted-foreground h-4 w-4" />
-                  <span>{customerDetails.email ?? "N/A"}</span>
+                  <span>{customerDetails.email ?? strings.na}</span>
                 </div>
                 {customerDetails.alternateContactName && (
                   <div className="text-sm">
-                    <p className="text-muted-foreground">{strings.alternateContact}</p>
+                    <p className="text-muted-foreground">
+                      {strings.alternateContact}
+                    </p>
                     <p className="font-medium">
                       {customerDetails.alternateContactName}
                     </p>
@@ -399,8 +410,15 @@ export function AdminUsersPanel() {
                         </div>
                         {booking.slot && (
                           <div className="text-muted-foreground mt-1 truncate text-[11px]">
-                            {booking.slot.date} • {booking.slot.from} -{" "}
-                            {booking.slot.to}
+                            {format(
+                              parseISO(booking.slot.date),
+                              "MMM d, yyyy",
+                              {
+                                locale,
+                              },
+                            )}{" "}
+                            • {formatSlotTime(booking.slot.from)} -{" "}
+                            {formatSlotTime(booking.slot.to)}
                           </div>
                         )}
                       </Card>
@@ -415,7 +433,9 @@ export function AdminUsersPanel() {
             </div>
           ) : (
             <div className="p-6 text-center">
-              <p className="text-muted-foreground">{strings.unableToLoadDetails}</p>
+              <p className="text-muted-foreground">
+                {strings.unableToLoadDetails}
+              </p>
             </div>
           )}
         </DrawerContent>

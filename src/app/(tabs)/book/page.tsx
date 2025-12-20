@@ -1231,7 +1231,9 @@ export default function BookingPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{strings.player}</span>
+                  <span className="text-muted-foreground">
+                    {strings.player}
+                  </span>
                   <span>{primaryConfirmation.customer.name}</span>
                 </div>
                 <div className="flex items-center justify-between">

@@ -57,11 +57,7 @@ export function ResetPasswordForm() {
         router.refresh();
       }, 2000);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : strings.errorResetFailed,
-      );
+      setError(err instanceof Error ? err.message : strings.errorResetFailed);
     } finally {
       setIsSubmitting(false);
     }
@@ -105,9 +101,7 @@ export function ResetPasswordForm() {
           {strings.panelTitle}
         </p>
         <h1 className="text-2xl font-semibold">{strings.resetPasswordTitle}</h1>
-        <p className="text-muted-foreground text-sm">
-          {strings.resetDesc}
-        </p>
+        <p className="text-muted-foreground text-sm">{strings.resetDesc}</p>
       </div>
 
       <div className="space-y-4">
@@ -124,7 +118,7 @@ export function ResetPasswordForm() {
             disabled={success}
           />
           <p className="text-muted-foreground text-xs">
-            Must be at least 8 characters long.
+            {strings.passwordLengthHint}
           </p>
         </div>
 
@@ -164,7 +158,9 @@ export function ResetPasswordForm() {
       </Button>
 
       <div className="flex items-center justify-center gap-2 text-sm">
-        <span className="text-muted-foreground">{strings.rememberPassword}</span>
+        <span className="text-muted-foreground">
+          {strings.rememberPassword}
+        </span>
         <Link href="/admin/login" className="font-semibold hover:underline">
           {strings.signIn}
         </Link>

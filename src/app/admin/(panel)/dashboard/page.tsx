@@ -2,6 +2,8 @@
 
 import { LineChart, TrendingUp } from "lucide-react";
 import { useMemo } from "react";
+import { format, parseISO } from "date-fns";
+import { enIN, ta } from "date-fns/locale";
 
 import { Card } from "~/components/ui/card";
 import { cn } from "~/lib/utils";
@@ -48,12 +50,14 @@ function calculatePercentageChange(current: number, previous: number): string {
 export default function DashboardPage() {
   const { language } = useLanguage();
   const strings = useMemo(() => allTranslations.admin[language], [language]);
-  const { data: dashboardData, isLoading } = api.admin.dashboardSummary.useQuery();
+  const locale = language === "ta" ? ta : enIN;
+  const { data: dashboardData, isLoading } =
+    api.admin.dashboardSummary.useQuery();
 
   if (isLoading || !dashboardData) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
       </div>
     );
   }
@@ -224,9 +228,7 @@ export default function DashboardPage() {
         </div>
         <div className="text-muted-foreground flex justify-between text-xs font-medium">
           {heatmapDates.map((date, index) => {
-            const dayName = new Date(date!).toLocaleDateString(language === "ta" ? "ta-IN" : "en-US", {
-              weekday: "short",
-            })[0];
+            const dayName = format(parseISO(date!), "EEEEE", { locale });
             return <span key={index}>{dayName}</span>;
           })}
         </div>
@@ -238,7 +240,9 @@ export default function DashboardPage() {
             <p className="text-muted-foreground text-xs tracking-widest uppercase">
               {strings.paymentStatus}
             </p>
-            <p className="text-lg font-semibold">{strings.bookingConversions}</p>
+            <p className="text-lg font-semibold">
+              {strings.bookingConversions}
+            </p>
           </div>
           <LineChart className="text-muted-foreground h-5 w-5" />
         </header>

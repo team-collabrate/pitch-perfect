@@ -71,6 +71,22 @@ Created `src/lib/posthog-tracking.ts` with ready-to-use hooks:
 - `useGalleryTracking()` - Track gallery interactions
 - `useNavigationTracking()` - Track navigation events
 
+### ✅ 7. Automatic User Identification
+
+Updated `src/lib/phone-context.tsx`:
+
+- **Automatic identification**: Users are identified in PostHog when they enter their phone number
+- **Automatic reset**: User identity is reset when phone number is cleared
+- **Uses phone number as distinct_id**: Phone numbers are used as the unique identifier for users
+- **No manual calls needed**: Identification happens automatically via the PhoneProvider
+
+Benefits:
+
+- All events are linked to identified users
+- Historical anonymous events are merged with identified profile
+- User journey tracking across sessions
+- No need to call `posthog.identify()` manually
+
 ## How to Use
 
 ### 1. Set Environment Variables
@@ -132,41 +148,43 @@ export function ContactForm() {
 }
 ```
 
-### 4. Identify Users (After Login)
+### 4. User Identification (Automatic!)
+
+**Good news:** User identification happens automatically! When a user enters their phone number, they are automatically identified in PostHog via the `PhoneProvider`.
+
+If you need to enrich the user profile with additional data (name, email, etc.), use the `enrichUserProfile` function:
 
 ```tsx
 import { usePostHog } from "posthog-js/react";
-import { identifyUser } from "~/lib/posthog-tracking";
+import { enrichUserProfile } from "~/lib/posthog-tracking";
+import { useEffect } from "react";
 
-export function LoginPage() {
+export function BookingPage() {
   const posthog = usePostHog();
+  const { data: customer } = api.customer.getByPhoneNumber.useQuery(
+    { phoneNumber: storedPhone },
+    { enabled: !!storedPhone },
+  );
 
-  const handleLogin = async (user) => {
-    // After successful login
-    identifyUser(posthog, user.id, {
-      email: user.email,
-      name: user.name,
-      plan: user.plan,
-    });
-  };
+  // Enrich user profile when customer data loads
+  useEffect(() => {
+    if (customer && posthog) {
+      enrichUserProfile(posthog, {
+        phoneNumber: customer.number,
+        name: customer.name,
+        email: customer.email,
+        languagePreference: customer.languagePreference,
+        alternateContactName: customer.alternateContactName,
+        alternateContactNumber: customer.alternateContactNumber,
+      });
+    }
+  }, [customer, posthog]);
 }
 ```
 
-### 5. Reset on Logout
+### 5. Reset on Phone Number Clear
 
-```tsx
-import { usePostHog } from "posthog-js/react";
-import { resetUser } from "~/lib/posthog-tracking";
-
-export function LogoutButton() {
-  const posthog = usePostHog();
-
-  const handleLogout = () => {
-    resetUser(posthog);
-    // Continue with logout logic
-  };
-}
-```
+User identity is automatically reset when the phone number is cleared from storage. No manual action needed!
 
 ## What PostHog is Tracking
 
@@ -176,12 +194,12 @@ export function LogoutButton() {
 - ✅ Page leaves
 - ✅ JavaScript errors and exceptions
 - ✅ User sessions
+- ✅ **User identification via phone number** (automatic)
 
 ### Manual Tracking (Use the helpers):
 
 - Booking attempts and completions
 - Form interactions
-- User authentication
 - Gallery interactions
 - Navigation events
 - Custom events specific to your app

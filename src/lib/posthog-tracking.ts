@@ -174,6 +174,37 @@ export function identifyUser(
 }
 
 /**
+ * Enrich user identification with customer details
+ * Call this after fetching customer data to add more properties to the user profile
+ */
+export function enrichUserProfile(
+    posthog: ReturnType<typeof usePostHog>,
+    customerData: {
+        phoneNumber: string;
+        name?: string | null;
+        email?: string | null;
+        languagePreference?: string | null;
+        alternateContactName?: string | null;
+        alternateContactNumber?: string | null;
+    }
+) {
+    const properties: Record<string, string | boolean | null> = {
+        phone_number: customerData.phoneNumber,
+    };
+
+    if (customerData.name) properties.name = customerData.name;
+    if (customerData.email) properties.email = customerData.email;
+    if (customerData.languagePreference)
+        properties.language = customerData.languagePreference;
+    if (customerData.alternateContactName)
+        properties.alternate_contact_name = customerData.alternateContactName;
+    if (customerData.alternateContactNumber)
+        properties.alternate_contact_number = customerData.alternateContactNumber;
+
+    posthog.identify(customerData.phoneNumber, properties);
+}
+
+/**
  * Example: Reset user identity (call on logout)
  */
 export function resetUser(posthog: ReturnType<typeof usePostHog>) {

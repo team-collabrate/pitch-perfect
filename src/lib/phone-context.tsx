@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { usePostHog } from "posthog-js/react";
 
 const STORAGE_KEY = "pitch-perfect-phone";
 
@@ -23,6 +24,7 @@ const PhoneContext = createContext<PhoneContextValue | undefined>(undefined);
 export function PhoneProvider({ children }: { children: React.ReactNode }) {
   const [phoneNumber, setPhoneNumberState] = useState<string>("");
   const [isHydrated, setIsHydrated] = useState(false);
+  const posthog = usePostHog();
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -55,6 +57,21 @@ export function PhoneProvider({ children }: { children: React.ReactNode }) {
       console.error("Failed to persist phone number", error);
     }
   }, [phoneNumber, isHydrated]);
+
+  // Identify user in PostHog when phone number changes
+  useEffect(() => {
+    if (!isHydrated || !posthog) return;
+
+    if (phoneNumber) {
+      // Identify user with their phone number
+      posthog.identify(phoneNumber, {
+        phone_number: phoneNumber,
+      });
+    } else {
+      // Reset PostHog identity when phone number is cleared
+      posthog.reset();
+    }
+  }, [phoneNumber, isHydrated, posthog]);
 
   const setPhoneNumber = useCallback((number: string) => {
     setPhoneNumberState(number);

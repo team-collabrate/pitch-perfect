@@ -134,15 +134,15 @@ export function Carousel({
         ref={containerRef}
         className={
           scrollable
-            ? "relative flex h-56 w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden scroll-smooth [-webkit-overflow-scrolling:touch]"
-            : "relative h-56 w-full overflow-hidden"
+            ? "relative flex h-56 w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden scroll-smooth [-webkit-overflow-scrolling:touch] md:h-72 lg:h-80"
+            : "relative h-56 w-full overflow-hidden md:h-72 lg:h-80"
         }
       >
         {scrollable ? (
           slides.map((slide) => (
             <div
               key={slide.id}
-              className="relative h-56 w-full shrink-0 snap-center"
+              className="relative h-56 w-full shrink-0 snap-center md:h-72 lg:h-80"
             >
               <Image
                 src={slide.src}
@@ -156,7 +156,7 @@ export function Carousel({
           ))
         ) : (
           <motion.div
-            className="flex h-56"
+            className="flex h-56 md:h-72 lg:h-80"
             style={{ x }}
             drag="x"
             dragConstraints={{
@@ -167,7 +167,10 @@ export function Carousel({
             onDragEnd={handleDragEnd}
           >
             {itemsForRender.map((slide) => (
-              <div key={slide.id} className="relative h-56 w-full shrink-0">
+              <div
+                key={slide.id}
+                className="relative h-56 w-full shrink-0 md:h-72 lg:h-80"
+              >
                 <Image
                   src={slide.src}
                   alt={slide.alt}

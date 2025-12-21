@@ -73,7 +73,7 @@ export default function HomePage() {
 
   return (
     <motion.div
-      className="space-y-8"
+      className="space-y-8 lg:space-y-10"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
@@ -82,7 +82,7 @@ export default function HomePage() {
         <Carousel slides={slides} autoPlayInterval={4000} />
       ) : null}
 
-      <div className="grid grid-cols-2 items-stretch gap-3">
+      <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2">
         {quickActions.map(({ key, href, label, desc, Icon, cardGlow }) => (
           <motion.div
             key={key}
@@ -92,7 +92,7 @@ export default function HomePage() {
           >
             <Link href={href} className="block h-full">
               <Card
-                className={`group border-border/60 shadow-primary/5 relative h-full overflow-hidden rounded-2xl border p-4 shadow-lg transition-all duration-300`}
+                className={`group border-border/60 shadow-primary/5 relative h-full overflow-hidden rounded-2xl border p-4 shadow-lg transition-all duration-300 md:p-6`}
               >
                 <div
                   className={`absolute inset-0 ${cardGlow} opacity-0 blur-3xl transition-opacity duration-300 group-hover:opacity-60`}
@@ -105,7 +105,9 @@ export default function HomePage() {
                     <p className="text-foreground text-base font-semibold">
                       {label}
                     </p>
-                    <p className="text-muted-foreground text-xs">{desc}</p>
+                    <p className="text-muted-foreground text-xs md:text-sm">
+                      {desc}
+                    </p>
                   </div>
                   <ArrowUpRight
                     className="text-muted-foreground group-hover:text-primary h-4 w-4 transition-colors"
@@ -125,10 +127,10 @@ export default function HomePage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{strings.highlightsTitle}</h2>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {highlights.map((item) => (
             <Card key={item.src} className="overflow-hidden p-0">
-              <div className="relative h-28 w-full">
+              <div className="relative h-28 w-full sm:h-36 lg:h-44">
                 <Image
                   src={item.src}
                   alt={item.label}

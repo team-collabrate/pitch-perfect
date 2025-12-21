@@ -52,7 +52,7 @@ export function BottomNav() {
 
   return (
     <nav className="border-border/60 bg-background/90 fixed right-0 bottom-0 left-0 z-50 border-t backdrop-blur-lg">
-      <div className="mx-auto flex max-w-md justify-between px-6 py-3 text-xs font-medium tracking-wide uppercase">
+      <div className="mx-auto flex max-w-md justify-between px-6 py-3 text-xs font-medium tracking-wide uppercase md:max-w-2xl lg:max-w-4xl">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (

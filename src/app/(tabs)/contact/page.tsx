@@ -16,8 +16,8 @@ import { FooterBranding } from "~/components/footer-branding";
 const whatsappNumber = "+917358848765";
 const instagramUrl = "https://www.instagram.com/+917358848765/?hl=en";
 
-const MotionCard = motion(Card);
-const MotionButton = motion(Button);
+const MotionCard = motion.create(Card);
+const MotionButton = motion.create(Button);
 
 export default function ContactPage() {
   const { language } = useLanguage();

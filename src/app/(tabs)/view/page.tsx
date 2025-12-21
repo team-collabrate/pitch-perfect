@@ -81,8 +81,8 @@ const toPngImage = toPng as (
 
 const formatDate = (isoDate: string) => format(parseISO(isoDate), "EEE, MMM d");
 
-const MotionCard = motion(Card);
-const MotionButton = motion(Button);
+const MotionCard = motion.create(Card);
+const MotionButton = motion.create(Button);
 const springy = { type: "spring", stiffness: 260, damping: 22 } as const;
 
 // Transform API booking to display format

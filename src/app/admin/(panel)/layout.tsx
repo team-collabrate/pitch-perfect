@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { AdminTopBar } from "~/components/admin/admin-top-bar";
 import { AdminBottomNav } from "~/components/admin/admin-bottom-nav";
+import { FooterBranding } from "~/components/footer-branding";
 import { requireManager } from "~/server/admin/session";
 
 export default async function AdminPanelLayout({
@@ -21,7 +22,10 @@ export default async function AdminPanelLayout({
           role: manager.role,
         }}
       />
-      <div className="flex-1 overflow-y-auto px-4 py-6 pb-24">{children}</div>
+      <div className="flex-1 overflow-y-auto px-4 py-6 pb-24">
+        {children}
+        <FooterBranding className="mt-10 rounded-xl" />
+      </div>
       <div className="border-border/60 bg-background/95 fixed bottom-0 left-1/2 w-full max-w-md -translate-x-1/2 border-t backdrop-blur">
         <AdminBottomNav role={manager.role} />
       </div>

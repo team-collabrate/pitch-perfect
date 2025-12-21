@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { LocationWidget } from "~/components/location-widget";
+import { FooterBranding } from "~/components/footer-branding";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { WhatsAppIcon } from "~/components/ui/whatsapp-icon";
@@ -468,6 +469,8 @@ export function LandingPageClient({
               </Link>
             </Button>
           </section>
+
+          <FooterBranding className="rounded-xl" />
         </div>
       </div>
     </main>

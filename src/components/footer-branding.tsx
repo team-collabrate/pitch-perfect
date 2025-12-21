@@ -2,11 +2,7 @@ import { cn } from "~/lib/utils";
 
 import { CollabrateLogo } from "~/components/collabrate-logo";
 
-export function FooterBranding({
-  className,
-}: {
-  className?: string;
-}) {
+export function FooterBranding({ className }: { className?: string }) {
   return (
     <footer
       className={cn(
@@ -16,7 +12,11 @@ export function FooterBranding({
     >
       <span>{"Developed and Managed by"}</span>
       <span className="text-foreground/80 inline-flex items-center gap-2 font-medium">
-        <CollabrateLogo className="h-5 w-5" aria-hidden="true" focusable="false" />
+        <CollabrateLogo
+          className="h-5 w-5"
+          aria-hidden="true"
+          focusable="false"
+        />
         <span>{"Collabrate"}</span>
       </span>
     </footer>

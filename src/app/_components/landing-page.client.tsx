@@ -137,7 +137,7 @@ export function LandingPageClient({
             <Card className="border-border/60 overflow-hidden rounded-2xl p-0">
               <div className="relative h-36 w-full">
                 <Image
-                  src="/1-apurkotai-turf-highlights.jpeg"
+                  src="/highlights/1-apurkotai-turf-highlights.jpeg"
                   alt="Pitch Perfect Turf Aerial View"
                   fill
                   priority
@@ -404,10 +404,10 @@ export function LandingPageClient({
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  "/1-apurkotai-turf-highlights.jpeg",
-                  "/2-apurkotai-turf-highlights.jpeg",
-                  "/3-apurkotai-turf-highlights.jpeg",
-                  "/4-apurkotai-turf-highlights.jpeg",
+                  "/highlights/1-apurkotai-turf-highlights.jpeg",
+                  "/highlights/2-apurkotai-turf-highlights.jpeg",
+                  "/highlights/3-apurkotai-turf-highlights.jpeg",
+                  "/highlights/4-apurkotai-turf-highlights.jpeg",
                 ].map((src, idx) => (
                   <Card key={src} className="overflow-hidden rounded-2xl p-0">
                     <div className="relative aspect-video w-full">

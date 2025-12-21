@@ -12,6 +12,7 @@ import { PhoneProvider } from "~/lib/phone-context";
 import { TopBar } from "~/components/top-bar";
 import { PwaRegister } from "~/components/pwa-register";
 import { Toaster } from "sonner";
+import { PHProvider } from "./providers";
 
 // Use runtime-configured base URL when available, otherwise fall back.
 const siteUrl = env.NEXT_PUBLIC_BASE_URL;
@@ -110,30 +111,32 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geist.variable} ${poppins.variable}`}
-      suppressHydrationWarning
+      suppressHydrationOnChange
     >
       <body className="bg-background text-foreground min-h-screen font-sans">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <LanguageProvider>
-            <PhoneProvider>
-              <BookingsProvider>
-                <TRPCReactProvider>
-                  <div className="bg-background mx-auto flex min-h-screen w-full max-w-md flex-col">
-                    <PwaRegister />
-                    <TopBar />
-                    <div className="flex-1 overflow-hidden">{children}</div>
-                  </div>
-                  <Toaster position="top-center" />
-                </TRPCReactProvider>
-              </BookingsProvider>
-            </PhoneProvider>
-          </LanguageProvider>
-        </ThemeProvider>
+        <PHProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <LanguageProvider>
+              <PhoneProvider>
+                <BookingsProvider>
+                  <TRPCReactProvider>
+                    <div className="bg-background mx-auto flex min-h-screen w-full max-w-md flex-col">
+                      <PwaRegister />
+                      <TopBar />
+                      <div className="flex-1 overflow-hidden">{children}</div>
+                    </div>
+                    <Toaster position="top-center" />
+                  </TRPCReactProvider>
+                </BookingsProvider>
+              </PhoneProvider>
+            </LanguageProvider>
+          </ThemeProvider>
+        </PHProvider>
       </body>
     </html>
   );

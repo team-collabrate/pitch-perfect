@@ -604,7 +604,7 @@ export default function BookingPage() {
         <h1 className="text-2xl font-semibold">{strings.title}</h1>
       </header>
 
-      <section className="space-y-4">
+      <section className="space-y-4 overflow-x-hidden">
         <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
           {strings.pickDate}
         </h2>

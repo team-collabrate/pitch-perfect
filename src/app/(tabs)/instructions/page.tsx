@@ -2,14 +2,14 @@
 
 import { useLanguage } from "~/lib/language-context";
 import { motion } from "framer-motion";
-import { 
-  Calendar, 
-  Clock, 
-  User, 
-  CreditCard, 
-  Ticket, 
-  Info, 
-  AlertCircle 
+import {
+  Calendar,
+  Clock,
+  User,
+  CreditCard,
+  Ticket,
+  Info,
+  AlertCircle,
 } from "lucide-react";
 
 export default function InstructionsPage() {
@@ -61,7 +61,10 @@ export default function InstructionsPage() {
         <ul className="space-y-3">
           {rules.map((rule, index) => (
             <li key={index} className="flex gap-3 text-sm">
-              <AlertCircle className="text-muted-foreground shrink-0" size={16} />
+              <AlertCircle
+                className="text-muted-foreground shrink-0"
+                size={16}
+              />
               <span>{rule}</span>
             </li>
           ))}

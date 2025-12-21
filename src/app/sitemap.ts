@@ -1,10 +1,9 @@
 import type { MetadataRoute } from "next";
 import { env } from "~/env";
 
-// Use the configured public base URL when available, otherwise fall back.
-const siteUrl = env.NEXT_PUBLIC_BASE_URL;
-
 export default function sitemap(): MetadataRoute.Sitemap {
+    const siteUrl = (env.NEXT_PUBLIC_BASE_URL ?? "https://pitchperfect.turf").replace(/\/$/, "");
+
     const pages = [
         "",
         "home",
@@ -16,9 +15,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ];
 
     return pages.map((p) => ({
-        url: `${siteUrl}/${p}`.replace(/([^:]\/)\/+/g, "$1"),
+        url: `${siteUrl}/${p}`.replace(/\/$/, ""),
         lastModified: new Date(),
-        changeFrequency: p === "" ? "daily" : "weekly",
+        changeFrequency: (p === "" ? "daily" : "weekly") as "daily" | "weekly",
         priority: p === "" ? 1 : 0.7,
     }));
 }

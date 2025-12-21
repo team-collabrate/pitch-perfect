@@ -16,22 +16,27 @@ import { Toaster } from "sonner";
 // Use runtime-configured base URL when available, otherwise fall back.
 const siteUrl = env.NEXT_PUBLIC_BASE_URL;
 const description =
-  "Mobile-first turf booking experience for Aruppukottai players.";
+  "Pitch Perfect Turf - The best football and cricket turf in Aruppukottai. Book your slots online for a premium playing experience.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Pitch Perfect Turf",
+    default: "Pitch Perfect Turf | Aruppukottai Turf Booking",
     template: "%s • Pitch Perfect Turf",
   },
   description,
   keywords: [
+    "Pitch Perfect Turf",
+    "arupokotai turf",
+    "Aruppukottai turf",
+    "turf booking Aruppukottai",
+    "football turf Aruppukottai",
+    "cricket turf Aruppukottai",
+    "sports ground Aruppukottai",
+    "Pitch Perfect",
     "turf booking",
     "football turf",
     "cricket practice",
-    "Aruppukottai",
-    "apurkotai turf",
-    "Pitch Perfect",
   ],
   authors: [{ name: "Pitch Perfect" }],
   creator: "Pitch Perfect",

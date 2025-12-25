@@ -26,11 +26,11 @@ export async function getManagerProfile() {
 export async function requireManager(options?: { superOnly?: boolean }) {
   const profile = await getManagerProfile();
   if (!profile) {
-    redirect("/admin");
+    redirect("/admin/login");
   }
 
   if (profile.manager.role === "staff") {
-    redirect("/admin");
+    redirect("/admin/login");
   }
 
   if (options?.superOnly && profile.manager.role !== "superAdmin") {

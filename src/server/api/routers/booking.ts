@@ -88,7 +88,7 @@ export const bookingRouter = createTRPCRouter({
                     }
 
                     // Check if slot exists in DB
-                    let dbSlot = await tx.query.timeSlots.findFirst({
+                    const dbSlot = await tx.query.timeSlots.findFirst({
                         where: and(
                             eq(timeSlots.date, date),
                             eq(timeSlots.from, from),
@@ -147,7 +147,7 @@ export const bookingRouter = createTRPCRouter({
                             })
                             .returning();
 
-                        if (!newSlot || newSlot.status !== "booked") {
+                        if (newSlot?.status !== "booked") {
                             throw new TRPCError({
                                 code: "CONFLICT",
                                 message: `Slot ${date} ${from}-${to} was just booked by someone else`,

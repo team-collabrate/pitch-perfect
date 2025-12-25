@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
         }
 
         const slots: typeof timeSlots.$inferInsert[] = [];
-        const slotsConfig = config.slots as SlotsConfigType;
+        const slotsConfig = config.slots;
         const availableSlots = slotsConfig.AvailableSlots ?? [];
         const avoidSlots = slotsConfig.avoidSlots ?? [];
         const daysInAdvance = slotsConfig.daysInAdvanceToCreateSlots ?? 3;

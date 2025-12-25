@@ -18,7 +18,7 @@ export class CloudinaryService {
         options?: Partial<UploadApiOptions>
     ): Promise<UploadApiResponse> {
         try {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+             
             const result = await cloudinary.uploader.upload(file, {
                 ...imageUploadOptions,
                 ...options,
@@ -42,7 +42,7 @@ export class CloudinaryService {
         options?: Partial<UploadApiOptions>
     ): Promise<UploadApiResponse> {
         try {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+             
             const result = await cloudinary.uploader.upload(file, {
                 ...videoUploadOptions,
                 ...options,
@@ -65,7 +65,7 @@ export class CloudinaryService {
         resourceType: "image" | "video" = "image"
     ): Promise<{ result: string }> {
         try {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             const result = await cloudinary.uploader.destroy(publicId, {
                 resource_type: resourceType,
             });

@@ -35,7 +35,7 @@ export function GalleryUploadForm({ onUploadSuccess }: GalleryUploadProps) {
     file: null as File | null,
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+   
   const createMutation = api.gallery.create.useMutation();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,7 +85,7 @@ export function GalleryUploadForm({ onUploadSuccess }: GalleryUploadProps) {
             (await uploadResponse.json()) as CloudinaryUploadResult;
 
           // Save to database via tRPC
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+           
           await createMutation.mutateAsync({
             title: formData.title || undefined,
             description: formData.description || undefined,

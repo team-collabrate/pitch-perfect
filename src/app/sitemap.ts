@@ -17,7 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     return pages.map((p) => ({
         url: `${siteUrl}/${p}`.replace(/\/$/, ""),
         lastModified: new Date(),
-        changeFrequency: (p === "" ? "daily" : "weekly") as "daily" | "weekly",
+        changeFrequency: (p === "" ? "daily" : "weekly"),
         priority: p === "" ? 1 : 0.7,
     }));
 }

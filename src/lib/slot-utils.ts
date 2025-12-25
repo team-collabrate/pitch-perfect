@@ -38,7 +38,7 @@ export function generateVirtualSlots(
       config.default ??
       ((config as any).AvailableSlots ? config : null);
 
-    if (!dayConfig || !dayConfig.AvailableSlots) {
+    if (!dayConfig?.AvailableSlots) {
       continue;
     }
 
@@ -134,7 +134,7 @@ export function validateSlotAgainstConfig(
     config.default ??
     ((config as any).AvailableSlots ? config : null);
 
-  if (!dayConfig || !dayConfig.AvailableSlots) return false;
+  if (!dayConfig?.AvailableSlots) return false;
 
   return dayConfig.AvailableSlots.some(
     (slot) =>
@@ -157,7 +157,7 @@ export function createSlotFromConfig(
     config.default ??
     ((config as any).AvailableSlots ? config : null);
 
-  if (!dayConfig || !dayConfig.AvailableSlots) {
+  if (!dayConfig?.AvailableSlots) {
     throw new Error(`No configuration found for ${date}`);
   }
 

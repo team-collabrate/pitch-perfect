@@ -54,6 +54,10 @@ export function LandingPageClient({
     () => allTranslations.gallery[language],
     [language],
   );
+  const landingStrings = useMemo(
+    () => allTranslations.landing[language],
+    [language],
+  );
 
   const galleryPreview = useMemo(() => {
     const items = galleryItems.slice(0, 6);
@@ -71,27 +75,27 @@ export function LandingPageClient({
   const featureCards = useMemo(
     () => [
       {
-        title: "Fast booking",
-        desc: "Pick a slot and confirm in minutes.",
+        title: landingStrings.fastBooking,
+        desc: landingStrings.fastBookingDesc,
         Icon: CalendarCheck,
       },
       {
-        title: "Instant ticket",
-        desc: "Get a booking ticket after confirmation.",
+        title: landingStrings.instantTicket,
+        desc: landingStrings.instantTicketDesc,
         Icon: Ticket,
       },
       {
-        title: "Clear timings",
-        desc: "See available time ranges for each day.",
+        title: landingStrings.clearTimings,
+        desc: landingStrings.clearTimingsDesc,
         Icon: Timer,
       },
       {
-        title: "Trusted support",
-        desc: "Call or WhatsApp us for help.",
+        title: landingStrings.trustedSupport,
+        desc: landingStrings.trustedSupportDesc,
         Icon: ShieldCheck,
       },
     ],
-    [],
+    [landingStrings],
   );
 
   return (
@@ -100,16 +104,14 @@ export function LandingPageClient({
         <div className="space-y-10">
           <header className="space-y-4">
             <p className="text-muted-foreground text-xs tracking-wide uppercase">
-              {contactStrings.subtitle}
+              {landingStrings.subtitle}
             </p>
             <div className="space-y-2">
               <h1 className="bbh-hegarty-regular text-2xl tracking-[0.08em] uppercase">
-                Pitch Perfect Turf
+                {landingStrings.title}
               </h1>
               <p className="text-muted-foreground text-sm">
-                {
-                  "Book your turf slot, view tickets, explore the gallery, and get directions—all in one place."
-                }
+                {landingStrings.description}
               </p>
             </div>
 
@@ -138,7 +140,7 @@ export function LandingPageClient({
               <div className="relative h-36 w-full">
                 <Image
                   src="/highlights/1-apurkotai-turf-highlights.jpeg"
-                  alt="Pitch Perfect Turf Aerial View"
+                  alt={landingStrings.title}
                   fill
                   priority
                   className="object-cover"
@@ -148,7 +150,7 @@ export function LandingPageClient({
                   <div className="bg-background/85 border-border/60 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs">
                     <Sparkles className="text-primary h-3.5 w-3.5" />
                     <span className="text-muted-foreground">
-                      {"Aruppukottai • Tamil Nadu"}
+                      {landingStrings.location}
                     </span>
                   </div>
                 </div>
@@ -158,7 +160,7 @@ export function LandingPageClient({
             <div className="flex items-center justify-between">
               <Button asChild variant="link" className="px-0">
                 <Link href="/home" className="flex items-center gap-1">
-                  {"Open app"} <ArrowUpRight className="h-4 w-4" />
+                  {landingStrings.openApp} <ArrowUpRight className="h-4 w-4" />
                 </Link>
               </Button>
               <div className="flex items-center gap-2">
@@ -188,9 +190,11 @@ export function LandingPageClient({
 
           <section className="space-y-3">
             <div className="flex items-end justify-between">
-              <h2 className="text-lg font-semibold">{"Features"}</h2>
+              <h2 className="text-lg font-semibold">
+                {landingStrings.features}
+              </h2>
               <p className="text-muted-foreground text-xs">
-                {"Simple • Mobile-first"}
+                {landingStrings.featuresSub}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -212,7 +216,9 @@ export function LandingPageClient({
 
           <section className="space-y-3">
             <div className="flex items-end justify-between">
-              <h2 className="text-lg font-semibold">{"Details"}</h2>
+              <h2 className="text-lg font-semibold">
+                {landingStrings.details}
+              </h2>
               <Button asChild variant="link" className="px-0">
                 <Link
                   href={mapUrl}
@@ -220,7 +226,8 @@ export function LandingPageClient({
                   rel="noreferrer"
                   className="flex items-center gap-1"
                 >
-                  {"Directions"} <ArrowUpRight className="h-4 w-4" />
+                  {landingStrings.directions}{" "}
+                  <ArrowUpRight className="h-4 w-4" />
                 </Link>
               </Button>
             </div>
@@ -233,12 +240,10 @@ export function LandingPageClient({
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-foreground text-sm font-semibold">
-                      {"Address"}
+                      {landingStrings.address}
                     </p>
                     <p className="text-muted-foreground mt-1 text-sm">
-                      {
-                        "12/4A, Pitch Perfect Turf, Aruppukottai Main Road, Tamil Nadu."
-                      }
+                      {landingStrings.addressText}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Button
@@ -254,7 +259,7 @@ export function LandingPageClient({
                           className="flex items-center gap-2"
                         >
                           <MapPin className="h-4 w-4" />
-                          {"Open Maps"}
+                          {landingStrings.openMaps}
                         </Link>
                       </Button>
                       <Button
@@ -267,7 +272,8 @@ export function LandingPageClient({
                           href="/contact"
                           className="flex items-center gap-2"
                         >
-                          {"More"} <ArrowUpRight className="h-4 w-4" />
+                          {landingStrings.more}{" "}
+                          <ArrowUpRight className="h-4 w-4" />
                         </Link>
                       </Button>
                     </div>
@@ -280,7 +286,7 @@ export function LandingPageClient({
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-foreground text-sm font-semibold">
-                      {"Call / WhatsApp"}
+                      {landingStrings.callWhatsApp}
                     </p>
                     <p className="text-muted-foreground mt-1 text-sm">
                       {contactStrings.frontDesk} {"•"} {"+91 73588 48765"}
@@ -292,7 +298,7 @@ export function LandingPageClient({
                           className="flex items-center justify-center gap-2"
                         >
                           <Phone className="h-4 w-4" />
-                          {"Call"}
+                          {landingStrings.call}
                         </Link>
                       </Button>
                       <Button
@@ -308,7 +314,7 @@ export function LandingPageClient({
                           className="flex items-center justify-center gap-2"
                         >
                           <WhatsAppIcon className="h-5 w-5" />
-                          {"WhatsApp"}
+                          {landingStrings.whatsApp}
                         </Link>
                       </Button>
                     </div>
@@ -321,7 +327,7 @@ export function LandingPageClient({
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-foreground text-sm font-semibold">
-                      {"Email"}
+                      {landingStrings.email}
                     </p>
                     <Link
                       href={`mailto:${supportEmail}`}
@@ -340,7 +346,7 @@ export function LandingPageClient({
                           href={`mailto:${supportEmail}`}
                           className="flex items-center justify-center gap-2"
                         >
-                          {"Send mail"}
+                          {landingStrings.sendMail}
                         </Link>
                       </Button>
                       <Button
@@ -356,7 +362,7 @@ export function LandingPageClient({
                           className="flex items-center justify-center gap-2"
                         >
                           <Instagram className="h-4 w-4" />
-                          {"Instagram"}
+                          {landingStrings.instagram}
                         </Link>
                       </Button>
                     </div>
@@ -393,7 +399,7 @@ export function LandingPageClient({
                       {item.mediaType === "video" ? (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/25">
                           <span className="bg-background/85 text-muted-foreground rounded-full px-2 py-1 text-[10px]">
-                            {"Video"}
+                            {landingStrings.video}
                           </span>
                         </div>
                       ) : null}
@@ -442,7 +448,7 @@ export function LandingPageClient({
                   className="flex items-center justify-center gap-2"
                 >
                   <WhatsAppIcon className="h-5 w-5" />
-                  {"WhatsApp"}
+                  {landingStrings.whatsApp}
                 </Link>
               </Button>
               <Button asChild variant="outline" className="rounded-full">
@@ -453,7 +459,7 @@ export function LandingPageClient({
                   className="flex items-center justify-center gap-2"
                 >
                   <Instagram className="h-4 w-4" />
-                  {"Instagram"}
+                  {landingStrings.instagram}
                 </Link>
               </Button>
             </div>
@@ -464,7 +470,7 @@ export function LandingPageClient({
                 className="flex items-center justify-center gap-2"
               >
                 <Phone className="h-4 w-4" />
-                {"Open contact page"}
+                {landingStrings.openContactPage}
               </Link>
             </Button>
           </section>

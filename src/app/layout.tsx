@@ -113,6 +113,12 @@ export default function RootLayout({
       className={`${geist.variable} ${poppins.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        <link
+          rel="canonical"
+          href={siteUrl.replace(/\/$/, "")}
+        />
+      </head>
       <body className="bg-background text-foreground min-h-screen font-sans">
         <PHProvider>
           <ThemeProvider

@@ -114,10 +114,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <link
-          rel="canonical"
-          href={siteUrl.replace(/\/$/, "")}
-        />
+        <link rel="canonical" href={siteUrl.replace(/\/$/, "")} />
       </head>
       <body className="bg-background text-foreground min-h-screen font-sans">
         <PHProvider>

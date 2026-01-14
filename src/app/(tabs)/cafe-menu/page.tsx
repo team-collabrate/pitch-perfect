@@ -196,7 +196,7 @@ export default function CafeMenuPage() {
                 {items.map((item, itemIdx) => (
                   <Card
                     key={`${category}-${itemIdx}`}
-                    className="bg-secondary/10 overflow-hidden border-none shadow-none py-2"
+                    className="bg-secondary/10 overflow-hidden border-none py-2 shadow-none"
                   >
                     <CardContent className="flex items-center justify-between">
                       <div className="flex flex-col gap-0.5">

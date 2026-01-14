@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import {
   CalendarCheck,
+  Coffee,
   GalleryHorizontal,
   Home,
   Phone,
@@ -50,9 +51,23 @@ export function BottomNav() {
   const { language } = useLanguage();
   const strings = useMemo(() => allTranslations.nav[language], [language]);
 
+  const hideButton =
+    pathname.startsWith("/book") || pathname.startsWith("/cafe-menu");
+
   return (
     <nav className="border-border/60 bg-background/90 fixed right-0 bottom-0 left-0 z-50 border-t backdrop-blur-lg">
-      <div className="mx-auto flex max-w-md justify-between px-6 py-3 text-xs font-medium tracking-wide uppercase">
+      <div className="relative mx-auto flex max-w-md justify-between px-6 py-3 text-xs font-medium tracking-wide uppercase">
+        {!hideButton && (
+          <div className="absolute -top-16 right-4">
+            <Link
+              href="/cafe-menu"
+              className="bg-primary hover:bg-primary/90 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-colors"
+            >
+              <Coffee className="text-primary-foreground h-6 w-6" />
+            </Link>
+          </div>
+        )}
+
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (

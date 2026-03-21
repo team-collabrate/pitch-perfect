@@ -2,7 +2,15 @@
 
 import { useLanguage } from "~/lib/language-context";
 import { motion } from "framer-motion";
-import { Target, Eye, MapPin, CheckCircle2 } from "lucide-react";
+import {
+  Target,
+  Eye,
+  MapPin,
+  CheckCircle2,
+  Building2,
+  User,
+  Award,
+} from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { FooterBranding } from "~/components/footer-branding";
 
@@ -11,7 +19,7 @@ const s = {
     title: "About Us",
     subtitle: "Who we are",
     description:
-      "Welcome to Pitch Perfect, the premier sports turf booking destination in the city. We provide world-class turf facilities for cricket and football enthusiasts who demand the best playing experience.",
+      "Welcome to Pitch Perfect Turf, the premier sports turf booking destination in Virudhunagar. We provide world-class turf facilities for cricket and football enthusiasts who demand the best playing experience.",
     missionTitle: "Our Mission",
     missionDesc:
       "To provide accessible, high-quality sports facilities that bring people together through the love of the game.",
@@ -25,7 +33,16 @@ const s = {
     feature4: "Easy Online Booking",
     facilityTitle: "Our Facility",
     facilityDesc:
-      "Located in the heart of the city, our turf campus features well-maintained grounds, modern amenities, and a café for refreshments. Whether you're a professional athlete or just starting out, we have the perfect slot for you.",
+      "Located in Chockalingampuram on Madurai–Tuticorin Highway, Aruppukottai, our turf campus features well-maintained grounds, modern amenities, and a café for refreshments. Whether you're a professional athlete or just starting out, we have the perfect slot for you.",
+    historyTitle: "Our Story",
+    historyDesc:
+      "Founded in May 2024, Pitch Perfect Turf was established with a vision to bring professional-grade sports facilities to our community. What started as a dream to provide quality playing spaces has grown into a trusted destination for sports enthusiasts across Virudhunagar district.",
+    founderTitle: "Our Founder",
+    founderDesc:
+      "Led by Prahadhi S, our founder envisioned creating a space where players of all skill levels could enjoy the game they love on premium turf facilities. With a commitment to quality and customer satisfaction, we continue to grow and serve our community.",
+    udyamTitle: "Registered MSME",
+    udyamDesc:
+      "Pitch Perfect Turf is a registered Micro Enterprise under Udyam Registration No. UDYAM-TN-32-0068371, committed to quality service and transparent business practices.",
   },
   ta: {
     title: "எங்களைப் பற்றி",
@@ -154,6 +171,63 @@ export default function AboutPage() {
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
               {s.en.facilityDesc}
+            </p>
+          </div>
+        </Card>
+      </motion.section>
+
+      <motion.section
+        className="space-y-3"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.35 }}
+      >
+        <h2 className="text-lg font-semibold">{s.en.historyTitle}</h2>
+        <Card className="p-6">
+          <div className="flex items-start gap-3">
+            <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+              <Building2 className="h-5 w-5" />
+            </div>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              {s.en.historyDesc}
+            </p>
+          </div>
+        </Card>
+      </motion.section>
+
+      <motion.section
+        className="space-y-3"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.4 }}
+      >
+        <h2 className="text-lg font-semibold">{s.en.founderTitle}</h2>
+        <Card className="p-6">
+          <div className="flex items-start gap-3">
+            <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+              <User className="h-5 w-5" />
+            </div>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              {s.en.founderDesc}
+            </p>
+          </div>
+        </Card>
+      </motion.section>
+
+      <motion.section
+        className="space-y-3"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.45 }}
+      >
+        <h2 className="text-lg font-semibold">{s.en.udyamTitle}</h2>
+        <Card className="p-6">
+          <div className="flex items-start gap-3">
+            <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+              <Award className="h-5 w-5" />
+            </div>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              {s.en.udyamDesc}
             </p>
           </div>
         </Card>

@@ -10,6 +10,7 @@ import {
   Clock,
   Phone,
   Mail,
+  Copyright,
 } from "lucide-react";
 import Link from "next/link";
 import { WhatsAppIcon } from "~/components/ui/whatsapp-icon";
@@ -21,10 +22,10 @@ const s = {
     title: "Terms and Conditions",
     subtitle: "Please read carefully",
     intro:
-      "Welcome to Pitch Perfect. By accessing and using our mobile application and services, you agree to be bound by these Terms and Conditions.",
+      "Welcome to Pitch Perfect Turf. By accessing and using our mobile application and services, you agree to be bound by these Terms and Conditions.",
     acceptanceTitle: "Acceptance of Terms",
     acceptanceDesc:
-      "By downloading, installing, or using the Pitch Perfect app, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.",
+      "By downloading, installing, or using the Pitch Perfect Turf app, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.",
     bookingTitle: "Booking Terms",
     bookingDesc:
       "All bookings are subject to availability. A booking is confirmed only after successful payment. You agree to provide accurate and complete information during the booking process.",
@@ -39,7 +40,10 @@ const s = {
       "Users must conduct themselves in a respectful manner. Any form of abuse, harassment, or violation of facility rules will result in immediate termination of booking without refund.",
     liabilityTitle: "Limitation of Liability",
     liabilityDesc:
-      "Pitch Perfect shall not be liable for any indirect, incidental, or consequential damages arising out of the use of our services.",
+      "Pitch Perfect Turf shall not be liable for any indirect, incidental, or consequential damages arising out of the use of our services.",
+    ipTitle: "Intellectual Property",
+    ipDesc:
+      "All content, logos, designs, and materials on our app and website are the intellectual property of Pitch Perfect Turf. Unauthorized reproduction, distribution, or use of these materials is strictly prohibited and may result in legal action.",
     changesTitle: "Changes to Terms",
     changesDesc:
       "We reserve the right to modify these terms at any time. Continued use of the app after changes constitutes acceptance of the new terms.",
@@ -89,6 +93,7 @@ const sections = [
   { icon: Shield, key: "cancellation" },
   { icon: Gavel, key: "conduct" },
   { icon: Shield, key: "liability" },
+  { icon: Copyright, key: "ip" },
   { icon: Clock, key: "changes" },
 ];
 

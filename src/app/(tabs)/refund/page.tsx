@@ -20,7 +20,7 @@ const s = {
     title: "Refund & Cancellation Policy",
     subtitle: "Our refund terms",
     intro:
-      "At Pitch Perfect, we strive to provide the best possible service. This policy outlines our refund and cancellation terms.",
+      "At Pitch Perfect Turf, we strive to provide the best possible service. This policy outlines our refund and cancellation terms.",
     cancellationTitle: "Cancellation Terms",
     cancellationDesc:
       "You may cancel your booking at least 24 hours before your scheduled slot time to receive a full refund.",

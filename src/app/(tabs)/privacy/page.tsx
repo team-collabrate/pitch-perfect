@@ -1,7 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Shield, Database, Share2, Lock, Phone, Mail } from "lucide-react";
+import {
+  Shield,
+  Database,
+  Share2,
+  Lock,
+  Phone,
+  Mail,
+  User,
+  Clock,
+} from "lucide-react";
 import Link from "next/link";
 import { WhatsAppIcon } from "~/components/ui/whatsapp-icon";
 import { Card } from "~/components/ui/card";
@@ -12,7 +21,7 @@ const s = {
     title: "Privacy Policy",
     subtitle: "Your privacy matters",
     intro:
-      "At Pitch Perfect, we are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclosure, and safeguard your information.",
+      "At Pitch Perfect Turf, we are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclosure, and safeguard your information.",
     collectionTitle: "Information We Collect",
     collectionDesc:
       "We collect personal information that you voluntarily provide to us when you register on the app, express an interest in obtaining information about us or our products and services, when you participate in activities on the app, or otherwise when you contact us.",
@@ -25,6 +34,12 @@ const s = {
     securityTitle: "How We Protect Your Information",
     securityDesc:
       "We have implemented appropriate technical and organizational security measures designed to protect the security of any personal information we process.",
+    rightsTitle: "Your Rights",
+    rightsDesc:
+      "You have the right to access, correct, or delete your personal information. You may also request restriction of processing or object to processing of your personal data. To exercise these rights, please contact us.",
+    changesTitle: "Changes to This Policy",
+    changesDesc:
+      "We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy on this page. You are advised to review this Privacy Policy periodically for any changes.",
     contactTitle: "Contact Us",
     contactDesc:
       "If you have questions or comments about this policy, you may email us at support@pitchperfectapk.com.",
@@ -39,7 +54,7 @@ const s = {
     title: "தனியுரிமைக் கொள்கை",
     subtitle: "உங்கள் தனியுரிமை முக்கியம்",
     intro:
-      "பிட்ச் பெர்பெக்டில், உங்கள் தனிப்பட்ட தகவலைப் பாதுகாப்பதற்கும் உங்கள் தனியுரிமை உரிமையைப் பாதுகாப்பதற்கும் நாங்கள் அர்ப்பணித்துள்ளோம்.",
+      "பிட்ச் பெர்பெக்ட் டர்ப்பில், உங்கள் தனிப்பட்ட தகவலைப் பாதுகாப்பதற்கும் உங்கள் தனியுரிமை உரிமையைப் பாதுகாப்பதற்கும் நாங்கள் அர்ப்பணித்துள்ளோம்.",
     collectionTitle: "நாங்கள் சேகரித்த தகவல்",
     collectionDesc:
       "நீங்கள் பதிவு செய்யும்போது,எங்கள் பற்றி அல்லது எங்கள் தயாரிப்புகள் மற்றும் சேவைகள் பற்றி தகவல் பெற தெரிவித்தும்போது, பயன்பாட்டில் நடவடிக்கைகளில் பங்கேர்க்கும்போது, அல்லதுநீங்கள் எங்களைத் தொடர்புக்கொள்ளும்போது உங்கள் விருப்பத்தின் பேரில் வழங்கும் தனிப்பட்ட தகவலை நாங்கள் சேகரிக்கிறோம்.",
@@ -52,6 +67,12 @@ const s = {
     securityTitle: "உங்கள் தகவலை எவ்வாறு பாதுகாக்கிறோம்",
     securityDesc:
       "நாங்கள் செயலாக்கம் செய்யக்கூடிய தனிப்பட்ட தகவல்களின் பாதுகாப்பைப் பாதுகாப்பதற்கு பொருத்தமான தொழில் நுட்ப மற்றும் நிறுவன பாதுகாப்பு நடவடிக்கைகளை செயலாக்கியுள்ளோம்.",
+    rightsTitle: "உங்கள் உரிமைகள்",
+    rightsDesc:
+      "உங்கள் தனிப்பட்ட தகவலை அணுக, சரி செய்ய அல்லது நீக்க உங்களுக்கு உரிமை உள்ளது. உங்கள் தனிப்பட்ட தகவலின் செயலாக்கத்தைக் கோரவோ எதிர்க்கவோ நீங்கள் கோரலாம். இந்த உரிமைகளைச் செலுத்த, தயவுசெய்து எங்களைத் தொடர்புக்கொள்ளவும்.",
+    changesTitle: "இந்தக் கொள்கையில் மாற்றங்கள்",
+    changesDesc:
+      "இந்தத் தனியுரிமைக் கொள்கையை நாங்கள் времяம் தோறும் புதுப்பிக்கலாம். மாற்றங்களை இந்தப் பக்கத்தில் பதிவிடுவதன் மூலம் உங்களுக்குத் தெரிவிப்போம்.எந்த மாற்றங்களுக்கும் இந்தத் தனியுரிமைக் கொள்கையைக் கூடுதலாகப் படிக்க உங்களைக் கேட்டுக்கொள்கிறோம்.",
     contactTitle: "எங்களைத் தொடர்புக்கொள்ள",
     contactDesc:
       "இந்தக் கொள்கை பற்றி கேள்விகள் அல்லது கருத்துகள் இருந்தால், நீங்கள் support@pitchperfectapk.comஇல் மின்னஞ்சல் அனுப்பலாம்.",
@@ -63,6 +84,8 @@ const sections = [
   { icon: Share2, key: "usage" },
   { icon: Share2, key: "sharing" },
   { icon: Lock, key: "security" },
+  { icon: User, key: "rights" },
+  { icon: Clock, key: "changes" },
 ];
 
 export default function PrivacyPage() {

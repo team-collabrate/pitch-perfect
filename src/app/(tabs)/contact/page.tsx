@@ -113,6 +113,12 @@ export default function ContactPage() {
             {strings.emailAddress}
           </Link>
         </div>
+        <div className="space-y-2 text-sm">
+          <p className="text-foreground font-semibold">
+            {strings.addressLabel}
+          </p>
+          <p className="text-muted-foreground">{strings.address}</p>
+        </div>
         {/* <div className="space-y-2 text-sm">
           <p className="text-foreground font-semibold">Business hours</p>
           <p className="text-muted-foreground">

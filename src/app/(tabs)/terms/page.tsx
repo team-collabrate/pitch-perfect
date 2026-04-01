@@ -78,7 +78,7 @@ const s = {
     whatsappCTA: "Chat on WhatsApp",
     addressLabel: "Address",
     address:
-      "12/4A, Pitch Perfect Turf, Aruppukottai Main Road, Chockalingampuram, Nethaji Road, Aruppukottai, Virudhunagar, Tamil Nadu - 626101",
+      "Madurai–Tuticorin Highway, Chockalingampuram, Nethaji Road, Aruppukottai, Virudhunagar, Tamil Nadu – 626101",
     acceptance:
       "By using our website, you confirm that you have read, understood, and agreed to these Terms & Conditions.",
   },

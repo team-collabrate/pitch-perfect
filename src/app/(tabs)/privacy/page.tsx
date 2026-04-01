@@ -45,7 +45,7 @@ const s = {
       "We do not sell or rent your personal data. However, we may share your information in the following cases:\na) Service Providers\n\nTrusted third parties (such as payment gateways, booking management tools) to complete your bookings.\nb) Legal Requirements\n\nIf required by law or to protect our legal rights and prevent fraud.",
     rightsTitle: "6. Your Rights and Choices",
     rightsDesc:
-      "You have the right to:\n\n• Access or update your personal data\n• Request deletion of your data\n• Opt out of marketing emails anytime\n• Withdraw consent for data usage\n\nTo exercise these rights, contact us at: a2zsmart2025@gmail.com",
+      "You have the right to:\n\n• Access or update your personal data\n• Request deletion of your data\n• Opt out of marketing emails anytime\n• Withdraw consent for data usage\n\nTo exercise these rights, contact us at: support@pitchperfectapk.com",
     thirdPartyTitle: "7. Third-Party Links",
     thirdPartyDesc:
       "Our website may include links to third-party websites. We are not responsible for their privacy practices. We recommend reviewing their policies before sharing any personal information.",

@@ -40,6 +40,15 @@ const config = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/about-us",
+        destination: "/about",
+        permanent: true,
+      },
+    ];
+  },
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
 };

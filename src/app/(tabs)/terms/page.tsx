@@ -49,10 +49,10 @@ const s = {
       "We accept multiple payment methods including: Credit/Debit Cards, UPI, Net Banking, Cash on Delivery (COD) (if available). Additional charges may apply for COD orders.",
     shippingTitle: "Shipping",
     shippingDesc:
-      "We offer shipping across India. Estimated delivery timelines are mentioned on product pages but may vary due to: Courier delays; Weather conditions; Public holidays or unforeseen circumstances.",
+      "We offer shipping across India. Estimated delivery timelines are mentioned on product pages but may vary due to:\n• Courier delays\n• Weather conditions\n• Public holidays or unforeseen circumstances.",
     returnsTitle: "Returns and Refunds",
     returnsDesc:
-      "Please refer to our Return & Refund Policy page for complete details regarding eligibility, process, and timelines.",
+      "We want you to be completely satisfied with your purchase. If you're not happy with your order, you may return it within 7 days of delivery under the following conditions:\n\n• The product must be unused and in original packaging\n• You must have the original receipt or proof of purchase\n• Return shipping charges will be borne by the customer\n\nRefunds will be processed within 5-7 business days after we receive and inspect the returned item.\n\nExceptions:\n• Personal hygiene products cannot be returned once opened\n• Customized or personalized items are not eligible for return\n• Damaged items must be reported within 24 hours of delivery",
     useTitle: "Use of Website",
     useDesc:
       "You agree not to misuse the website. Prohibited activities include: Hacking or unauthorized access; Spreading malware or viruses; Spamming or fraudulent activity. Violation may result in termination of access and legal action.",

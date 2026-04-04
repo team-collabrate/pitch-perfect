@@ -104,8 +104,3 @@ export const env = createEnv({
    */
   emptyStringAsUndefined: true,
 });
-
-console.log("[env]", {
-  NODE_ENV: env.NODE_ENV,
-  PAYTM_MODE: env.PAYTM_MODE,
-});

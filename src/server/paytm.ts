@@ -4,6 +4,11 @@ import PaytmChecksum from "paytmchecksum";
 
 import { env } from "~/env";
 
+console.log("[paytm]", {
+  NODE_ENV: env.NODE_ENV,
+  PAYTM_MODE: env.PAYTM_MODE,
+});
+
 export type PaytmInitiateResponse = {
   txnToken: string;
   orderId: string;

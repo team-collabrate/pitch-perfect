@@ -12,6 +12,17 @@ const redirectToBooking = (orderId: string, payment: "success" | "failed") =>
     ),
   );
 
+const redirectWithState = (
+  orderId: string,
+  payment: "success" | "failed" | "pending" | "cancelled" | "unknown",
+) =>
+  NextResponse.redirect(
+    new URL(
+      `/book?payment=${payment}&orderId=${orderId}`,
+      env.NEXT_PUBLIC_BASE_URL,
+    ),
+  );
+
 const toRecord = (formData: FormData) => {
   const entries = Array.from(formData.entries());
   return Object.fromEntries(
@@ -37,22 +48,40 @@ export async function POST(request: Request) {
 
   const status = payload.STATUS ?? payload.resultStatus ?? payload.RESPCODE;
   const transactionId = payload.TXNID ?? payload.BANKTXNID ?? payload.txnId;
-  const success =
-    status === "TXN_SUCCESS" || status === "S" || payload.RESPCODE === "01";
+  const normalizedStatus = (status ?? "").toUpperCase();
+  const isSuccess =
+    normalizedStatus === "TXN_SUCCESS" ||
+    normalizedStatus === "S" ||
+    payload.RESPCODE === "01";
+  const isPending =
+    normalizedStatus.includes("PENDING") ||
+    normalizedStatus.includes("IN_PROCESS") ||
+    normalizedStatus === "TXN_PENDING";
+  const isCancelled =
+    normalizedStatus.includes("CANCEL") || normalizedStatus === "TXN_CANCELLED";
+  const paymentState = isSuccess
+    ? "success"
+    : isPending
+      ? "pending"
+      : isCancelled
+        ? "cancelled"
+        : "failed";
 
   try {
-    await finalizePaymentOrder({
-      orderId,
-      success,
-      transactionId,
-      paymentStatus: status,
-    });
+    if (paymentState === "success" || paymentState === "failed") {
+      await finalizePaymentOrder({
+        orderId,
+        success: paymentState === "success",
+        transactionId,
+        paymentStatus: status,
+      });
+    }
   } catch (error) {
     console.error("Failed to finalize Paytm payment", error);
-    return redirectToBooking(orderId, "failed");
+    return redirectWithState(orderId, "failed");
   }
 
-  return redirectToBooking(orderId, success ? "success" : "failed");
+  return redirectWithState(orderId, paymentState);
 }
 
 export async function GET() {

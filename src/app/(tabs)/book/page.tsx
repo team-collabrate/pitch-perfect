@@ -232,7 +232,7 @@ export default function BookingPage() {
   } | null>(null);
   const restoredPaymentOrderRef = useRef<string | null>(null);
   const [paymentQuery, setPaymentQuery] = useState<{
-    payment: string | null;
+    payment: "success" | "failed" | "pending" | "cancelled" | "unknown" | null;
     orderId: string | null;
   }>({ payment: null, orderId: null });
 
@@ -243,8 +243,16 @@ export default function BookingPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const rawPayment = (params.get("payment") ?? "").toLowerCase();
+    const payment = (
+      ["success", "failed", "pending", "cancelled", "unknown"].includes(
+        rawPayment,
+      )
+        ? rawPayment
+        : null
+    ) as typeof paymentQuery.payment;
     setPaymentQuery({
-      payment: params.get("payment"),
+      payment,
       orderId: params.get("orderId"),
     });
   }, []);
@@ -302,9 +310,23 @@ export default function BookingPage() {
   );
 
   useEffect(() => {
-    if (paymentStatus !== "failed") return;
+    if (paymentStatus !== "failed" && paymentStatus !== "cancelled") return;
     toast.error(strings.bookingFailed);
+    setConfirmation([]);
+    setSelectedSlots([]);
+    setBookingType(new Set());
+    setPaymentOption("");
   }, [paymentStatus, strings.bookingFailed]);
+
+  useEffect(() => {
+    if (paymentStatus !== "pending") return;
+    toast.info("Payment is still pending. Please wait a moment.");
+  }, [paymentStatus]);
+
+  useEffect(() => {
+    if (paymentStatus !== "unknown") return;
+    toast.info("Payment status received.");
+  }, [paymentStatus]);
 
   useEffect(() => {
     if (paymentStatus !== "success" || !paymentOrder) return;
@@ -355,6 +377,18 @@ export default function BookingPage() {
     });
     fireSideCannons();
   }, [paymentStatus, paymentOrder, addBooking]);
+
+  useEffect(() => {
+    if (paymentStatus !== "failed" && paymentStatus !== "cancelled") return;
+    if (!paymentOrderId) return;
+
+    const timer = setTimeout(() => {
+      window.history.replaceState({}, "", "/book");
+      setPaymentQuery({ payment: null, orderId: null });
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [paymentStatus, paymentOrderId]);
 
   const bookingCountForCoupons = customerBookings.length;
 
@@ -655,6 +689,41 @@ export default function BookingPage() {
     }
   }, [confirmation, renderToPng]);
 
+  const paymentBanner =
+    paymentStatus === "success"
+      ? {
+          title: "Payment successful",
+          body: "Your booking has been confirmed.",
+          className: "border-green-500/30 bg-green-500/10 text-green-700",
+        }
+      : paymentStatus === "pending"
+        ? {
+            title: "Payment pending",
+            body: "We are waiting for Paytm to confirm this transaction.",
+            className: "border-amber-500/30 bg-amber-500/10 text-amber-700",
+          }
+        : paymentStatus === "cancelled"
+          ? {
+              title: "Payment cancelled",
+              body: "The transaction was cancelled before completion.",
+              className:
+                "border-orange-500/30 bg-orange-500/10 text-orange-700",
+            }
+          : paymentStatus === "failed"
+            ? {
+                title: "Payment failed",
+                body: "No booking was completed. Please try again.",
+                className: "border-red-500/30 bg-red-500/10 text-red-700",
+              }
+            : paymentStatus === "unknown"
+              ? {
+                  title: "Payment update received",
+                  body: "We could not classify the final payment state.",
+                  className:
+                    "border-slate-500/30 bg-slate-500/10 text-slate-700",
+                }
+              : null;
+
   return (
     <motion.div
       className="space-y-8"
@@ -668,6 +737,15 @@ export default function BookingPage() {
         </p>
         <h1 className="text-2xl font-semibold">{strings.title}</h1>
       </header>
+
+      {paymentBanner && (
+        <Card className={cn("rounded-3xl border p-4", paymentBanner.className)}>
+          <div className="space-y-1">
+            <p className="text-sm font-semibold">{paymentBanner.title}</p>
+            <p className="text-sm opacity-90">{paymentBanner.body}</p>
+          </div>
+        </Card>
+      )}
 
       <section className="space-y-4 overflow-x-hidden">
         <h2 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">

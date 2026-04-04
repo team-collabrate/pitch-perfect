@@ -1,5 +1,7 @@
 import { Loader } from "lucide-react";
 
-export function Spinner() {
-  return <Loader className="h-6 w-6 animate-spin" />;
+import { cn } from "~/lib/utils";
+
+export function Spinner({ className }: { className?: string }) {
+  return <Loader className={cn("h-6 w-6 animate-spin", className)} />;
 }

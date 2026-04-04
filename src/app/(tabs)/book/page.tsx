@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Pencil, CalendarX } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -191,6 +192,7 @@ export default function BookingPage() {
   const { language } = useLanguage();
   const { phoneNumber: storedPhone, setPhoneNumber: setStoredPhone } =
     usePhone();
+  const searchParams = useSearchParams();
   const utils = api.useUtils();
   const strings = useMemo(() => allTranslations.book[language], [language]);
   const customerContactsSchema = useMemo(
@@ -230,11 +232,15 @@ export default function BookingPage() {
     discount: number;
     finalAmount: number;
   } | null>(null);
+  const restoredPaymentOrderRef = useRef<string | null>(null);
 
   // Hydration effect
   useEffect(() => {
     setIsHydrated(true);
   }, []);
+
+  const paymentStatus = searchParams.get("payment");
+  const paymentOrderId = searchParams.get("orderId");
 
   // Fetch customer data when stored phone exists
   const { data: existingCustomer, isLoading: isLoadingCustomer } =
@@ -245,7 +251,11 @@ export default function BookingPage() {
 
   // Mutations
   const upsertCustomer = api.customer.upsert.useMutation();
-  const bookSlots = api.booking.book.useMutation();
+  const initiatePayment = api.booking.initiatePayment.useMutation();
+  const { data: paymentOrder } = api.booking.getPaymentOrder.useQuery(
+    { orderId: paymentOrderId ?? "" },
+    { enabled: paymentStatus === "success" && !!paymentOrderId },
+  );
 
   const slotFullAmount = selectedSlots[0]?.fullAmount ?? 80000;
   const slotAdvanceAmount = selectedSlots[0]?.advanceAmount ?? 10000;
@@ -280,6 +290,61 @@ export default function BookingPage() {
     { number: storedPhone },
     { enabled: !!storedPhone && isHydrated },
   );
+
+  useEffect(() => {
+    if (paymentStatus !== "failed") return;
+    toast.error(strings.bookingFailed);
+  }, [paymentStatus, strings.bookingFailed]);
+
+  useEffect(() => {
+    if (paymentStatus !== "success" || !paymentOrder) return;
+    if (restoredPaymentOrderRef.current === paymentOrder.orderId) return;
+    restoredPaymentOrderRef.current = paymentOrder.orderId;
+
+    const confirmationData: ConfirmationBooking[] = paymentOrder.bookings.map(
+      (booking: any) => ({
+        id: booking.id,
+        date: booking.timeSlot.date,
+        from: booking.timeSlot.from.slice(0, 5),
+        to: booking.timeSlot.to.slice(0, 5),
+        bookingType: booking.bookingType as any,
+        paymentOption: booking.status === "fullPaid" ? "full" : "advance",
+        amountPaid: booking.amountPaid / 100,
+        totalAmount: booking.totalAmount / 100,
+        verificationCode: booking.verificationCode,
+        bookingCode: `PP-${booking.id.slice(-6).toUpperCase()}`,
+        customer: {
+          name: paymentOrder.customer.name,
+          number: paymentOrder.customer.number,
+          email: paymentOrder.customer.email,
+          alternateContactName: paymentOrder.customer.alternateContactName,
+          alternateContactNumber: paymentOrder.customer.alternateContactNumber,
+          language: paymentOrder.customer.language,
+        },
+      }),
+    );
+
+    setConfirmation(confirmationData);
+    confirmationData.forEach((booking: ConfirmationBooking) => {
+      addBooking(
+        createBookingRecord({
+          id: booking.id,
+          slotId: `${booking.date}-${booking.from}-${booking.to}`,
+          date: booking.date,
+          from: booking.from,
+          to: booking.to,
+          bookingType: booking.bookingType,
+          paymentOption: booking.paymentOption,
+          amountPaid: booking.amountPaid,
+          totalAmount: booking.totalAmount,
+          verificationCode: booking.verificationCode,
+          bookingCode: booking.bookingCode,
+          customer: booking.customer,
+        }),
+      );
+    });
+    fireSideCannons();
+  }, [paymentStatus, paymentOrder, addBooking]);
 
   const bookingCountForCoupons = customerBookings.length;
 
@@ -371,18 +436,22 @@ export default function BookingPage() {
   const toggleSlotSelection = (slot: SlotView) => {
     if (slot.date !== selectedDate) return;
     setSelectedSlots((prev) => {
-      const exists = prev.some((item) =>
-        item.id === slot.id &&
-        item.date === slot.date &&
-        item.from === slot.from &&
-        item.to === slot.to
+      const exists = prev.some(
+        (item) =>
+          item.id === slot.id &&
+          item.date === slot.date &&
+          item.from === slot.from &&
+          item.to === slot.to,
       );
       if (exists) {
-        return prev.filter((item) =>
-          !(item.id === slot.id &&
-            item.date === slot.date &&
-            item.from === slot.from &&
-            item.to === slot.to)
+        return prev.filter(
+          (item) =>
+            !(
+              item.id === slot.id &&
+              item.date === slot.date &&
+              item.from === slot.from &&
+              item.to === slot.to
+            ),
         );
       }
       if (prev.length >= MAX_SLOTS_PER_DAY) {
@@ -492,7 +561,7 @@ export default function BookingPage() {
       // Store the phone number for future use
       setStoredPhone(normalizedNumber);
 
-      // Step 2: Book the slots
+      // Step 2: Reserve the slots and create a Paytm payment session
       const timeSlots = selectedSlots.map((slot) => ({
         date: slot.date,
         from: slot.from + ":00",
@@ -503,7 +572,7 @@ export default function BookingPage() {
         bookingType.size === 2
           ? "cricket&football"
           : Array.from(bookingType)[0]!;
-      const bookingResult = await bookSlots.mutateAsync({
+      const paymentSession = await initiatePayment.mutateAsync({
         number: normalizedNumber,
         timeSlots,
         paymentType: paymentOption,
@@ -511,54 +580,30 @@ export default function BookingPage() {
         couponId: appliedCoupon?.couponId,
       });
 
-      // Step 3: Create confirmation data
-      const confirmationData: ConfirmationBooking[] = bookingResult.map(
-        (booking) => {
-          if (!booking.timeSlot) {
-            throw new Error("Booking successful but time slot data is missing");
-          }
-          return {
-            id: booking.id,
-            date: booking.timeSlot.date,
-            from: booking.timeSlot.from.slice(0, 5),
-            to: booking.timeSlot.to.slice(0, 5),
-            bookingType: booking.bookingType as any,
-            paymentOption,
-            amountPaid: booking.amountPaid / 100, // Convert from paise to rupees
-            totalAmount: booking.totalAmount / 100,
-            verificationCode: booking.verificationCode ?? "",
-            bookingCode: `PP-${booking.id.slice(-6).toUpperCase()}`,
-            customer,
-          };
-        },
-      );
-
-      // Also store in local bookings context for offline viewing
-      confirmationData.forEach((booking) => {
-        addBooking(
-          createBookingRecord({
-            id: booking.id,
-            slotId: `${booking.date}-${booking.from}-${booking.to}`,
-            date: booking.date,
-            from: booking.from,
-            to: booking.to,
-            bookingType: booking.bookingType,
-            paymentOption: booking.paymentOption,
-            amountPaid: booking.amountPaid,
-            totalAmount: booking.totalAmount,
-            verificationCode: booking.verificationCode,
-            bookingCode: booking.bookingCode,
-            customer,
-          }),
-        );
-      });
-
-      setConfirmation(confirmationData);
-      fireSideCannons();
       setSelectedSlots([]);
       setBookingType(new Set());
       setPaymentOption("");
       setSlotDrawerOpen(false);
+
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = paymentSession.paymentPageUrl;
+
+      const appendHidden = (name: string, value: string) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      };
+
+      appendHidden("mid", paymentSession.mid);
+      appendHidden("orderId", paymentSession.orderId);
+      appendHidden("txnToken", paymentSession.txnToken);
+      appendHidden("callbackUrl", paymentSession.callbackUrl);
+
+      document.body.appendChild(form);
+      form.submit();
 
       // Invalidate queries to refresh data
       await utils.timeSlot.getAllByDate.invalidate({ date: selectedDate });
@@ -747,7 +792,7 @@ export default function BookingPage() {
                       item.id === slot.id &&
                       item.date === slot.date &&
                       item.from === slot.from &&
-                      item.to === slot.to
+                      item.to === slot.to,
                   );
                   const isAtLimit =
                     !isSelected && selectionCount >= MAX_SLOTS_PER_DAY;

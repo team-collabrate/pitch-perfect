@@ -101,6 +101,9 @@ importers:
       nodemailer:
         specifier: ^7.0.11
         version: 7.0.11
+      paytmchecksum:
+        specifier: ^1.5.1
+        version: 1.5.1
       postgres:
         specifier: ^3.4.7
         version: 3.4.7
@@ -3915,6 +3918,9 @@ packages:
 
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
+
+  paytmchecksum@1.5.1:
+    resolution: {integrity: sha512-RnimtEcnP3b7FiakPYkyO416UubaUflG5e2HlM2UYhryZ9wXwoRZ5k8XEK4wxaK+d7qIzWDMFUo1LICgaU+J0A==}
 
   peberminta@0.9.0:
     resolution: {integrity: sha512-XIxfHpEuSJbITd1H3EeQwpcZbTLHc+VVr8ANI9t5sit565tsI4/xK3KWTUFE2e6QiangUkh3B0jihzmGnNrRsQ==}
@@ -8321,6 +8327,8 @@ snapshots:
       minipass: 7.1.2
 
   pathe@2.0.3: {}
+
+  paytmchecksum@1.5.1: {}
 
   peberminta@0.9.0: {}
 

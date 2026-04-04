@@ -1,9 +1,11 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
+import { env } from "~/env";
 import { db } from "~/server/db";
 
 export const auth = betterAuth({
+  baseURL: env.NEXT_PUBLIC_BASE_URL,
   database: drizzleAdapter(db, {
     provider: "pg", // or "pg" or "mysql"
   }),
@@ -25,8 +27,7 @@ export const auth = betterAuth({
       console.log(`Password for user ${user.email} has been reset.`);
     },
   },
-  socialProviders: {
-  },
+  socialProviders: {},
 });
 
 export type Session = typeof auth.$Infer.Session;

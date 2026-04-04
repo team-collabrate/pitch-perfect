@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { Pencil, CalendarX } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { useSearchParams } from "next/navigation";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -192,7 +191,6 @@ export default function BookingPage() {
   const { language } = useLanguage();
   const { phoneNumber: storedPhone, setPhoneNumber: setStoredPhone } =
     usePhone();
-  const searchParams = useSearchParams();
   const utils = api.useUtils();
   const strings = useMemo(() => allTranslations.book[language], [language]);
   const customerContactsSchema = useMemo(
@@ -233,14 +231,26 @@ export default function BookingPage() {
     finalAmount: number;
   } | null>(null);
   const restoredPaymentOrderRef = useRef<string | null>(null);
+  const [paymentQuery, setPaymentQuery] = useState<{
+    payment: string | null;
+    orderId: string | null;
+  }>({ payment: null, orderId: null });
 
   // Hydration effect
   useEffect(() => {
     setIsHydrated(true);
   }, []);
 
-  const paymentStatus = searchParams.get("payment");
-  const paymentOrderId = searchParams.get("orderId");
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setPaymentQuery({
+      payment: params.get("payment"),
+      orderId: params.get("orderId"),
+    });
+  }, []);
+
+  const paymentStatus = paymentQuery.payment;
+  const paymentOrderId = paymentQuery.orderId;
 
   // Fetch customer data when stored phone exists
   const { data: existingCustomer, isLoading: isLoadingCustomer } =

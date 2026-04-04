@@ -423,51 +423,12 @@ export async function recordCallbackSuccess(input: {
   transactionId?: string;
   paymentStatus?: string;
 }) {
-  const existing = await db
-    .select({
-      id: bookings.id,
-      timeSlotId: bookings.timeSlotId,
-      status: bookings.status,
-    })
-    .from(bookings)
-    .where(eq(bookings.paymentId, input.orderId));
-
-  if (existing.length === 0) {
-    throw new TRPCError({
-      code: "NOT_FOUND",
-      message: "Payment order not found",
-    });
-  }
-
-  if (
-    existing.every((booking) =>
-      ["advancePaid", "fullPaid"].includes(booking.status),
-    )
-  ) {
-    return { orderId: input.orderId, success: true };
-  }
-
-  await db.transaction(async (tx) => {
-    await tx
-      .update(bookings)
-      .set({
-        finalPaymentId: input.transactionId,
-        updatedAt: new Date(),
-      })
-      .where(eq(bookings.paymentId, input.orderId));
-
-    await tx
-      .update(timeSlots)
-      .set({ status: "booked" })
-      .where(
-        inArray(
-          timeSlots.id,
-          existing.map((booking) => booking.timeSlotId),
-        ),
-      );
+  return finalizePaymentOrder({
+    orderId: input.orderId,
+    success: true,
+    transactionId: input.transactionId,
+    paymentStatus: input.paymentStatus,
   });
-
-  return { orderId: input.orderId, success: true };
 }
 
 export async function finalizePaymentOrder(input: {

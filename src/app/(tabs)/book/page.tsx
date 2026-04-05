@@ -180,6 +180,13 @@ type ConfirmationBooking = {
   to: string;
   bookingType: "cricket" | "football" | "cricket&football";
   paymentOption: "advance" | "full";
+  paymentStatus:
+    | "advancePaid"
+    | "fullPaid"
+    | "fullPending"
+    | "advancePending"
+    | "wontCome"
+    | "paymentFailed";
   amountPaid: number;
   totalAmount: number;
   verificationCode: string;
@@ -344,6 +351,7 @@ export default function BookingPage() {
           booking.status === "fullPending" || booking.status === "fullPaid"
             ? "full"
             : "advance",
+        paymentStatus: booking.status,
         amountPaid: booking.amountPaid / 100,
         totalAmount: booking.totalAmount / 100,
         verificationCode: booking.verificationCode,
@@ -723,7 +731,7 @@ export default function BookingPage() {
                   title: "Payment update received",
                   body: "We could not classify the final payment state.",
                   className:
-                    "border-slate-500/30 bg-slate-500/10 text-slate-700",
+                    "border-border/60 bg-muted/60 text-muted-foreground",
                 }
               : null;
 
@@ -1410,6 +1418,26 @@ export default function BookingPage() {
                     {primaryConfirmation.paymentOption === "advance"
                       ? strings.advance
                       : strings.full}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    {strings.paymentStatus}
+                  </span>
+                  <span className="capitalize">
+                    {primaryConfirmation.paymentStatus === "fullPaid"
+                      ? strings.fullPaid
+                      : primaryConfirmation.paymentStatus === "advancePaid"
+                        ? strings.advancePaid
+                        : primaryConfirmation.paymentStatus === "fullPending"
+                          ? strings.fullPending
+                          : primaryConfirmation.paymentStatus ===
+                              "advancePending"
+                            ? strings.advancePending
+                            : primaryConfirmation.paymentStatus ===
+                                "paymentFailed"
+                              ? strings.paymentFailed
+                              : strings.wontCome}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

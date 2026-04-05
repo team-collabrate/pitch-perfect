@@ -24,9 +24,22 @@ type BookingListItem = RouterOutputs["admin"]["bookingsList"][number];
 type BookingDetail = RouterOutputs["admin"]["bookingDetails"];
 
 function getPaymentLabel(status: string, strings: any): string {
-  if (status === "fullPaid") return strings.full;
-  if (status === "advance") return strings.advanceLabel;
-  return status.charAt(0).toUpperCase() + status.slice(1);
+  switch (status) {
+    case "advancePaid":
+      return strings.advancePaid;
+    case "fullPaid":
+      return strings.fullPaid;
+    case "advancePending":
+      return strings.advancePending;
+    case "fullPending":
+      return strings.fullPending;
+    case "paymentFailed":
+      return strings.paymentFailed;
+    case "wontCome":
+      return strings.wontCome;
+    default:
+      return status;
+  }
 }
 
 function getDotColor(booking: {

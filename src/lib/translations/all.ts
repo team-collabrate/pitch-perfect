@@ -199,6 +199,7 @@ export const allTranslations = {
       pitchPerfectPass: "Pitch Perfect pass",
       player: "Player",
       paymentMode: "Payment mode",
+      paymentStatus: "Payment status",
       downloadAsImage: "Download as image",
     },
     ta: {
@@ -300,6 +301,7 @@ export const allTranslations = {
       pitchPerfectPass: "பிட்ச் பெர்பெக்ட் அனுமதி",
       player: "வீரர்",
       paymentMode: "கட்டண முறை",
+      paymentStatus: "கட்டண நிலை",
       downloadAsImage: "படமாகப் பதிவிறக்கவும்",
     },
   },
@@ -1156,7 +1158,6 @@ export const allTranslations = {
       approved: "அங்கீகரிக்கப்பட்டது",
       discarded: "நிராகரிக்கப்பட்டது",
       galleryUpdated: "புகைப்படம் புதுப்பிக்கப்பட்டது",
-      galleryUpdateError: "புதுப்பிக்க முடியவில்லை",
       slotUpdated: "நேரம் புதுப்பிக்கப்பட்டது",
       slotUpdateError: "நேரத்தைப் புதுப்பிக்க முடியவில்லை",
       removeOverrideConfirm:

@@ -61,8 +61,15 @@ type DisplayBooking = {
   date: string;
   from: string;
   to: string;
-  bookingType: "cricket" | "football";
+  bookingType: "cricket" | "football" | "cricket&football";
   paymentOption: "advance" | "full";
+  paymentStatus:
+    | "advancePaid"
+    | "fullPaid"
+    | "fullPending"
+    | "advancePending"
+    | "wontCome"
+    | "paymentFailed";
   amountPaid: number;
   totalAmount: number;
   verificationCode: string;
@@ -102,6 +109,7 @@ function transformBooking(booking: BookingFromApi): DisplayBooking | null {
     to: booking.timeSlot.to.slice(0, 5),
     bookingType: booking.bookingType ?? "cricket",
     paymentOption: booking.status === "fullPaid" ? "full" : "advance",
+    paymentStatus: booking.status,
     hasCoupon: !!booking.couponId,
     amountPaid: booking.amountPaid / 100, // Convert from paise
     totalAmount: booking.totalAmount / 100,
@@ -109,6 +117,26 @@ function transformBooking(booking: BookingFromApi): DisplayBooking | null {
     bookingCode: `PP-${booking.id.slice(-6).toUpperCase()}`,
     phoneNumber: booking.phoneNumber,
   };
+}
+
+function getPaymentStatusLabel(
+  status: DisplayBooking["paymentStatus"],
+  strings: any,
+): string {
+  switch (status) {
+    case "advancePaid":
+      return strings.advancePaid;
+    case "fullPaid":
+      return strings.fullPaid;
+    case "fullPending":
+      return strings.fullPending;
+    case "advancePending":
+      return strings.advancePending;
+    case "wontCome":
+      return strings.wontCome;
+    case "paymentFailed":
+      return strings.paymentFailed;
+  }
 }
 
 // Compute booking status based on slot time
@@ -133,7 +161,10 @@ function BookingList({
   customerName?: string;
 }) {
   const { language } = useLanguage();
-  const strings = useMemo(() => allTranslations.view[language], [language]);
+  const strings = useMemo(
+    () => allTranslations.view[language] as any,
+    [language],
+  );
   if (bookings.length === 0) {
     return (
       <motion.section
@@ -186,17 +217,22 @@ function BookingList({
                 <p className="text-muted-foreground text-xs tracking-wide uppercase">
                   {booking.bookingType === "cricket"
                     ? strings.cricket
-                    : strings.football}
+                    : booking.bookingType === "football"
+                      ? strings.football
+                      : `${strings.cricket} & ${strings.football}`}
                 </p>
                 <h3 className="text-lg font-semibold">
                   {formatDate(booking.date)} ·{" "}
                   {formatSlotRange(booking.from, booking.to)}
                 </h3>
-                {booking.rescheduled && (
-                  <div className="mt-2">
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Badge variant="secondary">
+                    {getPaymentStatusLabel(booking.paymentStatus, strings)}
+                  </Badge>
+                  {booking.rescheduled && (
                     <Badge variant="secondary">{strings.rescheduled}</Badge>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
               <div className="flex flex-col items-end gap-1">
                 <span
@@ -259,7 +295,10 @@ export default function ViewPage() {
   const [phoneDrawerOpen, setPhoneDrawerOpen] = useState(false);
   const [tempPhone, setTempPhone] = useState("");
   const { language } = useLanguage();
-  const strings = useMemo(() => allTranslations.view[language], [language]);
+  const strings = useMemo(
+    () => allTranslations.view[language] as any,
+    [language],
+  );
 
   // Fetch customer data
   const { data: customer } = api.customer.getByPhoneNumber.useQuery(
@@ -388,7 +427,10 @@ export default function ViewPage() {
       date,
       slots,
     }));
-  }, [availableSlots]);
+  }, [availableSlots]) as Array<{
+    date: string;
+    slots: Array<{ date: string; from: string; to: string }>;
+  }>;
 
   const selectedSlot = useMemo(() => {
     if (!rescheduleDate || !rescheduleSlot) return undefined;
@@ -631,6 +673,14 @@ export default function ViewPage() {
                     {activeTicket.paymentOption === "full"
                       ? strings.fullPaid
                       : strings.advancePaid}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    {language === "ta" ? "கட்டண நிலை" : "Payment status"}
+                  </span>
+                  <span className="capitalize">
+                    {getPaymentStatusLabel(activeTicket.paymentStatus, strings)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

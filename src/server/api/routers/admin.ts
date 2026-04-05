@@ -534,7 +534,12 @@ export const adminRouter = createTRPCRouter({
         .from(bookings)
         .leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
         .leftJoin(customers, eq(bookings.phoneNumber, customers.number))
-        .where(eq(timeSlots.date, input.date))
+        .where(
+          and(
+            eq(timeSlots.date, input.date),
+            notInArray(bookings.status, ["paymentFailed", "wontCome"]),
+          ),
+        )
         .orderBy(asc(timeSlots.from));
 
       if (results.length === 0) {

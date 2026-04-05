@@ -1426,18 +1426,30 @@ export default function BookingPage() {
                   </span>
                   <span className="capitalize">
                     {primaryConfirmation.paymentStatus === "fullPaid"
-                      ? strings.fullPaid
+                      ? language === "ta"
+                        ? "முழுத் தொகை செலுத்தப்பட்டது"
+                        : "Full Paid"
                       : primaryConfirmation.paymentStatus === "advancePaid"
-                        ? strings.advancePaid
+                        ? language === "ta"
+                          ? "முன்பணம் செலுத்தப்பட்டது"
+                          : "Advance Paid"
                         : primaryConfirmation.paymentStatus === "fullPending"
-                          ? strings.fullPending
+                          ? language === "ta"
+                            ? "முழுத் தொகை நிலுவையில் உள்ளது"
+                            : "Full Pending"
                           : primaryConfirmation.paymentStatus ===
                               "advancePending"
-                            ? strings.advancePending
+                            ? language === "ta"
+                              ? "முன்பணம் நிலுவையில் உள்ளது"
+                              : "Advance Pending"
                             : primaryConfirmation.paymentStatus ===
                                 "paymentFailed"
-                              ? strings.paymentFailed
-                              : strings.wontCome}
+                              ? language === "ta"
+                                ? "கட்டணம் தோல்வியடைந்தது"
+                                : "Payment Failed"
+                              : language === "ta"
+                                ? "வரவில்லை"
+                                : "Won't Come"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

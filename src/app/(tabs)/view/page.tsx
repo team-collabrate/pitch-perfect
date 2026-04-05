@@ -322,7 +322,7 @@ export default function ViewPage() {
 
   // Fetch available time slots
   const { data: availableSlots } = api.timeSlot.getAllAvailable.useQuery(
-    { limit: 50 },
+    { days: 50 },
     { enabled: !!rescheduleTarget },
   );
 

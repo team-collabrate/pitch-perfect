@@ -28,6 +28,12 @@ export async function POST(request: Request) {
     ? ((await request.json()) as Record<string, string>)
     : toRecord(await request.formData());
 
+  console.info("Paytm callback request", {
+    method: request.method,
+    contentType,
+    payload,
+  });
+
   const orderId = payload.ORDERID ?? payload.orderId;
   if (!orderId) {
     return NextResponse.json({ error: "Missing order id" }, { status: 400 });

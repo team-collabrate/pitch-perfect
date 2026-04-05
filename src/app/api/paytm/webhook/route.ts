@@ -19,6 +19,12 @@ export async function POST(request: Request) {
     ? ((await request.json()) as Record<string, string>)
     : toRecord(await request.formData());
 
+  console.info("Paytm webhook request", {
+    method: request.method,
+    contentType,
+    payload,
+  });
+
   if (!verifyPaytmCallback(payload)) {
     return NextResponse.json({ error: "Invalid checksum" }, { status: 400 });
   }

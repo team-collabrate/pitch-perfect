@@ -6,6 +6,7 @@ import { db } from "~/server/db";
 
 export const auth = betterAuth({
   baseURL: env.NEXT_PUBLIC_BASE_URL,
+  trustedOrigins: [env.NEXT_PUBLIC_BASE_URL,env.NODE_ENV === "development" ? "http://localhost:3000" : ""].filter(Boolean),
   database: drizzleAdapter(db, {
     provider: "pg", // or "pg" or "mysql"
   }),

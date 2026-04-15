@@ -26,7 +26,6 @@ import {
   account,
   session,
 } from "~/server/db/schema";
-import { generatePassword } from "~/lib/password-generator";
 import { sendAdminInvitationEmail } from "~/server/email";
 import { auth } from "~/server/better-auth";
 import { createSlotFromConfig, generateVirtualSlots } from "~/lib/slot-utils";
@@ -773,6 +772,7 @@ export const superAdminRouter = createTRPCRouter({
       z.object({
         email: z.string().email(),
         name: z.string().min(1),
+        password: z.string().min(8),
         role: z.enum(["admin", "superAdmin"]),
       }),
     )
@@ -790,15 +790,12 @@ export const superAdminRouter = createTRPCRouter({
           });
         }
 
-        // Generate random password
-        const password = generatePassword();
-
         // Create user using Better Auth API
         const response = await auth.api.signUpEmail({
           body: {
             name: input.name,
             email: input.email,
-            password: password,
+            password: input.password,
           },
         });
 
@@ -833,6 +830,7 @@ export const superAdminRouter = createTRPCRouter({
             await sendAdminInvitationEmail(input.email, {
               adminName: input.name,
               role: input.role,
+              password: input.password,
             });
           } catch {
             // Silently ignore email errors

@@ -22,6 +22,7 @@ export function InviteAdminDrawer() {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
   const [role] = useState<"admin">("admin");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -47,12 +48,14 @@ export function InviteAdminDrawer() {
       await inviteAdminMutation.mutateAsync({
         email,
         name,
+        password,
         role,
       });
 
       setSuccess(true);
       setEmail("");
       setName("");
+      setPassword("");
 
       setTimeout(() => {
         setOpen(false);
@@ -97,13 +100,26 @@ export function InviteAdminDrawer() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="admin-email">{strings.email}</Label>
+              <Label htmlFor="admin-email">Email</Label>
               <Input
                 id="admin-email"
                 type="email"
-                placeholder={strings.emailPlaceholder}
+                placeholder="e.g. john@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="admin-password">Password</Label>
+              <Input
+                id="admin-password"
+                type="password"
+                placeholder="Enter a password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isPending}
               />
@@ -136,7 +152,7 @@ export function InviteAdminDrawer() {
               <Button
                 type="submit"
                 className="flex-1 rounded-xl"
-                disabled={isPending || success || !email || !name}
+                disabled={isPending || success || !email || !name || !password}
               >
                 {isPending ? strings.inviting : strings.sendInvite}
               </Button>

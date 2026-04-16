@@ -33,15 +33,19 @@ const getWidthClass = (value: number) => {
 };
 
 function formatCurrency(amount: number): string {
-  if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(1)}L`;
-  } else if (amount >= 1000) {
-    return `₹${(amount / 1000).toFixed(1)}K`;
+  const rupees = amount / 100;
+
+  if (rupees >= 100000) {
+    return `₹${(rupees / 100000).toFixed(1)}L`;
+  } else if (rupees >= 1000) {
+    return `₹${(rupees / 1000).toFixed(1)}K`;
   }
-  return `₹${amount}`;
+
+  return `₹${Math.round(rupees)}`;
 }
 
 function calculatePercentageChange(current: number, previous: number): string {
+  if (current === 0 && previous === 0) return "0%";
   if (previous === 0) return "+100%";
   const change = ((current - previous) / previous) * 100;
   return `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`;

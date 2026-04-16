@@ -592,48 +592,55 @@ export const adminRouter = createTRPCRouter({
 
   dashboardSummary: managerProcedure.query(async () => {
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      0,
-      23,
-      59,
-      59,
-    );
-    const startOfToday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    );
-    const startOfYesterday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() - 1,
-    );
+    const formatDateKey = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
 
-    // Get current month bookings
+      return `${year}-${month}-${day}`;
+    };
+
+    const currentMonthStart = formatDateKey(
+      new Date(now.getFullYear(), now.getMonth(), 1),
+    );
+    const nextMonthStart = formatDateKey(
+      new Date(now.getFullYear(), now.getMonth() + 1, 1),
+    );
+    const lastMonthStart = formatDateKey(
+      new Date(now.getFullYear(), now.getMonth() - 1, 1),
+    );
+    const todayKey = formatDateKey(now);
+    const yesterdayKey = formatDateKey(
+      new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1),
+    );
+    const currentTime = [now.getHours(), now.getMinutes(), now.getSeconds()]
+      .map((part) => String(part).padStart(2, "0"))
+      .join(":");
+
+    // Use slot dates instead of booking creation timestamps so the dashboard
+    // reflects the actual schedule being managed.
     const [currentMonthStats] = await db
       .select({
         totalBookings: count(bookings.id),
         totalRevenue: sum(bookings.amountPaid),
       })
       .from(bookings)
-      .where(sql`${bookings.createdAt} >= ${startOfMonth.toISOString()}`);
+      .innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+      .where(
+        sql`${timeSlots.date} >= ${currentMonthStart} AND ${timeSlots.date} < ${nextMonthStart}`,
+      );
 
-    // Get last month bookings for comparison
     const [lastMonthStats] = await db
       .select({
         totalBookings: count(bookings.id),
         totalRevenue: sum(bookings.amountPaid),
       })
       .from(bookings)
+      .innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
       .where(
-        sql`${bookings.createdAt} >= ${startOfLastMonth.toISOString()} AND ${bookings.createdAt} <= ${endOfLastMonth.toISOString()}`,
+        sql`${timeSlots.date} >= ${lastMonthStart} AND ${timeSlots.date} < ${currentMonthStart}`,
       );
 
-    // Get today's pending amount
     const [todayPending] = await db
       .select({
         pendingAmount: sum(sql<number>`CASE 
@@ -645,11 +652,8 @@ export const adminRouter = createTRPCRouter({
       })
       .from(bookings)
       .leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
-      .where(
-        sql`${timeSlots.date} = ${startOfToday.toISOString().split("T")[0]}`,
-      );
+      .where(sql`${timeSlots.date} = ${todayKey}`);
 
-    // Get yesterday's pending amount
     const [yesterdayPending] = await db
       .select({
         pendingAmount: sum(sql<number>`CASE 
@@ -661,11 +665,8 @@ export const adminRouter = createTRPCRouter({
       })
       .from(bookings)
       .leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
-      .where(
-        sql`${timeSlots.date} = ${startOfYesterday.toISOString().split("T")[0]}`,
-      );
+      .where(sql`${timeSlots.date} = ${yesterdayKey}`);
 
-    // Get upcoming bookings today
     const [todayBookingsCount] = await db
       .select({
         count: count(bookings.id),
@@ -673,24 +674,34 @@ export const adminRouter = createTRPCRouter({
       .from(bookings)
       .leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
       .where(
-        sql`${timeSlots.date} = ${startOfToday.toISOString().split("T")[0]} 
-                AND ${timeSlots.from} > ${now.toTimeString().split(" ")[0]}`,
+        sql`${timeSlots.date} = ${todayKey} AND ${timeSlots.from} > ${currentTime}`,
       );
 
-    // Get last 7 days revenue for trend
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const last7DayKeys = Array.from({ length: 7 }, (_, index) =>
+      formatDateKey(
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - (6 - index),
+        ),
+      ),
+    );
+
     const last7DaysRevenue = await db
       .select({
-        date: sql<string>`DATE(${bookings.createdAt})`,
+        date: timeSlots.date,
         revenue: sum(bookings.amountPaid),
       })
       .from(bookings)
-      .where(sql`${bookings.createdAt} >= ${sevenDaysAgo.toISOString()}`)
-      .groupBy(sql`DATE(${bookings.createdAt})`)
-      .orderBy(sql`DATE(${bookings.createdAt})`);
+      .innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+      .where(sql`${timeSlots.date} >= ${last7DayKeys[0]}`)
+      .groupBy(timeSlots.date)
+      .orderBy(asc(timeSlots.date));
 
-    // Get slot utilization heatmap (last 7 days, 4 time blocks per day)
-    const sevenDaysAgoDate = sevenDaysAgo.toISOString().split("T")[0];
+    const revenueByDate = new Map(
+      last7DaysRevenue.map((day) => [day.date, Number(day.revenue ?? 0)]),
+    );
+
     const heatmapData = await db
       .select({
         date: timeSlots.date,
@@ -699,7 +710,7 @@ export const adminRouter = createTRPCRouter({
       })
       .from(timeSlots)
       .leftJoin(bookings, eq(timeSlots.id, bookings.timeSlotId))
-      .where(sql`${timeSlots.date} >= ${sevenDaysAgoDate}`)
+      .where(sql`${timeSlots.date} >= ${last7DayKeys[0]}`)
       .groupBy(timeSlots.date, sql`EXTRACT(HOUR FROM ${timeSlots.from})`)
       .orderBy(timeSlots.date);
 
@@ -731,9 +742,9 @@ export const adminRouter = createTRPCRouter({
         },
       },
       trends: {
-        last7Days: last7DaysRevenue.map((d) => ({
-          date: d.date,
-          revenue: Number(d.revenue ?? 0),
+        last7Days: last7DayKeys.map((date) => ({
+          date,
+          revenue: revenueByDate.get(date) ?? 0,
         })),
       },
       heatmap: heatmapData.map((d) => ({

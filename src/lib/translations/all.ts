@@ -12,6 +12,7 @@ export const allTranslations = {
       viewTicketDesc: "Pull up your ticket",
       cafeMenu: "Cafe Menu",
       cafeMenuDesc: "Grab a bite at OK Kanmani",
+      cafeMenuTap: "Tap to open menu",
       instructionsTitle: "How to Book",
       instructionsDesc:
         "Learn the simple steps to book your perfect turf session",
@@ -32,6 +33,7 @@ export const allTranslations = {
       viewTicketDesc: "உங்கள் முன்பதிவு விவரங்களைக் காணுங்கள்",
       cafeMenu: "உணவகப் பட்டியல்",
       cafeMenuDesc: "ஓகே கண்மணியில் உணவருந்துங்கள்",
+      cafeMenuTap: "திறக்கத் தட்டவும்",
       instructionsTitle: "முன்பதிவு செய்வது எப்படி?",
       instructionsDesc:
         "உங்கள் சரியான விளையாட்டு நேரத்தை முன்பதிவு செய்வதற்கான எளிய வழிமுறைகள்",

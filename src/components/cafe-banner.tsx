@@ -26,26 +26,29 @@ export function CafeBanner() {
             src="/cafe-background.jpg"
             alt={homeStrings.cafeMenu}
             fill
-            className="object-cover h-32 transition-opacity duration-300 "
+            className="h-32 object-cover transition-opacity duration-300"
           />
-          {/* <div className="absolute inset-0 bg-amber-300/30 opacity-0 blur-3xl transition-opacity duration-300 group-hover:opacity-60" />
-          <div className="relative z-10 flex h-full items-center gap-3">
-            <span className="bg-background/70 text-foreground/80 group-hover:text-primary border-border/40 flex h-12 w-12 items-center justify-center rounded-2xl border transition-colors">
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/45 to-black/15" />
+          <div className="relative z-10 flex h-full items-end gap-3">
+            {/* <span className="bg-background/70 text-foreground/80 group-hover:text-primary border-border/40 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border backdrop-blur-sm transition-colors">
               <Coffee className="h-5 w-5" aria-hidden="true" />
-            </span>
+            </span> */}
             <div className="flex-1">
-              <p className="text-foreground text-base font-semibold">
+              <p className="text-base font-semibold text-white">
                 {homeStrings.cafeMenu}
               </p>
-              <p className="text-muted-foreground text-xs">
+              <p className="text-xs text-white/80">
                 {homeStrings.cafeMenuDesc}
+              </p>
+              <p className="mt-2 inline-flex rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[11px] font-medium text-white/90 backdrop-blur-sm">
+                {homeStrings.cafeMenuTap}
               </p>
             </div>
             <ArrowUpRight
-              className="text-muted-foreground group-hover:text-primary h-4 w-4 transition-colors"
+              className="mt-auto h-4 w-4 text-white/80 transition-colors group-hover:text-white"
               aria-hidden="true"
             />
-          </div> */}
+          </div>
         </Card>
       </motion.div>
     </Link>

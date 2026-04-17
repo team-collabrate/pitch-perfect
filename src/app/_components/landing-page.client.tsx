@@ -36,7 +36,7 @@ type GalleryItemPreview = {
 
 const whatsappNumber = "+917358848765";
 const whatsappDigits = whatsappNumber.replace(/\D/g, "");
-const instagramUrl = "https://www.instagram.com/+917358848765/?hl=en";
+const instagramUrl = "https://www.instagram.com/pitchperfect2024/";
 const supportEmail = "support@pitchperfectapk.com";
 const mapUrl = "https://maps.app.goo.gl/GtWnLZFP5PJL9cwb8";
 

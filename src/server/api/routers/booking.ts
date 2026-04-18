@@ -349,7 +349,21 @@ export const bookingRouter = createTRPCRouter({
           });
         }
 
-        const slotData = createSlotFromConfig(date, from, to, config.slots);
+        const dbSlot = await db.query.timeSlots.findFirst({
+          where: and(
+            eq(timeSlots.date, date),
+            eq(timeSlots.from, from),
+            eq(timeSlots.to, to),
+          ),
+        });
+
+        const slotData = dbSlot
+          ? {
+              fullAmount: dbSlot.fullAmount ?? 80000,
+              advanceAmount: dbSlot.advanceAmount ?? 10000,
+            }
+          : createSlotFromConfig(date, from, to, config.slots);
+
         totalBaseAmount +=
           input.paymentType === "full"
             ? slotData.fullAmount

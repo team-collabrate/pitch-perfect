@@ -105,6 +105,11 @@ export default function DailySlotsPage() {
   const handleSaveEdit = async (slot: SlotData) => {
     if (!editValues) return;
 
+    if (editValues.fullAmount <= 0 || editValues.advanceAmount <= 0) {
+      toast.error(strings.amountMustBePositive);
+      return;
+    }
+
     try {
       const payload = {
         fullAmount: Math.round(editValues.fullAmount * 100),
@@ -404,15 +409,37 @@ export default function DailySlotsPage() {
                       <Input
                         id={`advance-${index}`}
                         type="number"
-                        min="1"
-                        value={editValues.advanceAmount}
+                        value={editValues.advanceAmount || ""}
                         onChange={(e) =>
                           setEditValues({
                             ...editValues,
-                            advanceAmount: Math.max(
-                              1,
-                              parseFloat(e.target.value) || 1,
-                            ),
+                            advanceAmount:
+                              e.target.value === ""
+                                ? 0
+                                : parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        className="rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor={`full-${index}`}
+                        className="text-muted-foreground text-[10px] font-bold uppercase"
+                      >
+                        {strings.full} (₹)
+                      </label>
+                      <Input
+                        id={`full-${index}`}
+                        type="number"
+                        value={editValues.fullAmount || ""}
+                        onChange={(e) =>
+                          setEditValues({
+                            ...editValues,
+                            fullAmount:
+                              e.target.value === ""
+                                ? 0
+                                : parseFloat(e.target.value) || 0,
                           })
                         }
                         className="rounded-xl"

@@ -252,6 +252,10 @@ export function CouponsClient({ strings: _strings }: { strings: Strings }) {
       toast.error(strings.validToRequired);
       return;
     }
+    if (!draft.flatDiscountAmount || Number(draft.flatDiscountAmount) <= 0) {
+      toast.error(strings.amountMustBePositive);
+      return;
+    }
 
     const payload = {
       code: draft.code.trim().toUpperCase(),
@@ -397,14 +401,20 @@ export function CouponsClient({ strings: _strings }: { strings: Strings }) {
                       type="number"
                       inputMode="decimal"
                       step="0.01"
-                      value={(Number(draft.flatDiscountAmount) / 100).toFixed(
-                        2,
-                      )}
+                      value={
+                        draft.flatDiscountAmount
+                          ? (Number(draft.flatDiscountAmount) / 100).toFixed(2)
+                          : ""
+                      }
                       onChange={(e) =>
                         setDraft((d) => ({
                           ...d,
                           flatDiscountAmount: String(
-                            Math.round(parseFloat(e.target.value || "0") * 100),
+                            e.target.value === ""
+                              ? ""
+                              : Math.round(
+                                  parseFloat(e.target.value || "0") * 100,
+                                ),
                           ),
                         }))
                       }
@@ -424,14 +434,22 @@ export function CouponsClient({ strings: _strings }: { strings: Strings }) {
                       type="number"
                       inputMode="decimal"
                       step="0.01"
-                      value={(
-                        Number(draft.maxFlatDiscountAmount) / 100
-                      ).toFixed(2)}
+                      value={
+                        draft.maxFlatDiscountAmount
+                          ? (Number(draft.maxFlatDiscountAmount) / 100).toFixed(
+                              2,
+                            )
+                          : ""
+                      }
                       onChange={(e) =>
                         setDraft((d) => ({
                           ...d,
                           maxFlatDiscountAmount: String(
-                            Math.round(parseFloat(e.target.value || "0") * 100),
+                            e.target.value === ""
+                              ? ""
+                              : Math.round(
+                                  parseFloat(e.target.value || "0") * 100,
+                                ),
                           ),
                         }))
                       }
@@ -476,7 +494,7 @@ export function CouponsClient({ strings: _strings }: { strings: Strings }) {
                       <Input
                         id="usageLimit"
                         type="number"
-                        value={draft.usageLimit}
+                        value={draft.usageLimit || ""}
                         onChange={(e) =>
                           setDraft((d) => ({
                             ...d,
@@ -524,16 +542,22 @@ export function CouponsClient({ strings: _strings }: { strings: Strings }) {
                       <Input
                         id="minimumBookingAmount"
                         type="number"
-                        value={(
-                          Number(draft.minimumBookingAmount) / 100
-                        ).toFixed(2)}
+                        value={
+                          draft.minimumBookingAmount
+                            ? (
+                                Number(draft.minimumBookingAmount) / 100
+                              ).toFixed(2)
+                            : ""
+                        }
                         onChange={(e) =>
                           setDraft((d) => ({
                             ...d,
                             minimumBookingAmount: String(
-                              Math.round(
-                                parseFloat(e.target.value || "0") * 100,
-                              ),
+                              e.target.value === ""
+                                ? ""
+                                : Math.round(
+                                    parseFloat(e.target.value || "0") * 100,
+                                  ),
                             ),
                           }))
                         }

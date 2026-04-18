@@ -817,6 +817,7 @@ export const allTranslations = {
       galleryUpdateError: "Failed to update gallery item",
       slotUpdated: "Slot updated successfully",
       slotUpdateError: "Failed to update slot",
+      amountMustBePositive: "Amount must be greater than 0",
       removeOverrideConfirm:
         "Are you sure you want to remove this override? This will revert the slot to its default configuration.",
       overrideRemoved: "Override removed",
@@ -1164,6 +1165,7 @@ export const allTranslations = {
       galleryUpdated: "புகைப்படம் புதுப்பிக்கப்பட்டது",
       slotUpdated: "நேரம் புதுப்பிக்கப்பட்டது",
       slotUpdateError: "நேரத்தைப் புதுப்பிக்க முடியவில்லை",
+      amountMustBePositive: "தொகை 0 ஐ விட அதிகமாக இருக்க வேண்டும்",
       removeOverrideConfirm:
         "இந்த மாற்றத்தை நீக்க வேண்டுமா? இது இயல்புநிலைக்குத் திரும்பும்.",
       overrideRemoved: "மாற்றம் நீக்கப்பட்டது",

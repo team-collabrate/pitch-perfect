@@ -109,9 +109,8 @@ export function SlotManager() {
       if (!slotsConfig) return;
 
       const parsed = parseFloat(rawValue);
-      const amountInPaise = Number.isNaN(parsed)
-        ? 0
-        : Math.max(0, Math.round(parsed * 100));
+      const amountInPaise =
+        Number.isNaN(parsed) || rawValue === "" ? 0 : Math.round(parsed * 100);
 
       const newConfig = { ...slotsConfig };
       let targetConfig: DayConfig;
@@ -172,6 +171,14 @@ export function SlotManager() {
 
   const handleSaveSlots = useCallback(async () => {
     if (!slotsConfig) return;
+
+    const hasInvalidAmount =
+      slotsConfig.default.advanceAmount <= 0 ||
+      slotsConfig.default.fullAmount <= 0;
+    if (hasInvalidAmount) {
+      toast.error(strings.amountMustBePositive);
+      return;
+    }
 
     setLoading(true);
     try {

@@ -404,11 +404,15 @@ export default function DailySlotsPage() {
                       <Input
                         id={`advance-${index}`}
                         type="number"
+                        min="1"
                         value={editValues.advanceAmount}
                         onChange={(e) =>
                           setEditValues({
                             ...editValues,
-                            advanceAmount: parseFloat(e.target.value) || 0,
+                            advanceAmount: Math.max(
+                              1,
+                              parseFloat(e.target.value) || 1,
+                            ),
                           })
                         }
                         className="rounded-xl"
@@ -424,11 +428,15 @@ export default function DailySlotsPage() {
                       <Input
                         id={`full-${index}`}
                         type="number"
+                        min="1"
                         value={editValues.fullAmount}
                         onChange={(e) =>
                           setEditValues({
                             ...editValues,
-                            fullAmount: parseFloat(e.target.value) || 0,
+                            fullAmount: Math.max(
+                              1,
+                              parseFloat(e.target.value) || 1,
+                            ),
                           })
                         }
                         className="rounded-xl"

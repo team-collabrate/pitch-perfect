@@ -18,6 +18,23 @@ export function formatSlotTime(time: string): string {
   return `${normalizedHour}:${minutes} ${period}`;
 }
 
+export function addMinutesToTime(time: string, minutesToAdd: number): string {
+  const [hoursStr, minutesStr = "00"] = time.split(":");
+  const hours = Number(hoursStr);
+  const minutes = Number(minutesStr);
+
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return time;
+  }
+
+  const totalMinutes = hours * 60 + minutes + minutesToAdd;
+  const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+  const nextHours = Math.floor(normalized / 60);
+  const nextMinutes = normalized % 60;
+
+  return `${String(nextHours).padStart(2, "0")}:${String(nextMinutes).padStart(2, "0")}`;
+}
+
 export function formatSlotRange(from: string, to: string): string {
   return `${formatSlotTime(from)} - ${formatSlotTime(to)}`;
 }

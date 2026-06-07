@@ -25,7 +25,7 @@ import {
   DrawerFooter,
   DrawerCloseButton,
 } from "~/components/ui/drawer";
-import { cn, formatSlotTime } from "~/lib/utils";
+import { addMinutesToTime, cn, formatSlotTime } from "~/lib/utils";
 import { createBookingRecord, useBookings } from "~/lib/bookings-context";
 import { usePhone } from "~/lib/phone-context";
 import { Spinner } from "~/components/spinner";
@@ -51,6 +51,7 @@ const MotionButton = motion.create(Button);
 const MotionCard = motion.create(Card);
 
 const springy = { type: "spring", stiffness: 260, damping: 20 } as const;
+const SLOT_DURATION_MINUTES = 30;
 
 const sanitizePhone = (value: string) => value.replace(/\D/g, "");
 
@@ -488,8 +489,25 @@ export default function BookingPage() {
   const isPastSelectedSlot = useCallback((slot: SlotView) => {
     const today = format(new Date(), "yyyy-MM-dd");
     if (slot.date !== today) return false;
-    return new Date(`${slot.date}T${slot.from}`) < new Date();
+    const slotEndsAt = addMinutesToTime(slot.from, SLOT_DURATION_MINUTES);
+    return new Date(`${slot.date}T${slotEndsAt}`) < new Date();
   }, []);
+
+  const visibleSlotsForSelectedDate = useMemo(() => {
+    if (!slotsForSelectedDate.length) return [];
+
+    const today = format(new Date(), "yyyy-MM-dd");
+    if (selectedDate !== today) return slotsForSelectedDate;
+
+    const endedSlots = slotsForSelectedDate.filter((slot) =>
+      isPastSelectedSlot(slot),
+    );
+    const recentEndedSlot = endedSlots[endedSlots.length - 1];
+
+    return slotsForSelectedDate.filter(
+      (slot) => !isPastSelectedSlot(slot) || slot === recentEndedSlot,
+    );
+  }, [isPastSelectedSlot, selectedDate, slotsForSelectedDate]);
 
   const getTimeOfDayLabel = useCallback(
     (time: string) => {
@@ -935,7 +953,7 @@ export default function BookingPage() {
                   </p>
                 </div>
               ) : (
-                slotsForSelectedDate.map((slot) => {
+                visibleSlotsForSelectedDate.map((slot) => {
                   const isSelected = selectedSlots.some(
                     (item) =>
                       item.id === slot.id &&

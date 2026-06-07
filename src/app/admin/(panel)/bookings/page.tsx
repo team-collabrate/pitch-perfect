@@ -36,7 +36,6 @@ import {
   DrawerCloseButton,
 } from "~/components/ui/drawer";
 import { toast } from "sonner";
-import { createBookingRecord, useBookings } from "~/lib/bookings-context";
 
 type BookingListItem = RouterOutputs["admin"]["bookingsList"][number];
 type BookingDetail = RouterOutputs["admin"]["bookingDetails"];
@@ -117,6 +116,8 @@ function getPaymentLabel(status: string, _strings?: BookingStrings): string {
       return "Payment Failed";
     case "wontCome":
       return "Won't Come";
+    case "manual":
+      return "Manual";
     default:
       return status;
   }
@@ -134,6 +135,8 @@ function getPaymentBadgeClass(status: string): string {
       return "bg-destructive/10 text-destructive";
     case "wontCome":
       return "bg-muted text-muted-foreground";
+    case "manual":
+      return "bg-slate-500/10 text-slate-600 dark:text-slate-300";
     default:
       return "bg-primary/10 text-primary";
   }
@@ -182,7 +185,6 @@ export default function BookingsPage() {
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<
     string | null
   >(null);
-  const { bookings: localBookings, addBooking } = useBookings();
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [selectedRescheduleSlot, setSelectedRescheduleSlot] =
     useState<RescheduleSlot | null>(null);
@@ -317,15 +319,6 @@ export default function BookingsPage() {
     },
   );
 
-  const manualBookings = useMemo(
-    () =>
-      localBookings
-        .filter((booking) => booking.notes === "manual")
-        .slice()
-        .reverse(),
-    [localBookings],
-  );
-
   const availableSlotsByDate = useMemo(() => {
     if (!availableSlots) return [];
 
@@ -407,6 +400,17 @@ export default function BookingsPage() {
           : Promise.resolve(),
       ]);
       toast(strings.bookingRescheduled);
+    },
+  });
+
+  const createManualBooking = api.admin.createManualBooking.useMutation({
+    onSuccess: async () => {
+      await Promise.allSettled([
+        utils.admin.bookingsList.invalidate(),
+        utils.admin.getBookingsByDate.invalidate(),
+      ]);
+      toast(strings.createManualBooking);
+      closeManualBookingDrawer();
     },
   });
 
@@ -509,30 +513,13 @@ export default function BookingsPage() {
       return;
     }
 
-    const booking = createBookingRecord({
-      slotId: `${manualSlot.date}-${manualSlot.from}-${manualSlot.to}`,
+    createManualBooking.mutate({
       date: manualSlot.date,
       from: manualSlot.from,
       to: manualSlot.to,
-      bookingType: "cricket",
-      paymentOption: "advance",
-      amountPaid: 0,
-      totalAmount: 0,
-      verificationCode: "0000",
-      customer: {
-        name: manualName?.trim() ?? "",
-        number: manualPhone?.trim() ?? "",
-        email: "",
-        alternateContactName: "",
-        alternateContactNumber: "",
-        language: "en",
-      },
-      notes: "manual",
+      name: manualName?.trim() || undefined,
+      number: manualPhone?.trim() || undefined,
     });
-
-    addBooking(booking);
-    toast(strings.createManualBooking);
-    closeManualBookingDrawer();
   };
 
   useEffect(() => {
@@ -618,50 +605,6 @@ export default function BookingsPage() {
           )}
         </div>
       </header>
-
-      {manualBookings.length > 0 && (
-        <Card className="border-border/60 bg-card/60 rounded-3xl p-4">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                {strings.manualBookings}
-              </p>
-              <h2 className="text-sm font-semibold">
-                {strings.manualBookings}
-              </h2>
-            </div>
-            <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-medium">
-              {manualBookings.length}
-            </span>
-          </div>
-          <div className="space-y-2">
-            {manualBookings.slice(0, 3).map((booking) => (
-              <div
-                key={booking.id}
-                className="border-border/60 bg-background/60 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm"
-              >
-                <div className="min-w-0">
-                  <p className="font-semibold">
-                    {booking.customer.name?.trim() || strings.na}
-                  </p>
-                  <p className="text-muted-foreground text-xs">
-                    {booking.customer.number?.trim() || strings.na}
-                  </p>
-                </div>
-                <div className="text-right text-xs">
-                  <p className="font-medium">
-                    {format(parseISO(booking.date), "MMM d, yyyy", { locale })}
-                  </p>
-                  <p className="text-muted-foreground">
-                    {formatSlotTime(booking.from)} -{" "}
-                    {formatSlotTime(booking.to)}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
 
       {/* Tabs */}
       <div className="flex gap-2 border-b">
@@ -1359,10 +1302,12 @@ export default function BookingsPage() {
             <Button
               type="button"
               className="w-full rounded-xl"
-              disabled={!manualSlot}
+              disabled={!manualSlot || createManualBooking.isPending}
               onClick={handleManualBooking}
             >
-              {strings.createManualBooking}
+              {createManualBooking.isPending
+                ? strings.updating
+                : strings.createManualBooking}
             </Button>
             <Button
               type="button"

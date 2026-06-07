@@ -396,11 +396,13 @@ export function AdminUsersPanel() {
                                 ? strings.fullPaid
                                 : booking.status === "advancePaid"
                                   ? strings.advancePaid
-                                  : booking.status === "advancePending"
-                                    ? strings.advancePending
-                                    : booking.status === "fullPending"
-                                      ? strings.fullPending
-                                      : booking.status}
+                                  : booking.status === "manual"
+                                    ? "Manual"
+                                    : booking.status === "advancePending"
+                                      ? strings.advancePending
+                                      : booking.status === "fullPending"
+                                        ? strings.fullPending
+                                        : booking.status}
                             </span>
                           </div>
                           <div className="text-xs font-medium whitespace-nowrap">

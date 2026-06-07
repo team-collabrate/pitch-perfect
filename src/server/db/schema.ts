@@ -148,6 +148,7 @@ export const bookingStatusEnum = pgEnum("booking_status", [
   "advancePending",
   "wontCome",
   "paymentFailed",
+  "manual",
 ]);
 
 export const bookingTypeEnum = pgEnum("booking_type", ["cricket", "football", "cricket&football"]);

@@ -65,6 +65,18 @@ const superAdminProcedure = managerProcedure.use(({ ctx, next }) => {
 });
 
 const paidBookingStatuses = ["advancePaid", "fullPaid"] as const;
+const visibleBookingStatuses = [...paidBookingStatuses, "manual"] as const;
+
+const manualBookingInput = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  from: z.string().regex(/^\d{2}:\d{2}:\d{2}$/),
+  to: z.string().regex(/^\d{2}:\d{2}:\d{2}$/),
+  bookingType: z
+    .enum(["cricket", "football", "cricket&football"])
+    .default("cricket"),
+  name: z.string().max(100).optional(),
+  number: z.string().max(20).optional(),
+});
 
 export const adminRouter = createTRPCRouter({
   bookingsList: managerProcedure
@@ -109,7 +121,7 @@ export const adminRouter = createTRPCRouter({
           // All next day bookings
           eq(timeSlots.date, nextDateStr),
         ),
-        inArray(bookings.status, paidBookingStatuses),
+        inArray(bookings.status, visibleBookingStatuses),
       ];
 
       const records = await db
@@ -193,6 +205,112 @@ export const adminRouter = createTRPCRouter({
       }
 
       return updated;
+    }),
+
+  createManualBooking: managerProcedure
+    .input(manualBookingInput)
+    .mutation(async ({ input }) => {
+      const config = await db.query.configTable.findFirst();
+      if (!config?.slots) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Slot configuration not found",
+        });
+      }
+
+      if (
+        !validateSlotAgainstConfig(
+          input.date,
+          input.from,
+          input.to,
+          config.slots,
+        )
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Selected time slot is not valid according to configuration",
+        });
+      }
+
+      const existingSlot = await db.query.timeSlots.findFirst({
+        where: and(
+          eq(timeSlots.date, input.date),
+          eq(timeSlots.from, input.from),
+          eq(timeSlots.to, input.to),
+        ),
+      });
+
+      if (existingSlot && existingSlot.status !== "available") {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Selected time slot is already booked or unavailable",
+        });
+      }
+
+      const slotToUse = createSlotFromConfig(
+        input.date,
+        input.from,
+        input.to,
+        config.slots,
+      );
+
+      const [upsertedSlot] = await db
+        .insert(timeSlots)
+        .values({
+          ...slotToUse,
+          status: "booked",
+        })
+        .onConflictDoUpdate({
+          target: [timeSlots.date, timeSlots.from, timeSlots.to],
+          set: { status: "booked" },
+        })
+        .returning();
+
+      if (!upsertedSlot) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create or update time slot",
+        });
+      }
+
+      const phoneNumber =
+        input.number?.trim() || `MANUAL-${upsertedSlot.id}`;
+      const customerName = input.name?.trim() || "Manual booking";
+
+      await db
+        .insert(customers)
+        .values({
+          name: customerName,
+          number: phoneNumber,
+          email: null,
+          alternateContactName: customerName,
+          alternateContactNumber: phoneNumber,
+          languagePreference: "en",
+        })
+        .onConflictDoUpdate({
+          target: customers.number,
+          set: {
+            name: customerName,
+            alternateContactName: customerName,
+            alternateContactNumber: phoneNumber,
+            updatedAt: new Date(),
+          },
+        });
+
+      const [booking] = await db
+        .insert(bookings)
+        .values({
+          phoneNumber,
+          timeSlotId: upsertedSlot.id,
+          amountPaid: 0,
+          totalAmount: 0,
+          verificationCode: "0000",
+          bookingType: input.bookingType,
+          status: "manual",
+        })
+        .returning({ id: bookings.id, status: bookings.status });
+
+      return booking;
     }),
 
   deleteBooking: managerProcedure
@@ -680,8 +798,8 @@ export const adminRouter = createTRPCRouter({
         .where(
           and(
             eq(timeSlots.date, input.date),
-            inArray(bookings.status, paidBookingStatuses),
-          ),
+            inArray(bookings.status, visibleBookingStatuses),
+          )
         )
         .orderBy(asc(timeSlots.from));
 

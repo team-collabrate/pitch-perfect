@@ -38,7 +38,8 @@ type BookingFromApi = {
     | "fullPending"
     | "advancePending"
     | "wontCome"
-    | "paymentFailed";
+    | "paymentFailed"
+    | "manual";
   amountPaid: number;
   totalAmount: number;
   verificationCode: string | null;
@@ -69,7 +70,8 @@ type DisplayBooking = {
     | "fullPending"
     | "advancePending"
     | "wontCome"
-    | "paymentFailed";
+    | "paymentFailed"
+    | "manual";
   amountPaid: number;
   totalAmount: number;
   verificationCode: string;
@@ -136,6 +138,8 @@ function getPaymentStatusLabel(
       return strings.wontCome;
     case "paymentFailed":
       return strings.paymentFailed;
+    case "manual":
+      return "Manual";
   }
 }
 

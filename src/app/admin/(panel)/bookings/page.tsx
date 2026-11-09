@@ -16,8 +16,9 @@ import {
   type Locale,
 } from "date-fns";
 import { enIN } from "date-fns/locale";
-import { formatSlotTime } from "~/lib/utils";
+import { cn, formatSlotTime } from "~/lib/utils";
 import {
+  Flag,
   Phone,
   Plus,
   RotateCw,
@@ -136,10 +137,19 @@ function getPaymentBadgeClass(status: string): string {
     case "wontCome":
       return "bg-muted text-muted-foreground";
     case "manual":
-      return "bg-slate-500/10 text-slate-600 dark:text-slate-300";
+      // Solid and high contrast on purpose: manual bookings must stand out.
+      return "bg-violet-600 text-white dark:bg-violet-500";
     default:
       return "bg-primary/10 text-primary";
   }
+}
+
+// Manual bookings are entered by staff, so they get a bold card (tinted
+// background + thick left accent) that is easy to spot in a long list.
+function getBookingCardClass(status: string): string {
+  return status === "manual"
+    ? "border-violet-500/50 border-l-4 border-l-violet-500 bg-violet-500/10 shadow-sm shadow-violet-500/20 hover:bg-violet-500/15"
+    : "border-border/60 bg-card/60 hover:bg-card/80";
 }
 
 function getDotColor(booking: {
@@ -687,14 +697,28 @@ export default function BookingsPage() {
                       <div className="flex gap-4">
                         <div className="relative flex flex-col items-center pt-1">
                           <div
-                            className={`${getDotColor(booking)} h-3 w-3 rounded-full`}
+                            className={cn(
+                              getDotColor(booking),
+                              "h-3 w-3 rounded-full",
+                              booking.status === "manual" &&
+                                "ring-4 ring-violet-500/40",
+                            )}
                           ></div>
                         </div>
                         <Card
                           onClick={() => openBooking(booking.id)}
-                          className="border-border/60 bg-card/60 hover:bg-card/80 mb-2 flex-1 cursor-pointer rounded-3xl p-4 transition-all hover:shadow-md"
+                          className={cn(
+                            getBookingCardClass(booking.status),
+                            "mb-2 flex-1 cursor-pointer rounded-3xl p-4 transition-all hover:shadow-md",
+                          )}
                         >
                           <div className="space-y-3">
+                            {booking.status === "manual" && (
+                              <div className="flex items-center gap-1.5 text-xs font-bold tracking-widest text-violet-700 uppercase dark:text-violet-300">
+                                <Flag className="h-3.5 w-3.5" />
+                                {strings.manualBooking}
+                              </div>
+                            )}
                             <div className="flex items-start justify-between">
                               <div>
                                 <p className="text-muted-foreground text-xs tracking-widest uppercase">
@@ -790,14 +814,28 @@ export default function BookingsPage() {
                           <div className="flex gap-4">
                             <div className="relative flex flex-col items-center pt-1">
                               <div
-                                className={`${getDotColor(booking)} h-3 w-3 rounded-full`}
+                                className={cn(
+                                  getDotColor(booking),
+                                  "h-3 w-3 rounded-full",
+                                  booking.status === "manual" &&
+                                    "ring-4 ring-violet-500/40",
+                                )}
                               ></div>
                             </div>
                             <Card
                               onClick={() => openBooking(booking.id)}
-                              className="border-border/60 bg-card/60 hover:bg-card/80 mb-2 flex-1 cursor-pointer rounded-3xl p-4 transition-all hover:shadow-md"
+                              className={cn(
+                                getBookingCardClass(booking.status),
+                                "mb-2 flex-1 cursor-pointer rounded-3xl p-4 transition-all hover:shadow-md",
+                              )}
                             >
                               <div className="space-y-3">
+                                {booking.status === "manual" && (
+                                  <div className="flex items-center gap-1.5 text-xs font-bold tracking-widest text-violet-700 uppercase dark:text-violet-300">
+                                    <Flag className="h-3.5 w-3.5" />
+                                    {strings.manualBooking}
+                                  </div>
+                                )}
                                 <div className="flex items-start justify-between">
                                   <div>
                                     <p className="text-muted-foreground text-xs tracking-widest uppercase">
@@ -894,6 +932,13 @@ export default function BookingsPage() {
                     {activeBooking.verificationCode}
                   </p>
                 </div>
+
+                {activeBooking.status === "manual" && (
+                  <div className="mb-4 flex items-center gap-2 rounded-2xl border border-violet-500/50 bg-violet-500/10 px-4 py-3 text-sm font-bold text-violet-700 dark:text-violet-300">
+                    <Flag className="h-4 w-4 shrink-0" />
+                    {strings.manualBooking}
+                  </div>
+                )}
 
                 <div className="grid gap-6">
                   {/* Customer & Alternate Contact */}

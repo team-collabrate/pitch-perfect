@@ -14,6 +14,14 @@ import {
   mergeWithActualSlots,
   isPastTime,
 } from "~/lib/slot-utils";
+import { releaseExpiredPendingBookings } from "~/server/payments/booking";
+
+// Reopen slots whose payment was abandoned before we read them. A failure here
+// must never break slot listing, so it is logged and ignored.
+const sweepExpiredHolds = (bufferMinutes: number) =>
+  releaseExpiredPendingBookings(bufferMinutes).catch((error) => {
+    console.error("[timeSlot] Failed to release expired holds", error);
+  });
 
 export const timeSlotRouter = createTRPCRouter({
   // 1. Get all available slots across all dates (current and forward)
@@ -34,6 +42,8 @@ export const timeSlotRouter = createTRPCRouter({
       if (!config?.slots) {
         throw new Error("Slot configuration not found");
       }
+
+      await sweepExpiredHolds(config.bookingBufferMinutes);
 
       // Step 2: Generate dates for the next N days
       const dates: string[] = [];
@@ -98,6 +108,8 @@ export const timeSlotRouter = createTRPCRouter({
       if (!config?.slots) {
         throw new Error("Slot configuration not found");
       }
+
+      await sweepExpiredHolds(config.bookingBufferMinutes);
 
       // Step 2: Generate virtual slots from config
       let virtualSlots = generateVirtualSlots([input.date], config.slots);

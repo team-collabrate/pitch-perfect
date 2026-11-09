@@ -1,4 +1,13 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import {
+  and,
+  eq,
+  gte,
+  inArray,
+  lte,
+  notExists,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 import { db } from "~/server/db";
@@ -51,6 +60,8 @@ export type BookingPaymentOrder = {
 
 const PENDING_STATUSES = ["advancePending", "fullPending"] as const;
 
+class SlotTakenError extends Error {}
+
 const sanitizeAmount = (value: number) => Math.max(0, Math.round(value));
 
 const allocateAmounts = (baseAmounts: number[], totalAmount: number) => {
@@ -94,81 +105,91 @@ const getBookingSummary = async (orderId: string) => {
     .where(eq(bookings.paymentId, orderId));
 };
 
-const releasePaymentOrder = async (orderId: string) => {
-  const existing = await db
-    .select({
-      id: bookings.id,
-      timeSlotId: bookings.timeSlotId,
-      status: bookings.status,
-    })
-    .from(bookings)
-    .where(eq(bookings.paymentId, orderId));
-
-  if (existing.length === 0) return;
-
-  await db.transaction(async (tx) => {
-    await tx
+/**
+ * Marks still-pending bookings that match `where` as failed and puts the slots
+ * they were holding back on sale.
+ *
+ * Both steps are deliberately narrow so a late or repeated release can never
+ * undo someone else's booking:
+ *  - only bookings that are still pending are touched, so a second release for
+ *    the same order (late webhook, retry) finds nothing to do;
+ *  - a slot is only reopened if it is still `bookingInProgress` and no other
+ *    pending booking is holding it.
+ */
+const releasePendingBookings = async (where?: SQL) => {
+  return db.transaction(async (tx) => {
+    const released = await tx
       .update(bookings)
       .set({ status: "paymentFailed", updatedAt: new Date() })
-      .where(eq(bookings.paymentId, orderId));
+      .where(and(inArray(bookings.status, [...PENDING_STATUSES]), where))
+      .returning({ timeSlotId: bookings.timeSlotId });
+
+    if (released.length === 0) return 0;
 
     await tx
       .update(timeSlots)
       .set({ status: "available" })
       .where(
-        inArray(
-          timeSlots.id,
-          existing.map((booking) => booking.timeSlotId),
+        and(
+          inArray(timeSlots.id, [
+            ...new Set(released.map((booking) => booking.timeSlotId)),
+          ]),
+          eq(timeSlots.status, "bookingInProgress"),
+          notExists(
+            tx
+              .select({ one: sql`1` })
+              .from(bookings)
+              .where(
+                and(
+                  eq(bookings.timeSlotId, timeSlots.id),
+                  inArray(bookings.status, [...PENDING_STATUSES]),
+                ),
+              ),
+          ),
         ),
       );
+
+    return released.length;
   });
 };
 
-export async function releaseExpiredPendingBookings() {
-  const config = await db.query.configTable.findFirst();
-  if (!config) return 0;
+const releasePaymentOrder = (orderId: string) =>
+  releasePendingBookings(eq(bookings.paymentId, orderId));
 
-  const cutoff = new Date(Date.now() - config.bookingBufferMinutes * 60_000);
+/**
+ * Automatic release only ever looks at payment attempts started on or after
+ * this moment (the day this feature was written). Unfinished records from
+ * before it are deliberately left exactly as they are: some may belong to
+ * customers who really paid but were never confirmed, and rewriting history
+ * gains nothing. Safe to leave as is forever.
+ */
+export const HOLD_RELEASE_STARTS_AT = new Date("2026-11-09T05:20:00Z");
 
-  const pending = await db
-    .select({
-      id: bookings.id,
-      timeSlotId: bookings.timeSlotId,
-      createdAt: bookings.createdAt,
-    })
-    .from(bookings)
-    .where(
-      and(
-        inArray(bookings.status, [...PENDING_STATUSES]),
-        sql`${bookings.createdAt} <= ${cutoff}`,
-      ),
-    );
+/**
+ * Reopens slots whose payment was started but never finished (customer closed
+ * the Paytm page, lost network, ...). Without this a slot stays
+ * `bookingInProgress` forever because no payment callback ever arrives.
+ *
+ * "Finished" is decided by the admin's booking buffer setting. A buffer of 0 or
+ * less turns automatic release off.
+ *
+ * Pass `bufferMinutes` when the caller already loaded the config. `since` only
+ * exists so tests can move the start date.
+ */
+export async function releaseExpiredPendingBookings(
+  bufferMinutes?: number,
+  since: Date = HOLD_RELEASE_STARTS_AT,
+) {
+  const minutes =
+    bufferMinutes ??
+    (await db.query.configTable.findFirst())?.bookingBufferMinutes;
 
-  if (pending.length === 0) return 0;
+  if (minutes === undefined || minutes <= 0) return 0;
 
-  await db.transaction(async (tx) => {
-    await tx
-      .update(bookings)
-      .set({ status: "paymentFailed", updatedAt: new Date() })
-      .where(
-        inArray(
-          bookings.id,
-          pending.map((booking) => booking.id),
-        ),
-      );
-
-    await tx
-      .update(timeSlots)
-      .set({ status: "available" })
-      .where(
-        inArray(
-          timeSlots.id,
-          pending.map((booking) => booking.timeSlotId),
-        ),
-      );
-  });
-
-  return pending.length;
+  const cutoff = new Date(Date.now() - minutes * 60_000);
+  return releasePendingBookings(
+    and(lte(bookings.createdAt, cutoff), gte(bookings.createdAt, since)),
+  );
 }
 
 export async function calculateCouponDiscount(input: {
@@ -279,6 +300,10 @@ export async function createPaymentOrder(
     from: slot.from,
     to: slot.to,
   }));
+
+  // Free any abandoned holds first so this customer isn't told a slot is
+  // taken when its earlier payment attempt was simply never completed.
+  await releaseExpiredPendingBookings(config.bookingBufferMinutes);
 
   const result = await db.transaction(async (tx) => {
     const slotsToBook: Array<{
@@ -465,7 +490,14 @@ export async function finalizePaymentOrder(input: {
     ["advancePaid", "fullPaid", "paymentFailed"].includes(booking.status),
   );
 
-  if (alreadyFinal) {
+  // The hold may have been released (see releaseExpiredPendingBookings) before
+  // the customer finished paying. Money has been taken, so try to win the slots
+  // back rather than silently dropping a paid order.
+  const paidAfterRelease =
+    input.success &&
+    existing.every((booking) => booking.status === "paymentFailed");
+
+  if (alreadyFinal && !paidAfterRelease) {
     return {
       orderId: input.orderId,
       success: existing.every((booking) => booking.status !== "paymentFailed"),
@@ -477,35 +509,75 @@ export async function finalizePaymentOrder(input: {
     return { orderId: input.orderId, success: false };
   }
 
-  await db.transaction(async (tx) => {
-    await tx
-      .update(bookings)
-      .set({
-        status:
-          existing[0]?.status === "fullPending" ? "fullPaid" : "advancePaid",
-        finalPaymentId: input.transactionId,
-        updatedAt: new Date(),
-      })
-      .where(eq(bookings.paymentId, input.orderId));
+  try {
+    await db.transaction(async (tx) => {
+      const slotIds = [
+        ...new Set(existing.map((booking) => booking.timeSlotId)),
+      ];
+      let paidStatus: "advancePaid" | "fullPaid" =
+        existing[0]?.status === "fullPending" ? "fullPaid" : "advancePaid";
 
-    await tx
-      .update(timeSlots)
-      .set({ status: "booked" })
-      .where(
-        inArray(
-          timeSlots.id,
-          existing.map((booking) => booking.timeSlotId),
-        ),
-      );
+      if (paidAfterRelease) {
+        const reclaimed = await tx
+          .update(timeSlots)
+          .set({ status: "booked" })
+          .where(
+            and(
+              inArray(timeSlots.id, slotIds),
+              eq(timeSlots.status, "available"),
+            ),
+          )
+          .returning({ advanceAmount: timeSlots.advanceAmount });
 
-    const couponId = existing[0]?.couponId;
-    if (couponId) {
+        // Someone else got the slot first. Roll back; the payment needs a refund.
+        if (reclaimed.length !== slotIds.length) throw new SlotTakenError();
+
+        // The pending type was lost when the order was released, so infer it:
+        // anything above the advance price must have been a full payment.
+        const advanceTotal = reclaimed.reduce(
+          (sum, slot) => sum + (slot.advanceAmount ?? 0),
+          0,
+        );
+        const paidTotal = existing.reduce(
+          (sum, booking) => sum + booking.amountPaid,
+          0,
+        );
+        paidStatus = paidTotal > advanceTotal ? "fullPaid" : "advancePaid";
+      }
+
       await tx
-        .update(coupons)
-        .set({ numberOfUses: sql`${coupons.numberOfUses} + 1` })
-        .where(eq(coupons.id, couponId));
+        .update(bookings)
+        .set({
+          status: paidStatus,
+          finalPaymentId: input.transactionId,
+          updatedAt: new Date(),
+        })
+        .where(eq(bookings.paymentId, input.orderId));
+
+      if (!paidAfterRelease) {
+        await tx
+          .update(timeSlots)
+          .set({ status: "booked" })
+          .where(inArray(timeSlots.id, slotIds));
+      }
+
+      const couponId = existing[0]?.couponId;
+      if (couponId) {
+        await tx
+          .update(coupons)
+          .set({ numberOfUses: sql`${coupons.numberOfUses} + 1` })
+          .where(eq(coupons.id, couponId));
+      }
+    });
+  } catch (error) {
+    if (error instanceof SlotTakenError) {
+      console.error(
+        `[payments] Order ${input.orderId} was paid (txn ${input.transactionId ?? "unknown"}) after its slot hold expired and the slot has since been taken. Refund this order manually.`,
+      );
+      return { orderId: input.orderId, success: false };
     }
-  });
+    throw error;
+  }
 
   const customer = await db.query.customers.findFirst({
     where: eq(customers.number, existing[0]!.phoneNumber),

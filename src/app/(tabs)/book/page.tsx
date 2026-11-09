@@ -36,7 +36,7 @@ type SlotView = {
   date: string;
   from: string;
   to: string;
-  status: "available" | "booked" | "unavailable";
+  status: "available" | "booked" | "unavailable" | "bookingInProgress";
   fullAmount: number;
   advanceAmount: number;
 };
@@ -964,7 +964,11 @@ export default function BookingPage() {
                   const isPast = isPastSelectedSlot(slot);
                   const isBooked = slot.status === "booked";
                   const isUnavailable = slot.status === "unavailable";
-                  const isBlocked = isPast || isBooked || isUnavailable;
+                  // Another customer is mid-payment on this slot. Block it here
+                  // instead of letting the tap fail later with "already booked".
+                  const isHeld = slot.status === "bookingInProgress";
+                  const isBlocked =
+                    isPast || isBooked || isUnavailable || isHeld;
                   const isAtLimit =
                     !isSelected && selectionCount >= MAX_SLOTS_PER_DAY;
                   const isDisabled = isBlocked || isAtLimit;
@@ -974,9 +978,11 @@ export default function BookingPage() {
                       ? strings.booked
                       : isUnavailable
                         ? strings.unavailable
-                        : isAtLimit && !isSelected
-                          ? strings.slotLimitReached
-                          : strings.tapToSelect;
+                        : isHeld
+                          ? strings.bookingInProgress
+                          : isAtLimit && !isSelected
+                            ? strings.slotLimitReached
+                            : strings.tapToSelect;
                   return (
                     <motion.button
                       key={slot.id}

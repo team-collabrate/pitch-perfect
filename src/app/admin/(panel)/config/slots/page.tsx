@@ -58,7 +58,7 @@ export default function DailySlotsPage() {
   const [editValues, setEditValues] = useState<{
     fullAmount: number;
     advanceAmount: number;
-    status: "available" | "unavailable" | "booked";
+    status: SlotData["status"];
   } | null>(null);
 
   const {
@@ -84,7 +84,7 @@ export default function DailySlotsPage() {
   }, [calendarMonth]);
 
   const displayedSlots = useMemo(() => {
-    return [...slots].sort((a, b) => {
+    return ([...slots] as SlotData[]).sort((a, b) => {
       const fromCompare = a.from.localeCompare(b.from);
       if (fromCompare !== 0) return fromCompare;
       return a.to.localeCompare(b.to);
@@ -96,12 +96,7 @@ export default function DailySlotsPage() {
     setEditValues({
       fullAmount: slot.fullAmount / 100,
       advanceAmount: slot.advanceAmount / 100,
-      status:
-        slot.status === "available"
-          ? "available"
-          : slot.status === "booked"
-            ? "booked"
-            : "unavailable",
+      status: slot.status,
     });
   };
 
@@ -119,17 +114,25 @@ export default function DailySlotsPage() {
     }
 
     try {
-      const payload = {
+      const amounts = {
         fullAmount: Math.round(editValues.fullAmount * 100),
         advanceAmount: Math.round(editValues.advanceAmount * 100),
-        status: editValues.status,
       };
+
+      // "Payment in progress" is set by the booking flow, not by admins. Leave
+      // it alone unless the admin picked a different status, so editing just
+      // the price of a held slot doesn't silently turn it into "unavailable".
+      const status =
+        editValues.status === "bookingInProgress"
+          ? undefined
+          : editValues.status;
 
       if (slot.id) {
         // Update existing DB slot
         await updateSlotMutation.mutateAsync({
           slotId: slot.id,
-          ...payload,
+          ...amounts,
+          status,
         });
       } else {
         // Create new DB slot to override virtual slot
@@ -137,7 +140,8 @@ export default function DailySlotsPage() {
           date: selectedDate,
           from: slot.from.length === 5 ? `${slot.from}:00` : slot.from,
           to: slot.to.length === 5 ? `${slot.to}:00` : slot.to,
-          ...payload,
+          ...amounts,
+          status: status ?? "available",
         });
       }
 
@@ -311,14 +315,18 @@ export default function DailySlotsPage() {
                             ? "bg-green-500/10 text-green-600"
                             : slot.status === "booked"
                               ? "bg-blue-500/10 text-blue-600"
-                              : "bg-red-500/10 text-red-600",
+                              : slot.status === "bookingInProgress"
+                                ? "bg-amber-500/10 text-amber-600"
+                                : "bg-red-500/10 text-red-600",
                         )}
                       >
                         {slot.status === "available"
                           ? strings.available
                           : slot.status === "booked"
                             ? "Booked"
-                            : strings.unavailable}
+                            : slot.status === "bookingInProgress"
+                              ? strings.paymentInProgress
+                              : strings.unavailable}
                       </span>
                       <span className="text-muted-foreground">
                         {strings.advance}: ₹{slot.advanceAmount / 100}
@@ -393,13 +401,15 @@ export default function DailySlotsPage() {
                         onChange={(e) =>
                           setEditValues({
                             ...editValues,
-                            status: e.target.value as
-                              | "available"
-                              | "unavailable"
-                              | "booked",
+                            status: e.target.value as SlotData["status"],
                           })
                         }
                       >
+                        {editValues.status === "bookingInProgress" && (
+                          <option value="bookingInProgress" disabled>
+                            {strings.paymentInProgress}
+                          </option>
+                        )}
                         <option value="available">{strings.available}</option>
                         <option value="unavailable">
                           {strings.unavailable}

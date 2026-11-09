@@ -3,6 +3,7 @@ import {
   eq,
   gte,
   inArray,
+  isNull,
   lte,
   notExists,
   sql,
@@ -14,6 +15,10 @@ import { db } from "~/server/db";
 import { bookings, coupons, customers, timeSlots } from "~/server/db/schema";
 import { sendBookingConfirmation } from "~/server/email";
 import { sendPaymentSuccessNotification } from "~/server/notifications/ntfy";
+import {
+  getPaytmTransactionStatus,
+  type PaytmTransactionStatus,
+} from "~/server/payments/paytm";
 import {
   createSlotFromConfig,
   validateSlotAgainstConfig,
@@ -61,6 +66,12 @@ export type BookingPaymentOrder = {
 const PENDING_STATUSES = ["advancePending", "fullPending"] as const;
 
 class SlotTakenError extends Error {}
+class AlreadyFinalizedError extends Error {}
+
+/** Asks Paytm about an order. Injectable so tests can pretend to be Paytm. */
+export type PaytmStatusFetcher = (
+  orderId: string,
+) => Promise<PaytmTransactionStatus>;
 
 const sanitizeAmount = (value: number) => Math.max(0, Math.round(value));
 
@@ -166,19 +177,53 @@ const releasePaymentOrder = (orderId: string) =>
 export const HOLD_RELEASE_STARTS_AT = new Date("2026-11-09T05:20:00Z");
 
 /**
- * Reopens slots whose payment was started but never finished (customer closed
- * the Paytm page, lost network, ...). Without this a slot stays
- * `bookingInProgress` forever because no payment callback ever arrives.
+ * If Paytm still can't say whether an order was paid after this long, treat it as
+ * abandoned and free the slot rather than hold it forever. A payment that turns
+ * out to have gone through later is still restored by finalizePaymentOrder.
+ */
+const UNCONFIRMED_GRACE_MINUTES = 30;
+/** At most this many orders are put to Paytm per sweep, so slot listing stays quick. */
+const MAX_ORDERS_PER_SWEEP = 5;
+/** An order Paytm couldn't settle is not asked about again for this long. */
+const RECHECK_AFTER_MS = 60_000;
+const recentSweepChecks = new Map<string, number>();
+
+const askPaytm = async (
+  orderId: string,
+  fetchStatus: PaytmStatusFetcher,
+): Promise<PaytmTransactionStatus> => {
+  try {
+    return await fetchStatus(orderId);
+  } catch (error) {
+    return {
+      state: "unknown",
+      reason: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
+
+/**
+ * Deals with payments that were started but never reported back (customer
+ * closed the Paytm page, switched UPI apps and never returned, lost network...).
+ * Without this a slot stays `bookingInProgress` forever.
  *
- * "Finished" is decided by the admin's booking buffer setting. A buffer of 0 or
- * less turns automatic release off.
+ * An unfinished order is only touched once it is older than the admin's booking
+ * buffer. Then, instead of assuming it was abandoned, Paytm is asked:
+ *  - paid:            the payment is recorded (booking confirmed, slot booked);
+ *  - failed / no payment attempt: the slot is reopened;
+ *  - still pending / no usable answer: the slot stays held until
+ *    UNCONFIRMED_GRACE_MINUTES have passed, then it is reopened.
  *
- * Pass `bufferMinutes` when the caller already loaded the config. `since` only
- * exists so tests can move the start date.
+ * A buffer of 0 or less turns all of this off. Only orders started on or after
+ * `since` are considered (see HOLD_RELEASE_STARTS_AT).
+ *
+ * Pass `bufferMinutes` when the caller already loaded the config. `since` and
+ * `fetchStatus` exist so tests can move the start date and stand in for Paytm.
  */
 export async function releaseExpiredPendingBookings(
   bufferMinutes?: number,
   since: Date = HOLD_RELEASE_STARTS_AT,
+  fetchStatus: PaytmStatusFetcher = getPaytmTransactionStatus,
 ) {
   const minutes =
     bufferMinutes ??
@@ -186,10 +231,195 @@ export async function releaseExpiredPendingBookings(
 
   if (minutes === undefined || minutes <= 0) return 0;
 
-  const cutoff = new Date(Date.now() - minutes * 60_000);
-  return releasePendingBookings(
-    and(lte(bookings.createdAt, cutoff), gte(bookings.createdAt, since)),
+  const now = Date.now();
+  const cutoff = new Date(now - minutes * 60_000);
+  const expiredWindow = and(
+    inArray(bookings.status, [...PENDING_STATUSES]),
+    lte(bookings.createdAt, cutoff),
+    gte(bookings.createdAt, since),
   );
+
+  const expired = await db
+    .select({ orderId: bookings.paymentId, createdAt: bookings.createdAt })
+    .from(bookings)
+    .where(expiredWindow);
+
+  if (expired.length === 0) return 0;
+
+  // One entry per Paytm order, keyed to when its oldest booking was started.
+  const orders = new Map<string, Date>();
+  let withoutOrder = false;
+  for (const row of expired) {
+    if (!row.orderId) {
+      withoutOrder = true;
+      continue;
+    }
+    const started = orders.get(row.orderId);
+    if (!started || row.createdAt < started)
+      orders.set(row.orderId, row.createdAt);
+  }
+
+  let released = 0;
+
+  if (withoutOrder) {
+    // No Paytm order exists to ask about, so nothing can ever arrive for these.
+    released += await releasePendingBookings(
+      and(
+        isNull(bookings.paymentId),
+        lte(bookings.createdAt, cutoff),
+        gte(bookings.createdAt, since),
+      ),
+    );
+  }
+
+  for (const [orderId, askedAt] of recentSweepChecks) {
+    if (now - askedAt > 60 * 60_000) recentSweepChecks.delete(orderId);
+  }
+
+  // Oldest first. An order Paytm couldn't settle a moment ago is skipped (it must
+  // not use up one of the few places in this sweep); if it has also passed the
+  // grace period it is given up on without asking again.
+  const toAsk: Array<{ orderId: string; pastGrace: boolean }> = [];
+  const toGiveUp: string[] = [];
+  const oldestFirst = [...orders.entries()].sort(
+    (a, b) => a[1].getTime() - b[1].getTime(),
+  );
+  for (const [orderId, startedAt] of oldestFirst) {
+    const pastGrace =
+      (now - startedAt.getTime()) / 60_000 >= UNCONFIRMED_GRACE_MINUTES;
+    const askedAt = recentSweepChecks.get(orderId);
+    if (askedAt !== undefined && now - askedAt < RECHECK_AFTER_MS) {
+      if (pastGrace) toGiveUp.push(orderId);
+      continue;
+    }
+    if (toAsk.length < MAX_ORDERS_PER_SWEEP) toAsk.push({ orderId, pastGrace });
+  }
+
+  for (const orderId of toGiveUp) {
+    try {
+      released += await releasePaymentOrder(orderId);
+      recentSweepChecks.delete(orderId);
+    } catch (error) {
+      console.error(
+        `[payments] Could not release unfinished order ${orderId}`,
+        error,
+      );
+    }
+  }
+
+  // Ask Paytm about all of them at once (network only, no database writes)...
+  const answers = await Promise.all(
+    toAsk.map(async ({ orderId, pastGrace }) => {
+      recentSweepChecks.set(orderId, now);
+      return {
+        orderId,
+        pastGrace,
+        status: await askPaytm(orderId, fetchStatus),
+      };
+    }),
+  );
+
+  // ...then act on the answers one at a time.
+  for (const { orderId, pastGrace, status } of answers) {
+    try {
+      if (status?.state === "success") {
+        await finalizePaymentOrder({
+          orderId,
+          success: true,
+          transactionId: status.transactionId,
+          paymentStatus: "TXN_SUCCESS",
+        });
+        recentSweepChecks.delete(orderId);
+      } else if (
+        status?.state === "failed" ||
+        status?.state === "notFound" ||
+        pastGrace
+      ) {
+        released += await releasePaymentOrder(orderId);
+        recentSweepChecks.delete(orderId);
+      }
+      // Otherwise Paytm hasn't settled it yet: leave the hold in place for now.
+    } catch (error) {
+      console.error(
+        `[payments] Could not resolve unfinished order ${orderId}`,
+        error,
+      );
+    }
+  }
+
+  return released;
+}
+
+export type PaymentCheckResult = { state: "paid" | "failed" | "pending" };
+
+const RETURN_RECHECK_MS = 5_000;
+const recentReturnChecks = new Map<string, number>();
+
+/**
+ * Called when a customer comes back from Paytm with a result that isn't final.
+ * Asks Paytm and records the payment if it went through. Only an explicit
+ * failure from Paytm reopens the slot here; "no record" or "pending" right after
+ * the customer returns is not proof they didn't pay, so the sweep decides later.
+ */
+export async function confirmPaymentOrder(
+  orderId: string,
+  fetchStatus: PaytmStatusFetcher = getPaytmTransactionStatus,
+): Promise<PaymentCheckResult> {
+  const rows = await db
+    .select({ status: bookings.status })
+    .from(bookings)
+    .where(eq(bookings.paymentId, orderId));
+
+  if (rows.length === 0) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Payment order not found",
+    });
+  }
+
+  if (
+    rows.every(
+      (row) => row.status === "advancePaid" || row.status === "fullPaid",
+    )
+  ) {
+    return { state: "paid" };
+  }
+
+  const stillPending = rows.some((row) =>
+    (PENDING_STATUSES as readonly string[]).includes(row.status),
+  );
+  const fallback: PaymentCheckResult = {
+    state: stillPending ? "pending" : "failed",
+  };
+
+  const now = Date.now();
+  for (const [id, askedAt] of recentReturnChecks) {
+    if (now - askedAt > 10 * 60_000) recentReturnChecks.delete(id);
+  }
+  const lastAsked = recentReturnChecks.get(orderId);
+  if (lastAsked !== undefined && now - lastAsked < RETURN_RECHECK_MS) {
+    return fallback;
+  }
+  recentReturnChecks.set(orderId, now);
+
+  const status = await askPaytm(orderId, fetchStatus);
+
+  if (status.state === "success") {
+    const result = await finalizePaymentOrder({
+      orderId,
+      success: true,
+      transactionId: status.transactionId,
+      paymentStatus: "TXN_SUCCESS",
+    });
+    return { state: result.success ? "paid" : "failed" };
+  }
+
+  if (status.state === "failed" && stillPending) {
+    await releasePaymentOrder(orderId);
+    return { state: "failed" };
+  }
+
+  return fallback;
 }
 
 export async function calculateCouponDiscount(input: {
@@ -518,23 +748,13 @@ export async function finalizePaymentOrder(input: {
         existing[0]?.status === "fullPending" ? "fullPaid" : "advancePaid";
 
       if (paidAfterRelease) {
-        const reclaimed = await tx
-          .update(timeSlots)
-          .set({ status: "booked" })
-          .where(
-            and(
-              inArray(timeSlots.id, slotIds),
-              eq(timeSlots.status, "available"),
-            ),
-          )
-          .returning({ advanceAmount: timeSlots.advanceAmount });
-
-        // Someone else got the slot first. Roll back; the payment needs a refund.
-        if (reclaimed.length !== slotIds.length) throw new SlotTakenError();
-
         // The pending type was lost when the order was released, so infer it:
         // anything above the advance price must have been a full payment.
-        const advanceTotal = reclaimed.reduce(
+        const slotPrices = await tx
+          .select({ advanceAmount: timeSlots.advanceAmount })
+          .from(timeSlots)
+          .where(inArray(timeSlots.id, slotIds));
+        const advanceTotal = slotPrices.reduce(
           (sum, slot) => sum + (slot.advanceAmount ?? 0),
           0,
         );
@@ -545,16 +765,47 @@ export async function finalizePaymentOrder(input: {
         paidStatus = paidTotal > advanceTotal ? "fullPaid" : "advancePaid";
       }
 
-      await tx
+      // Claim the bookings first. If another request (callback, webhook, status
+      // check) finished this order a moment ago there is nothing left to claim and
+      // we stop here, so the slot, coupon count and confirmation messages are only
+      // ever handled once.
+      const claimed = await tx
         .update(bookings)
         .set({
           status: paidStatus,
           finalPaymentId: input.transactionId,
           updatedAt: new Date(),
         })
-        .where(eq(bookings.paymentId, input.orderId));
+        .where(
+          and(
+            eq(bookings.paymentId, input.orderId),
+            inArray(bookings.status, [
+              ...(paidAfterRelease
+                ? (["paymentFailed"] as const)
+                : PENDING_STATUSES),
+            ]),
+          ),
+        )
+        .returning({ id: bookings.id });
 
-      if (!paidAfterRelease) {
+      if (claimed.length === 0) throw new AlreadyFinalizedError();
+
+      if (paidAfterRelease) {
+        const reclaimed = await tx
+          .update(timeSlots)
+          .set({ status: "booked" })
+          .where(
+            and(
+              inArray(timeSlots.id, slotIds),
+              eq(timeSlots.status, "available"),
+            ),
+          )
+          .returning({ id: timeSlots.id });
+
+        // Someone else got the slot first. Roll back (the claim above is undone);
+        // the payment needs a refund.
+        if (reclaimed.length !== slotIds.length) throw new SlotTakenError();
+      } else {
         await tx
           .update(timeSlots)
           .set({ status: "booked" })
@@ -570,6 +821,16 @@ export async function finalizePaymentOrder(input: {
       }
     });
   } catch (error) {
+    if (error instanceof AlreadyFinalizedError) {
+      const current = await db
+        .select({ status: bookings.status })
+        .from(bookings)
+        .where(eq(bookings.paymentId, input.orderId));
+      return {
+        orderId: input.orderId,
+        success: current.every((booking) => booking.status !== "paymentFailed"),
+      };
+    }
     if (error instanceof SlotTakenError) {
       console.error(
         `[payments] Order ${input.orderId} was paid (txn ${input.transactionId ?? "unknown"}) after its slot hold expired and the slot has since been taken. Refund this order manually.`,

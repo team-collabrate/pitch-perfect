@@ -276,6 +276,7 @@ export default function BookingPage() {
   // Mutations
   const upsertCustomer = api.customer.upsert.useMutation();
   const initiatePayment = api.booking.initiatePayment.useMutation();
+  const confirmPayment = api.booking.confirmPayment.useMutation();
   const { data: paymentOrder } = api.booking.getPaymentOrder.useQuery(
     { orderId: paymentOrderId ?? "" },
     { enabled: paymentStatus === "success" && !!paymentOrderId },
@@ -333,6 +334,57 @@ export default function BookingPage() {
     if (paymentStatus !== "unknown") return;
     toast.info("Payment status received.");
   }, [paymentStatus]);
+
+  // When Paytm sends the customer back without a clear result, ask the server to
+  // check with Paytm (it records the booking if the payment went through) instead
+  // of leaving the customer waiting on a message that may never arrive.
+  const confirmPaymentRef = useRef(confirmPayment.mutateAsync);
+  confirmPaymentRef.current = confirmPayment.mutateAsync;
+
+  useEffect(() => {
+    if (paymentStatus !== "pending" && paymentStatus !== "unknown") return;
+    if (!paymentOrderId) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const check = async () => {
+      attempts += 1;
+      try {
+        const result = await confirmPaymentRef.current({
+          orderId: paymentOrderId,
+        });
+        if (cancelled) return;
+
+        if (result.state === "paid") {
+          window.history.replaceState(
+            {},
+            "",
+            `/book?payment=success&orderId=${paymentOrderId}`,
+          );
+          setPaymentQuery({ payment: "success", orderId: paymentOrderId });
+          return;
+        }
+        if (result.state === "failed") {
+          setPaymentQuery({ payment: "failed", orderId: paymentOrderId });
+          return;
+        }
+      } catch {
+        // Keep waiting; the next attempt may get through.
+      }
+
+      if (!cancelled && attempts < 12) {
+        timer = setTimeout(() => void check(), 5000);
+      }
+    };
+
+    timer = setTimeout(() => void check(), 1500);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [paymentStatus, paymentOrderId]);
 
   useEffect(() => {
     if (paymentStatus !== "success" || !paymentOrder) return;

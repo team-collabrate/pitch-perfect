@@ -13,6 +13,7 @@ import {
 } from "~/lib/slot-utils";
 import {
   calculateCouponDiscount,
+  confirmPaymentOrder,
   createPaymentOrder,
   getPaymentOrder as fetchPaymentOrder,
   failPaymentOrder,
@@ -417,6 +418,18 @@ export const bookingRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => fetchPaymentOrder(input.orderId)),
+
+  // The customer came back from Paytm with a result that isn't final (pending /
+  // unknown). Ask Paytm directly and record the payment if it went through, so a
+  // lost callback or webhook can't leave a paid order unrecorded. Order ids are
+  // random, and the answer always comes from Paytm, never from the caller.
+  confirmPayment: publicProcedure
+    .input(
+      z.object({
+        orderId: z.string().regex(/^PAYTM_[0-9A-F]{18}$/),
+      }),
+    )
+    .mutation(async ({ input }) => confirmPaymentOrder(input.orderId)),
 
   // Get bookings by phone number
   getByNumber: publicProcedure

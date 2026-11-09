@@ -765,6 +765,48 @@ export const adminRouter = createTRPCRouter({
       return { success: true, count: result.length };
     }),
 
+  // Slots on a date that staff booked rather than a customer: either a
+  // "manual" booking exists for the slot, or the slot was switched to
+  // "Booked (Manual)" and no paid customer booking backs it. The slots page
+  // uses this to highlight them.
+  manualBookedSlots: managerProcedure
+    .input(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }))
+    .query(async ({ input }) => {
+      const bookedSlots = await db
+        .select({ id: timeSlots.id, from: timeSlots.from, to: timeSlots.to })
+        .from(timeSlots)
+        .where(
+          and(eq(timeSlots.date, input.date), eq(timeSlots.status, "booked")),
+        );
+
+      if (bookedSlots.length === 0) return [];
+
+      const slotBookings = await db
+        .select({ timeSlotId: bookings.timeSlotId, status: bookings.status })
+        .from(bookings)
+        .where(
+          inArray(
+            bookings.timeSlotId,
+            bookedSlots.map((slot) => slot.id),
+          ),
+        );
+
+      const customerStatuses: string[] = [...paidBookingStatuses, "wontCome"];
+
+      return bookedSlots
+        .filter((slot) => {
+          const statuses = slotBookings
+            .filter((booking) => booking.timeSlotId === slot.id)
+            .map((booking) => booking.status);
+
+          return (
+            statuses.includes("manual") ||
+            !statuses.some((status) => customerStatuses.includes(status))
+          );
+        })
+        .map(({ from, to }) => ({ from, to }));
+    }),
+
   getBookingsByDate: managerProcedure
     .input(
       z.object({

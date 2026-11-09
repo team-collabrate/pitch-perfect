@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Clock,
   Edit2,
+  Flag,
   Save,
   X,
   Trash2,
@@ -68,6 +69,22 @@ export default function DailySlotsPage() {
   } = api.timeSlot.getAllByDate.useQuery(
     { date: selectedDate },
     { enabled: !!selectedDate },
+  );
+
+  // Slots booked by staff (manual booking) get a bold highlight below.
+  const { data: manualSlots = [], refetch: refetchManual } =
+    api.admin.manualBookedSlots.useQuery(
+      { date: selectedDate },
+      { enabled: !!selectedDate },
+    );
+  const manualSlotKeys = useMemo(
+    () =>
+      new Set(
+        manualSlots.map(
+          (slot) => `${slot.from.slice(0, 5)}|${slot.to.slice(0, 5)}`,
+        ),
+      ),
+    [manualSlots],
   );
 
   const createSlotMutation = api.admin.createSlot.useMutation();
@@ -148,7 +165,7 @@ export default function DailySlotsPage() {
       toast.success(strings.slotUpdated);
       setEditingSlotIndex(null);
       setEditValues(null);
-      await refetch();
+      await Promise.all([refetch(), refetchManual()]);
     } catch (error) {
       toast.error(strings.slotUpdateError);
       console.error(error);
@@ -161,7 +178,7 @@ export default function DailySlotsPage() {
     try {
       await deleteSlotMutation.mutateAsync({ slotId });
       toast.success(strings.overrideRemoved);
-      await refetch();
+      await Promise.all([refetch(), refetchManual()]);
     } catch (error) {
       toast.error(strings.overrideRemoveError);
       console.error(error);
@@ -286,18 +303,28 @@ export default function DailySlotsPage() {
           {displayedSlots.map((slot, index) => {
             const isEditing = editingSlotIndex === index;
             const isVirtual = !slot.id;
+            const isManual =
+              slot.status === "booked" &&
+              manualSlotKeys.has(
+                `${slot.from.slice(0, 5)}|${slot.to.slice(0, 5)}`,
+              );
 
             return (
               <Card
                 key={`${slot.from}-${index}`}
                 className={cn(
                   "border-border/60 bg-card/60 rounded-3xl p-4 transition-all",
+                  isManual &&
+                    "border-l-4 border-violet-500/50 border-l-violet-500 bg-violet-500/10 shadow-sm shadow-violet-500/20",
                   isEditing && "ring-primary border-transparent ring-2",
                 )}
               >
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
+                      {isManual && (
+                        <Flag className="h-4 w-4 shrink-0 text-violet-600 dark:text-violet-300" />
+                      )}
                       <p className="font-semibold">
                         {formatSlotTime(slot.from)} – {formatSlotTime(slot.to)}
                       </p>
@@ -307,26 +334,30 @@ export default function DailySlotsPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                       <span
                         className={cn(
-                          "rounded-full px-2 py-0.5 font-medium uppercase",
+                          "rounded-full px-2 py-0.5 font-medium whitespace-nowrap uppercase",
                           slot.status === "available"
                             ? "bg-green-500/10 text-green-600"
-                            : slot.status === "booked"
-                              ? "bg-blue-500/10 text-blue-600"
-                              : slot.status === "bookingInProgress"
-                                ? "bg-amber-500/10 text-amber-600"
-                                : "bg-red-500/10 text-red-600",
+                            : isManual
+                              ? "bg-violet-600 font-bold text-white dark:bg-violet-500"
+                              : slot.status === "booked"
+                                ? "bg-blue-500/10 text-blue-600"
+                                : slot.status === "bookingInProgress"
+                                  ? "bg-amber-500/10 text-amber-600"
+                                  : "bg-red-500/10 text-red-600",
                         )}
                       >
                         {slot.status === "available"
                           ? strings.available
-                          : slot.status === "booked"
-                            ? "Booked"
-                            : slot.status === "bookingInProgress"
-                              ? strings.paymentInProgress
-                              : strings.unavailable}
+                          : isManual
+                            ? strings.bookedManual
+                            : slot.status === "booked"
+                              ? "Booked"
+                              : slot.status === "bookingInProgress"
+                                ? strings.paymentInProgress
+                                : strings.unavailable}
                       </span>
                       <span className="text-muted-foreground">
                         {strings.advance}: ₹{slot.advanceAmount / 100}
